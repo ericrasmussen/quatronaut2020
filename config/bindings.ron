@@ -1,0 +1,12 @@
+(
+  axes: {
+    // player movement
+    "x_axis": Emulated(pos: Key(D), neg: Key(A)),
+    "y_axis": Emulated(pos: Key(W), neg: Key(S)),
+
+    // laser beams!
+    "x_laser": Emulated(pos: Key(Right), neg: Key(Left)),
+    "y_laser": Emulated(pos: Key(Up), neg: Key(Down)),
+  },
+  actions: {},
+)

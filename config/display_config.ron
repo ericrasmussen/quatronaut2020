@@ -1,0 +1,6 @@
+// TODO: add a background image
+// much later TODO: create a prefab for the camera
+(
+  title: "Benitron 3000",
+  dimensions: Some((800, 600)),
+)
