@@ -1,0 +1,13 @@
+List((
+    texture_width: 28,
+    texture_height: 28,
+    sprites: [
+        // existential horror
+        (
+            x: 0,
+            y: 0,
+            width: 28,
+            height: 28,
+        ),
+    ]
+))

@@ -16,6 +16,7 @@ use amethyst::{
 // use log::info;
 
 use crate::entities::player::Player;
+use crate::entities::enemy::Enemy;
 use crate::entities::laser::Laser;
 
 pub struct MyState;
@@ -36,12 +37,17 @@ impl SimpleState for MyState {
         init_camera(world, &dimensions);
 
         // get a handle on the sprite sheet
-        let sprite_sheet_handle = load_sprite_sheet(world);
+        let sprite_sheet_handle = load_sprite_sheet(world, "sprite_sheet");
 
+        // get the enemy sprite sheet. it's separate for now since the assets
+        // will all be changing anyway
+        let enemy_sprite_sheet_handle = load_sprite_sheet(world, "enemy_sprites");
         // need to register this type of entry before init
         world.register::<Player>();
         world.register::<Laser>();
+        world.register::<Enemy>();
         init_characters(world, sprite_sheet_handle, &dimensions);
+        init_enemies(world, enemy_sprite_sheet_handle);
     }
 
     fn handle_event(
@@ -83,12 +89,14 @@ fn init_camera(world: &mut World, dimensions: &ScreenDimensions) {
         .build();
 }
 
-fn load_sprite_sheet(world: &mut World) -> Handle<SpriteSheet> {
+// sprite_sheet
+// enemy_sprites
+fn load_sprite_sheet(world: &mut World, name: &str) -> Handle<SpriteSheet> {
     let texture_handle = {
         let loader = world.read_resource::<Loader>();
         let texture_storage = world.read_resource::<AssetStorage<Texture>>();
         loader.load(
-            "sprites/sprite_sheet.png",
+            format!("sprites/{}.png", name),
             ImageFormat::default(),
             (),
             &texture_storage,
@@ -98,7 +106,7 @@ fn load_sprite_sheet(world: &mut World) -> Handle<SpriteSheet> {
     let loader = world.read_resource::<Loader>();
     let sprite_sheet_store = world.read_resource::<AssetStorage<SpriteSheet>>();
     loader.load(
-        "sprites/sprite_sheet.ron", // Here we load the associated ron file
+        format!("sprites/{}.ron", name),
         SpriteSheetFormat(texture_handle),
         (),
         &sprite_sheet_store,
@@ -134,4 +142,38 @@ fn init_characters(world: &mut World,
         .with(Player::new(10.0, fire_delay))
         .with(player_transform)
         .build();
+}
+
+// for now, all this does is create an enemy entity.
+// this would also ideally go into a prefab
+fn init_enemies(world: &mut World,
+    sprite_sheet_handle: Handle<SpriteSheet>)
+{
+
+    let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
+    let scale = Vector3::new(5.0, 5.0, 5.0);
+
+
+    // the enemy has a separate sprite sheet until I have real assets to work with and can
+    // make a shared sprite sheet (preferably as a prefab)
+    let sprite_render = SpriteRender {
+        sprite_sheet: sprite_sheet_handle,
+        sprite_number: 0,
+    };
+
+    // we'll eventually need to define waves of enemies outside of state.rs. they
+    // should be generated for each level/wave.
+    let coordinates = vec![2.0, 8.0, 12.0, 16.0, 22.0, 30.0];
+
+    for n in coordinates {
+        let position = Translation3::new(40.0 * n as f32, 40.0 * n as f32, 0.0);
+        let enemy_transform = Transform::new(position, rotation, scale);
+
+        world
+        .create_entity()
+        .with(sprite_render.clone())
+        .with(Enemy::new(10.0))
+        .with(enemy_transform)
+        .build();
+    }
 }
