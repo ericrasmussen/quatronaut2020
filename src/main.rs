@@ -35,6 +35,9 @@ fn main() -> amethyst::Result<()> {
         // TODO: not sure if the input system is needed here?
         .with(systems::LaserSystem, "laser_system", &["input_system"])
         .with(systems::CollisionSystem, "collision_system", &["input_system"])
+        .with(systems::AttackedSystem, "attacked_system", &["input_system"])
+        .with(systems::EnemyTrackingSystem, "enemy_tracking_system", &["input_system"])
+        .with(systems::EnemyMoveSystem, "enemy_move_system", &["input_system"])
         .with_bundle(
             RenderingBundle::<DefaultBackend>::new()
                 .with_plugin(

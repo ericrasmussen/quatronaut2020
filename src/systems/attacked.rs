@@ -6,54 +6,56 @@ use amethyst::core::{Transform};
 use amethyst::derive::SystemDesc;
 use amethyst::ecs::{Join, System, SystemData, ReadStorage, WriteStorage, Entities};
 
-use crate::entities::laser::Laser;
 use crate::entities::enemy::Enemy;
+use crate::entities::player::Player;
 
 //use log::info;
 
 // big TODO: as this system gets more complicated, at some point it'll probably
-// be worth using ncollide's broad phase collision 
+// be worth using ncollide's broad phase collision, which would let us consolidate
+// this and collision.rs.
 #[derive(SystemDesc)]
-pub struct CollisionSystem;
+pub struct AttackedSystem;
 
-impl<'s> System<'s> for CollisionSystem {
+impl<'s> System<'s> for AttackedSystem {
     type SystemData = (
         ReadStorage<'s, Transform>,
-        WriteStorage<'s, Laser>,
+        WriteStorage<'s, Player>,
         WriteStorage<'s, Enemy>,
         Entities<'s>,
     );
 
-    fn run(&mut self, (transforms, lasers, enemies, entities): Self::SystemData) {
-        for (entity_a, laser_a, transform_a) in (&entities, &lasers, &transforms).join() {
+    // we don't need `player` here, though if we add health it'd be useful. keeping for now
+    // until deciding
+    fn run(&mut self, (transforms, players, enemies, entities): Self::SystemData) {
+        for (player_entity, _player, player_transform) in (&entities, &players, &transforms).join() {
 
         /*
         * Initialize the shapes.
         */
-        // this is for a laser much larger than ours. agh.
-        // the x, y should be the half length along the x and y axes, respectively
-        // for a ball type you'd use a radius instead. this creates a representation of
-        // the shape and a size of the shape, but *not* positioning of any kind
-        // this number should be in a config somewhere... it's the pixel width 7 and height 1,
-        // both scaled by 5, and then divided in two to get the half length
-        let laser_cube = Cuboid::new(Vector2::new(17.5, 2.5));
+
+        // see collision.rs for details on the calculations, and let us hope this code does
+        // not live forever.
+        // note that it should be 40.0, 57.5 for the player but we want to be a little
+        // forgiving. it is the year 3000, after all
+        let player_cube = Cuboid::new(Vector2::new(35.0, 52.5));
  
         // next we need to create an isometry representation of the position, which for 2d
         // ncollide is a vector of the x and y coordinates and a rotation (zero() for no rotation).
         // the actual rotation is available via some_transform.isometry(), but 
-        let laser_cube_pos = Isometry2::new(
-            Vector2::new(transform_a.translation().x, transform_a.translation().y),
+        let player_cube_pos = Isometry2::new(
+            Vector2::new(player_transform.translation().x, player_transform.translation().y),
             nalgebra::zero()
         );
 
         // a bounding volume is the combination of a shape and a position
-        let aabb_cube1 = bounding_volume::aabb(&laser_cube, &laser_cube_pos);
+        let aabb_cube1 = bounding_volume::aabb(&player_cube, &player_cube_pos);
 
-        for (entity_b, enemy_b, transform_b) in (&entities, &enemies, &transforms).join() {
+        for (_enemy_entity, _enemy, enemy_transform) in (&entities, &enemies, &transforms).join() {
 
             let enemy_cube = Cuboid::new(Vector2::new(70.0, 70.0));
             let enemy_cube_pos = Isometry2::new(
-                Vector2::new(transform_b.translation().x, transform_b.translation().y),
+                Vector2::new(enemy_transform.translation().x, enemy_transform.translation().y),
                 nalgebra::zero()
             );
 
@@ -68,7 +70,7 @@ impl<'s> System<'s> for CollisionSystem {
             //info!("does it collide? {:?}", aabb_cube1.intersects(&aabb_cube2));
             if aabb_cube1.intersects(&aabb_cube2) {
                 // this should be a call to some enemy method for reducing health
-                entities.delete(entity_b);
+                entities.delete(player_entity);
             }
             }    
         }

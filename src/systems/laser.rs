@@ -58,7 +58,7 @@ impl<'s> System<'s> for LaserSystem {
 
             // this will change when we add rudimentary collision detection. for now
             // it's just a bounds check that'll delete lasers once they go off screen.
-            if trans.x < 0.0 || trans.x > 1700.0 || trans.y < 0.0 || trans.y > 1400.0 {
+            if trans.x < 0.0 || trans.x > 2500.0 || trans.y < 0.0 || trans.y > 2500.0 {
                 let deleted = entities.delete(entity);
 
                 if let Err(msg) = deleted {

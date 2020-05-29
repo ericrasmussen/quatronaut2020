@@ -11,9 +11,8 @@ use amethyst::{
     core::math::{Translation3, UnitQuaternion, Vector3},
 };
 
-// uncomment the lines below for logging key input
-// use amethyst::input::get_key
-// use log::info;
+//use amethyst::input::get_key;
+//use log::info;
 
 use crate::entities::player::Player;
 use crate::entities::enemy::Enemy;
@@ -66,9 +65,12 @@ impl SimpleState for MyState {
             //    info!("handling key event: {:?}", event);
             //}
 
-            // If you're looking for a more sophisticated event handling solution,
-            // including key bindings and gamepad support, please have a look at
-            // https://book.amethyst.rs/stable/pong-tutorial/pong-tutorial-03.html#capturing-user-input
+            // TODO: eventually need to add a menu type screen for state
+            // transitions. this doesn't really work because it doesn't clean up
+            // the current state
+            //if let Some((VirtualKeyCode::R, _)) = get_key(&event) {
+            //    return Trans::Switch(Box::new(MyState));
+            //}
         }
 
         // Keep going
@@ -121,7 +123,6 @@ fn init_characters(world: &mut World,
         sprite_sheet_handle: Handle<SpriteSheet>,
         dimensions: &ScreenDimensions) 
     {
-
     let position = Translation3::new(dimensions.width() * 0.5, dimensions.height() * 0.5, 0.0);
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
     let scale = Vector3::new(5.0, 5.0, 5.0);
@@ -172,7 +173,8 @@ fn init_enemies(world: &mut World,
         world
         .create_entity()
         .with(sprite_render.clone())
-        .with(Enemy::new(10.0))
+        // this sets the speed, which should also be from a config file
+        .with(Enemy::new(30.0))
         .with(enemy_transform)
         .build();
     }
