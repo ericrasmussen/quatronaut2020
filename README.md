@@ -7,7 +7,7 @@ A work-in-progress robotron style game made using https://amethyst.rs.
 ```bash
 git clone https://github.com/ericrasmussen/benitron3000.git
 cd benitron3000
-cargo run
+make
 ```
 
 ### Gameplay notes
@@ -21,25 +21,6 @@ The game supports many experimental features, including being able to walk offsc
 ### Additional build instructions
 
 The information below comes from the https://github.com/amethyst/amethyst-starter-2d README:
-
-#### For Mac Users
-
-This starter uses vulkan as a renderer by default. You'll want to change the backend to use `metal`, which can be done by opening the `Cargo.toml` file and changing
-
-```toml
-[features]
-default = ["vulkan"]
-```
-
-to
-
-```toml
-[features]
-default = ["metal"]
-```
-
-If using OSX and Metal you will require full XCode installed from the Appstore in order to compile metal shaders.
-After install you may be required to run this command `sudo xcode-select --switch /Applications/Xcode.app/Contents/Developer` [reference gfx-rs issue](https://github.com/gfx-rs/gfx/issues/2472)
 
 #### For Linux Users
 
