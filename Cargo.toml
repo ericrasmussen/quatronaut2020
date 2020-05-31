@@ -4,22 +4,17 @@ version = "0.1.0"
 authors = ["Eric R <eric@chromaticleaves.com>"]
 edition = "2018"
 
-[target.'cfg(target_os = "macos")'.dependencies.amethyst]
-version = "0.15.0"
-features = ["metal"]
-
-[target.'cfg(not(target_os = "macos"))'.dependencies.amethyst]
-version = "0.15.0"
-features = ["vulkan"]
-
 [dependencies]
-amethyst_rendy = "0.5.0" 
+amethyst = "0.15.0"
+amethyst_rendy = "0.5.0"
+log = { version = "0.4.8", features = ["serde"] }
 nalgebra = "0.20"
 ncollide2d = "0.22"
 serde = { version = "1.0.104", features = ["derive"] }
-log = { version = "0.4.8", features = ["serde"] }
 # used only for a default implementation of GameplayState. probably not really needed
 derive-new = "0.5.8"
 
 [features]
 empty = ["amethyst/empty"]
+metal = ["amethyst/metal"]
+vulkan = ["amethyst/vulkan"]

@@ -1,0 +1,26 @@
+{
+    "platformSettings.autoLoad": true,
+    "platformSettings.platforms": {
+        "darwin": {
+            "nodes": {
+                "rust-analyzer.cargo.features": [
+                    "metal"
+                ]
+            }
+        },
+        "linux": {
+            "nodes": {
+                "rust-analyzer.cargo.features": [
+                    "vulkan"
+                ]
+            }
+        },
+        "win32": {
+            "nodes": {
+                "rust-analyzer.cargo.features": [
+                    "vulkan"
+                ]
+            }
+        },
+    },
+}

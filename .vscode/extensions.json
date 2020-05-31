@@ -1,0 +1,9 @@
+{
+    "recommendations": [
+        "bungcip.better-toml",
+        "editorconfig.editorconfig",
+        "matklad.rust-analyzer",
+        "runarsf.platform-settings",
+        "stkb.rewrap"
+    ]
+}
