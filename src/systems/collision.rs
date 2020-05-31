@@ -68,7 +68,7 @@ impl<'s> System<'s> for CollisionSystem {
                 //info!("does it collide? {:?}", aabb_cube1.intersects(&aabb_cube2));
                 if aabb_cube1.intersects(&aabb_cube2) {
                     // this should be a call to some enemy method for reducing health
-                    entities.delete(entity_b);
+                    entities.delete(entity_b).unwrap();
                 }
             }
         }

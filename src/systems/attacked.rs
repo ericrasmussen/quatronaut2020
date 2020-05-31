@@ -70,7 +70,7 @@ impl<'s> System<'s> for AttackedSystem {
                 //info!("does it collide? {:?}", aabb_cube1.intersects(&aabb_cube2));
                 if aabb_cube1.intersects(&aabb_cube2) {
                     // this should be a call to some enemy method for reducing health
-                    entities.delete(player_entity);
+                    entities.delete(player_entity).unwrap();
                 }
             }
         }
