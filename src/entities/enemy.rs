@@ -33,7 +33,6 @@ use serde::{Deserialize, Serialize};
 pub struct EnemyPrefab {
     pub sheet: SpriteSheetPrefab,
     pub render: SpriteRenderPrefab,
-    pub transform: Transform,
     pub enemy: Enemy,
 }
 
@@ -41,7 +40,6 @@ impl<'a> PrefabData<'a> for EnemyPrefab {
     type SystemData = (
         <SpriteSheetPrefab as PrefabData<'a>>::SystemData,
         <SpriteRenderPrefab as PrefabData<'a>>::SystemData,
-        <Transform as PrefabData<'a>>::SystemData,
         <Enemy as PrefabData<'a>>::SystemData,
     );
     type Result = ();
@@ -54,8 +52,7 @@ impl<'a> PrefabData<'a> for EnemyPrefab {
         children: &[Entity],
     ) -> Result<(), Error> {
         &self.render.add_to_entity(entity, &mut system_data.1, entities, children)?;
-        &self.transform.add_to_entity(entity, &mut system_data.2, entities, children)?;
-        &self.enemy.add_to_entity(entity, &mut system_data.3, entities, children)?;
+        &self.enemy.add_to_entity(entity, &mut system_data.2, entities, children)?;
         Ok(())
     }
 

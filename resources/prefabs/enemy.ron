@@ -54,7 +54,7 @@ Prefab (
                 // NOTE: if we use this prefab handle for generating waves of enemies,
                 // we probably only need scale. translation would be chosen at random
                 // by a spawn point, or generated randomly or procedurally
-                transform: (translation: (30.0, 30.0, 0.0), scale: (5.0, 5.0, 5.0)),
+                //transform: (translation: (30.0, 30.0, 0.0), scale: (5.0, 5.0, 5.0)),
                 // END transform: Transform
 
                 // BEGIN enemy: Enemy

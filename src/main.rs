@@ -50,7 +50,8 @@ fn main() -> amethyst::Result<()> {
                 .with_plugin(RenderFlat2D::default()),
         )?;
 
-    let mut game = Application::new(resources, state::GameplayState::new(), game_data)?;
+    // 2.0 is the seconds to delay before enemy wave 1 spawns
+    let mut game = Application::new(resources, state::GameplayState::new(2.0), game_data)?;
     game.run();
 
     Ok(())

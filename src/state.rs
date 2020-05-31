@@ -10,6 +10,8 @@ use amethyst::{
     window::ScreenDimensions,
     core::math::{Translation3, UnitQuaternion, Vector3},
 };
+use amethyst::core::timing::Time;
+
 use derive_new::new;
 //use amethyst::input::get_key;
 //use log::info;
@@ -26,6 +28,11 @@ pub struct GameplayState {
     /// Handle to the loaded prefab.
     #[new(default)]
     pub prefab_handle: Option<Handle<Prefab<EnemyPrefab>>>,
+    /// Haven't decided how/when to spawn enemy waves yet. This
+    /// lets us spawn after a certain amount of time has elapsed,
+    /// but will probably be replaced with something that spawns based
+    /// on score, or launches a new wave when the enemy count is 0.
+    pub wave_timer: f32,
 }
 
 impl SimpleState for GameplayState {
@@ -67,13 +74,33 @@ impl SimpleState for GameplayState {
 
         // get the enemy sprite sheet. it's separate for now since the assets
         // will all be changing anyway
-        let enemy_sprite_sheet_handle = load_sprite_sheet(world, "enemy_sprites");
+        //let enemy_sprite_sheet_handle = load_sprite_sheet(world, "enemy_sprites");
         // need to register this type of entry before init
         world.register::<Player>();
         world.register::<Laser>();
         world.register::<Enemy>();
         init_characters(world, sprite_sheet_handle, &dimensions);
-        init_enemies(world, enemy_sprite_sheet_handle);
+        //init_enemies(world, enemy_sprite_sheet_handle);
+    }
+
+    fn update(&mut self, data: &mut StateData<'_, GameData<'_, '_>>) -> SimpleTrans {
+        // check the time in a separate scope we can use `data.world` later
+        {
+            let time = data.world.fetch::<Time>();
+            self.wave_timer -= time.delta_seconds();
+        }
+        if self.wave_timer <= 0.0 {
+            // set the timer to 10 seconds before the next wave starts.
+            // again, mostly a placeholder until deciding on what makes sense for
+            // actual gameplay
+            self.wave_timer = 20.0;
+            // TODO: decide how to handle unwrapping here, or if we even
+            // need an `Option` type (since we shouldn't be this far into playing
+            // the game if we didn't get this required prefab)
+            init_enemy_wave(data.world, self.prefab_handle.clone().unwrap());
+
+        }
+        Trans::None
     }
 
     fn handle_event(
@@ -116,6 +143,50 @@ fn init_camera(world: &mut World, dimensions: &ScreenDimensions) {
         .with(Camera::standard_2d(dimensions.width(), dimensions.height()))
         .with(transform)
         .build();
+}
+
+fn init_enemy_wave(world: &mut World, prefab_handle: Handle<Prefab<EnemyPrefab>>) {
+        // Create one set of entities from the prefab.
+        let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
+        let scale = Vector3::new(5.0, 5.0, 5.0);
+        let mut offset = 250.0;
+
+        // bottom wave
+        (0..15).for_each(|_| {
+            let position = Translation3::new(offset, 20.0, 0.0);
+            offset += 250.0;
+            let transform = Transform::new(position, rotation, scale);
+            world
+                .create_entity()
+                .with(prefab_handle.clone())
+                .with(transform)
+                .build();
+        });
+        // top wave
+        offset = 0.0;
+        (0..15).for_each(|_| {
+            let position = Translation3::new(offset, 1600.0, 0.0);
+            offset += 250.0;
+            let transform = Transform::new(position, rotation, scale);
+            world
+                .create_entity()
+                .with(prefab_handle.clone())
+                .with(transform)
+                .build();
+        });
+        // left wave
+        offset = 0.0;
+        (0..10).for_each(|_| {
+            let position = Translation3::new(0.0, offset, 0.0);
+            offset += 250.0;
+            let transform = Transform::new(position, rotation, scale);
+            world
+                .create_entity()
+                .with(prefab_handle.clone())
+                .with(transform)
+                .build();
+        });
+
 }
 
 // sprite_sheet
@@ -179,7 +250,7 @@ fn init_characters(world: &mut World,
 // how many enemies were left (e.g. enemy_count == 0)
 // at that point we'd either generate a number of enemies and coordinates
 // or use some fixed algorithm
-fn init_enemies(world: &mut World,
+/* fn init_enemies(world: &mut World,
     sprite_sheet_handle: Handle<SpriteSheet>)
 {
 
@@ -202,12 +273,13 @@ fn init_enemies(world: &mut World,
         let position = Translation3::new(40.0 * n as f32, 40.0 * n as f32, 0.0);
         let enemy_transform = Transform::new(position, rotation, scale);
 
-        // world
-        // .create_entity()
-        // .with(sprite_render.clone())
-        // // this sets the speed, which should also be from a config file
-        // .with(Enemy::new(200.0))
-        // .with(enemy_transform)
-        // .build();
+         world
+         .create_entity()
+         .with(sprite_render.clone())
+         // this sets the speed, which should also be from a config file
+         .with(Enemy::new(200.0))
+         .with(enemy_transform)
+         .build();
     }
 }
+ */
