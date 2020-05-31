@@ -7,13 +7,11 @@ edition = "2018"
 [dependencies]
 amethyst = "0.15.0"
 amethyst_rendy = "0.5.0" 
+log = { version = "0.4.8", features = ["serde"] }
 nalgebra = "0.20"
 ncollide2d = "0.22"
 
-log = { version = "0.4.8", features = ["serde"] }
-
 [features]
-default = ["empty"]
+empty = ["amethyst/empty"]
 metal = ["amethyst/metal"]
 vulkan = ["amethyst/vulkan"]
-empty = ["amethyst/empty"]
