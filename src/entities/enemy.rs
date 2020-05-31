@@ -1,7 +1,5 @@
 /// An existential horror brought to life by the complexities of ECS.
-use amethyst::{
-    ecs::prelude::{Component, DenseVecStorage}
-};
+use amethyst::ecs::prelude::{Component, DenseVecStorage};
 
 //use log::info;
 
@@ -19,7 +17,7 @@ pub struct Enemy {
 impl Enemy {
     pub fn new(speed: f32) -> Enemy {
         Enemy {
-            speed: speed,
+            speed,
             velocity_x: 0.0,
             velocity_y: 0.0,
         }
@@ -35,12 +33,7 @@ impl Enemy {
     // probably doesn't belong here but since only enemies need this for now,
     // here's a function to compute how to move towards another transform
     // based on speed
-    pub fn move_towards(&mut self,
-        target_x: f32,
-        target_y: f32,
-        current_x: f32,
-        current_y: f32,
-    ) {
+    pub fn move_towards(&mut self, target_x: f32, target_y: f32, current_x: f32, current_y: f32) {
         let dx = target_x - current_x;
         let dy = target_y - current_y;
         let angle = dy.atan2(dx);

@@ -1,12 +1,11 @@
-
 /// This module includes the laser component creation, laser entity,
 /// and the Direction enum used for rotating the sprite and determining
 /// velocity.
 /// If we need to reuse Direction it can be turned into a separate component.
 use amethyst::{
+    core::Transform,
+    ecs::prelude::{Component, DenseVecStorage, Entities, Entity, LazyUpdate, ReadExpect},
     renderer::{sprite::SpriteSheetHandle, SpriteRender},
-    core::{Transform},
-    ecs::prelude::{Entity, Entities, LazyUpdate, ReadExpect, Component, DenseVecStorage},
 };
 
 //use log::info;
@@ -26,7 +25,6 @@ pub enum Direction {
 use self::Direction::*;
 
 impl Direction {
-
     // the system part of the ECS will receive pos/neg horizontal and pos/neg vertical
     // input from the player. on a keyboard the values are typically:
     // negative: -1.0
@@ -37,11 +35,9 @@ impl Direction {
     fn horizontal(x: f32) -> Option<Direction> {
         if x < 0.0 {
             Some(Left)
-        }
-        else if x > 0.0 {
+        } else if x > 0.0 {
             Some(Right)
-        }
-        else {
+        } else {
             None
         }
     }
@@ -49,11 +45,9 @@ impl Direction {
     fn vertical(y: f32) -> Option<Direction> {
         if y < 0.0 {
             Some(Down)
-        }
-        else if y > 0.0 {
+        } else if y > 0.0 {
             Some(Up)
-        }
-        else {
+        } else {
             None
         }
     }
@@ -63,14 +57,13 @@ impl Direction {
     // meaningless, because we can't have RightRight, or RightLeft, and so on.
     fn combine(self, other: &Option<Direction>) -> Direction {
         match (self, other) {
-            (Right, Some(Up))   => RightUp,
+            (Right, Some(Up)) => RightUp,
             (Right, Some(Down)) => RightDown,
-            (Left, Some(Up))    => LeftUp,
-            (Left, Some(Down))  => LeftDown,
-            (x, _)              => x
+            (Left, Some(Up)) => LeftUp,
+            (Left, Some(Down)) => LeftDown,
+            (x, _) => x,
         }
     }
-
 }
 
 /// This is the laser component type, used by `spawn_laser` to create new
@@ -93,26 +86,20 @@ impl Laser {
     // we need to decide if they are directional (e.g. Up, or Right and Up),
     // combine the horizontal and vertical directions if possible, and finally
     // create a new laser.
-    pub fn from_coordinates(
-        x: Option<f32>,
-        y: Option<f32>,
-    ) -> Option<Laser> {
-
+    pub fn from_coordinates(x: Option<f32>, y: Option<f32>) -> Option<Laser> {
         // inputs come from the amethyst input manager
         let maybe_x = Direction::horizontal(x.unwrap_or(0.0));
         let maybe_y = Direction::vertical(y.unwrap_or(0.0));
 
         // we try to create a composite direction (e.g. LeftUp) or
         // return a single direction (e.g. Up).
-        let maybe_composite = maybe_x
-          .and_then(|x_dir| Some(x_dir.combine(&maybe_y)))
-          .or(maybe_y);
+        let maybe_composite = maybe_x.and_then(|x_dir| Some(x_dir.combine(&maybe_y))).or(maybe_y);
 
         // once we have determined the one true direction or no
         // direction at all, we can return our Option<Laser>
         match maybe_composite {
             Some(dir) => Some(Laser::new(dir)),
-            _         => None,
+            _ => None,
         }
     }
 }
@@ -135,7 +122,6 @@ pub fn spawn_laser(
     entities: &Entities,
     lazy_update: &ReadExpect<LazyUpdate>,
 ) {
- 
     // an incorrect sprite number here will lead to a memory leak
     let sprite_render = SpriteRender {
         sprite_sheet: sprite_sheet_handle,
@@ -148,14 +134,14 @@ pub fn spawn_laser(
     // with `rad = lambda x: (x * math.pi) / 180` and then passing in degrees
     // (e.g. `rad(90)`)
     match laser.direction {
-        Left      => transform.set_rotation_2d(0.0),
-        LeftUp    => transform.set_rotation_2d(-0.7853981633974483),
-        Up        => transform.set_rotation_2d(1.5707963267948966),
-        RightUp   => transform.set_rotation_2d(0.7853981633974483),
-        Right     => transform.set_rotation_2d(0.0),
+        Left => transform.set_rotation_2d(0.0),
+        LeftUp => transform.set_rotation_2d(-0.7853981633974483),
+        Up => transform.set_rotation_2d(1.5707963267948966),
+        RightUp => transform.set_rotation_2d(0.7853981633974483),
+        Right => transform.set_rotation_2d(0.0),
         RightDown => transform.set_rotation_2d(2.356194490192345),
-        Down      => transform.set_rotation_2d(1.5707963267948966),
-        LeftDown  => transform.set_rotation_2d(-2.356194490192345),
+        Down => transform.set_rotation_2d(1.5707963267948966),
+        LeftDown => transform.set_rotation_2d(-2.356194490192345),
     };
 
     let laser_entity: Entity = entities.create();
