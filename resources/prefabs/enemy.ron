@@ -1,0 +1,61 @@
+#![enable(implicit_some)]
+
+//                        
+//                        transform: (translation: (0.0, -1.5, 6.2), scale: (100.02, 100.02, 1.0)),
+
+Prefab (
+    entities: [
+        PrefabEntity(
+            data: EnemyPrefab(
+                enemy: Enemy(
+                        speed: 100,
+                        // not clear if we need these yet
+                        velocity_x: 0,
+                        velocity_y: 0,
+                        //movement: (
+                        //    velocity: (0.0, 0.0)
+                        //    max_movement_speed: 2.0,
+                        //),
+                        // still need the texture/asset part
+                ),
+                sprite_sheet: Sheet(
+                    // these are taken from a prefab example and probably
+                    // don't apply. if they can be left off entirely that's best
+                    texture: File("sprites/enemy_sprites.png", (
+                                "IMAGE", (
+                                    sampler_info: (
+                                        min_filter: Nearest,
+                                        mag_filter: Nearest,
+                                        mip_filter: Nearest,
+                                        wrap_mode: (Tile, Tile, Tile),
+                                        lod_bias: (0),
+                                        lod_range: (
+                                            start: ( 0 ),
+                                            end: ( 8000 ),
+                                        ),
+                                        comparison: None,
+                                        border: (0),
+                                        normalized: true,
+                                        anisotropic: Off,
+                                    ),
+                                )
+                    )),
+                    sprites: [
+                        List((
+                            texture_width: 28,
+                            texture_height: 28,
+                            sprites: [(
+                                x: 0,
+                                y: 0,
+                                width: 28,
+                                height: 28,
+                            )],
+                        ))
+                    ],
+                    name: "enemy_sprite",
+                ),
+                sprite_render: (sheet: "enemy_sheet", sprite_number: 0),
+            ),
+        ),
+    ]
+)
