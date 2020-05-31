@@ -28,7 +28,7 @@ impl<'s> System<'s> for CollisionSystem {
     );
 
     fn run(&mut self, (transforms, lasers, enemies, entities): Self::SystemData) {
-        for (entity_a, laser_a, transform_a) in (&entities, &lasers, &transforms).join() {
+        for (_entity_a, _laser_a, transform_a) in (&entities, &lasers, &transforms).join() {
             /*
              * Initialize the shapes.
              */
@@ -51,7 +51,7 @@ impl<'s> System<'s> for CollisionSystem {
             // a bounding volume is the combination of a shape and a position
             let aabb_cube1 = bounding_volume::aabb(&laser_cube, &laser_cube_pos);
 
-            for (entity_b, enemy_b, transform_b) in (&entities, &enemies, &transforms).join() {
+            for (entity_b, _enemy_b, transform_b) in (&entities, &enemies, &transforms).join() {
                 let enemy_cube = Cuboid::new(Vector2::new(70.0, 70.0));
                 let enemy_cube_pos = Isometry2::new(
                     Vector2::new(transform_b.translation().x, transform_b.translation().y),

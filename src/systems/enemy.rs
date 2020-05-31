@@ -22,7 +22,7 @@ impl<'s> System<'s> for EnemyTrackingSystem {
         Read<'s, Time>,
     );
 
-    fn run(&mut self, (transforms, mut enemies, players, time): Self::SystemData) {
+    fn run(&mut self, (transforms, mut enemies, players, _time): Self::SystemData) {
         // seems like we should have another way to get to the player transform since
         // this always be a for loop for a single player. and if it's not, enemies would be
         // moving at high speeds towards groups of players, or not at all if players are
