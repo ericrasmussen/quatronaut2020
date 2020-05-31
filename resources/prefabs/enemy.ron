@@ -1,25 +1,12 @@
 #![enable(implicit_some)]
 
-//                        
-//                        transform: (translation: (0.0, -1.5, 6.2), scale: (100.02, 100.02, 1.0)),
-
 Prefab (
     entities: [
         PrefabEntity(
             data: EnemyPrefab(
-                enemy: Enemy(
-                        speed: 100,
-                        // not clear if we need these yet
-                        velocity_x: 0,
-                        velocity_y: 0,
-                        //movement: (
-                        //    velocity: (0.0, 0.0)
-                        //    max_movement_speed: 2.0,
-                        //),
-                        // still need the texture/asset part
-                ),
-                sprite_sheet: Sheet(
-                    // these are taken from a prefab example and probably
+                // BEGIN sheet: SpriteSheetPrefab
+                sheet: Sheet(
+                    // many of these attributes are taken from a prefab example and probably
                     // don't apply. if they can be left off entirely that's best
                     texture: File("sprites/enemy_sprites.png", (
                                 "IMAGE", (
@@ -52,9 +39,32 @@ Prefab (
                             )],
                         ))
                     ],
-                    name: "enemy_sprite",
+                    name: "enemy_sprite_sheet",
                 ),
-                sprite_render: (sheet: "enemy_sheet", sprite_number: 0),
+                // END sheet: SpriteSheetPrefab
+
+                // BEGIN render: SpriteRenderPrefab
+                render: (
+                    sheet: "enemy_sprite_sheet",
+                    sprite_number: 0,
+                ),
+                // END render: SpriteRenderPrefab
+
+                // BEGIN transform: Transform
+                // NOTE: if we use this prefab handle for generating waves of enemies,
+                // we probably only need scale. translation would be chosen at random
+                // by a spawn point, or generated randomly or procedurally
+                transform: (translation: (30.0, 30.0, 0.0), scale: (5.0, 5.0, 5.0)),
+                // END transform: Transform
+
+                // BEGIN enemy: Enemy
+                enemy: Enemy(
+                        speed: 100,
+                        // not clear if we need these yet
+                        velocity_x: 0,
+                        velocity_y: 0,
+                ),
+                // END enemy: Enemy
             ),
         ),
     ]

@@ -8,6 +8,7 @@ use amethyst::{
         types::DefaultBackend,
         RenderingBundle,
     },
+    assets::PrefabLoaderSystemDesc,
     utils::application_root_dir,
     input::{InputBundle, StringBindings}
 };
@@ -15,6 +16,7 @@ use amethyst::{
 mod state;
 mod systems;
 mod entities;
+use entities::enemy::EnemyPrefab;
 
 fn main() -> amethyst::Result<()> {
     amethyst::start_logger(Default::default());
@@ -31,6 +33,7 @@ fn main() -> amethyst::Result<()> {
     let game_data = GameDataBuilder::default()
         .with_bundle(TransformBundle::new())?
         .with_bundle(input_bundle)?
+        .with_system_desc(PrefabLoaderSystemDesc::<EnemyPrefab>::default(), "", &[])
         .with(systems::PlayerSystem, "player_system", &["input_system"])
         // TODO: not sure if the input system is needed here?
         .with(systems::LaserSystem, "laser_system", &["input_system"])
@@ -47,7 +50,7 @@ fn main() -> amethyst::Result<()> {
                 .with_plugin(RenderFlat2D::default()),
         )?;
 
-    let mut game = Application::new(resources, state::MyState, game_data)?;
+    let mut game = Application::new(resources, state::GameplayState::new(), game_data)?;
     game.run();
 
     Ok(())

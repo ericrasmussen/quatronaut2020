@@ -2,7 +2,7 @@
 /// by main.rs
 
 use amethyst::{
-    assets::{AssetStorage, Loader, Handle},
+    assets::{AssetStorage, Loader, Prefab, PrefabLoader, Handle, ProgressCounter, RonFormat},
     core::transform::Transform,
     input::{is_close_requested, is_key_down, VirtualKeyCode},
     prelude::*,
@@ -10,17 +10,25 @@ use amethyst::{
     window::ScreenDimensions,
     core::math::{Translation3, UnitQuaternion, Vector3},
 };
-
+use derive_new::new;
 //use amethyst::input::get_key;
 //use log::info;
 
 use crate::entities::player::Player;
-use crate::entities::enemy::Enemy;
+use crate::entities::enemy::{Enemy, EnemyPrefab};
 use crate::entities::laser::Laser;
 
-pub struct MyState;
+#[derive(new)]
+pub struct GameplayState {
+    /// Tracks loaded assets.
+    #[new(default)]
+    pub progress_counter: ProgressCounter,
+    /// Handle to the loaded prefab.
+    #[new(default)]
+    pub prefab_handle: Option<Handle<Prefab<EnemyPrefab>>>,
+}
 
-impl SimpleState for MyState {
+impl SimpleState for GameplayState {
     // On start will run when this state is initialized. For more
     // state lifecycle hooks, see:
     // https://book.amethyst.rs/stable/concepts/state.html#life-cycle
@@ -34,6 +42,25 @@ impl SimpleState for MyState {
 
         // Place the camera
         init_camera(world, &dimensions);
+
+        // TODO: why is this enemy?
+        let prefab_handle = world.exec(|loader: PrefabLoader<'_, EnemyPrefab>| {
+            loader.load(
+                "prefabs/enemy.ron",
+                RonFormat,
+                &mut self.progress_counter,
+            )
+        });
+
+        // Create one set of entities from the prefab.
+        (0..1).for_each(|_| {
+            world
+                .create_entity()
+                .with(prefab_handle.clone())
+                .build();
+        });
+
+        self.prefab_handle = Some(prefab_handle);
 
         // get a handle on the sprite sheet
         let sprite_sheet_handle = load_sprite_sheet(world, "sprite_sheet");
@@ -147,6 +174,11 @@ fn init_characters(world: &mut World,
 
 // for now, all this does is create an enemy entity.
 // this would also ideally go into a prefab
+
+// a wave generation feature would have to go into update and be score based or based on
+// how many enemies were left (e.g. enemy_count == 0)
+// at that point we'd either generate a number of enemies and coordinates
+// or use some fixed algorithm
 fn init_enemies(world: &mut World,
     sprite_sheet_handle: Handle<SpriteSheet>)
 {
@@ -164,18 +196,18 @@ fn init_enemies(world: &mut World,
 
     // we'll eventually need to define waves of enemies outside of state.rs. they
     // should be generated for each level/wave.
-    let coordinates = vec![2.0, 8.0, 12.0, 16.0, 22.0, 30.0];
+    let coordinates = vec![2.0, 8.0, 12.0, 16.0, 30.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0];
 
     for n in coordinates {
         let position = Translation3::new(40.0 * n as f32, 40.0 * n as f32, 0.0);
         let enemy_transform = Transform::new(position, rotation, scale);
 
-        world
-        .create_entity()
-        .with(sprite_render.clone())
-        // this sets the speed, which should also be from a config file
-        .with(Enemy::new(30.0))
-        .with(enemy_transform)
-        .build();
+        // world
+        // .create_entity()
+        // .with(sprite_render.clone())
+        // // this sets the speed, which should also be from a config file
+        // .with(Enemy::new(200.0))
+        // .with(enemy_transform)
+        // .build();
     }
 }
