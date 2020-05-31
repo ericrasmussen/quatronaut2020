@@ -1,10 +1,10 @@
-use amethyst::core::Transform;
-use amethyst::core::timing::Time;
-use amethyst::derive::SystemDesc;
-use amethyst::ecs::{Join, Read, ReadStorage, System, SystemData, WriteStorage};
+use amethyst::{
+    core::{timing::Time, Transform},
+    derive::SystemDesc,
+    ecs::{Join, Read, ReadStorage, System, SystemData, WriteStorage},
+};
 
-use crate::entities::enemy::Enemy;
-use crate::entities::player::Player;
+use crate::entities::{enemy::Enemy, player::Player};
 
 //use log::info;
 
@@ -22,15 +22,13 @@ impl<'s> System<'s> for EnemyTrackingSystem {
         Read<'s, Time>,
     );
 
-    fn run(&mut self, (transforms, mut enemies, players, time): Self::SystemData) {
+    fn run(&mut self, (transforms, mut enemies, players, _time): Self::SystemData) {
         // seems like we should have another way to get to the player transform since
         // this always be a for loop for a single player. and if it's not, enemies would be
         // moving at high speeds towards groups of players, or not at all if players are
         // in opposite directions
         for (enemy, enemy_transform) in (&mut enemies, &transforms).join() {
-
-           for (_player, player_transform) in (&players, &transforms).join() {
-
+            for (_player, player_transform) in (&players, &transforms).join() {
                 // this updates the x and y velocities on the enemy struct, which
                 // can be used in another system to modify the transform
                 // we can't modify it here because we can't take ownership of mut
@@ -40,13 +38,12 @@ impl<'s> System<'s> for EnemyTrackingSystem {
                     player_transform.translation().x,
                     player_transform.translation().y,
                     enemy_transform.translation().x,
-                    enemy_transform.translation().y
+                    enemy_transform.translation().y,
                 );
             }
         }
     }
 }
-
 
 // now we can update the transform
 #[derive(SystemDesc)]
@@ -56,11 +53,7 @@ pub struct EnemyMoveSystem;
 // to breaking some of it into separate systems (for instance, one system to track
 // input, another to modify the transform, another to spawn lasers, etc)
 impl<'s> System<'s> for EnemyMoveSystem {
-    type SystemData = (
-        WriteStorage<'s, Transform>,
-        ReadStorage<'s, Enemy>,
-        Read<'s, Time>,
-    );
+    type SystemData = (WriteStorage<'s, Transform>, ReadStorage<'s, Enemy>, Read<'s, Time>);
 
     fn run(&mut self, (mut transforms, enemies, time): Self::SystemData) {
         // seems like we should have another way to get to the player transform since
@@ -69,7 +62,7 @@ impl<'s> System<'s> for EnemyMoveSystem {
         // in opposite directions
         for (enemy, enemy_transform) in (&enemies, &mut transforms).join() {
             enemy_transform.prepend_translation_x(enemy.velocity_x * time.delta_seconds());
-            enemy_transform.prepend_translation_y(enemy.velocity_y * time.delta_seconds());                
+            enemy_transform.prepend_translation_y(enemy.velocity_y * time.delta_seconds());
         }
     }
 }

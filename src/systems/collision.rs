@@ -1,18 +1,21 @@
 use nalgebra::{Isometry2, Vector2};
-use ncollide2d::bounding_volume::{self, BoundingVolume};
-use ncollide2d::shape::Cuboid;
+use ncollide2d::{
+    bounding_volume::{self, BoundingVolume},
+    shape::Cuboid,
+};
 
-use amethyst::core::{Transform};
-use amethyst::derive::SystemDesc;
-use amethyst::ecs::{Join, System, SystemData, ReadStorage, WriteStorage, Entities};
+use amethyst::{
+    core::Transform,
+    derive::SystemDesc,
+    ecs::{Entities, Join, ReadStorage, System, SystemData, WriteStorage},
+};
 
-use crate::entities::laser::Laser;
-use crate::entities::enemy::Enemy;
+use crate::entities::{enemy::Enemy, laser::Laser};
 
 //use log::info;
 
 // big TODO: as this system gets more complicated, at some point it'll probably
-// be worth using ncollide's broad phase collision 
+// be worth using ncollide's broad phase collision
 #[derive(SystemDesc)]
 pub struct CollisionSystem;
 
@@ -25,11 +28,10 @@ impl<'s> System<'s> for CollisionSystem {
     );
 
     fn run(&mut self, (transforms, lasers, enemies, entities): Self::SystemData) {
-        for (entity_a, laser_a, transform_a) in (&entities, &lasers, &transforms).join() {
-
+        for (entity_a, _laser_a, transform_a) in (&entities, &lasers, &transforms).join() {
             /*
-            * Initialize the shapes.
-            */
+             * Initialize the shapes.
+             */
             // this is for a laser much larger than ours. agh.
             // the x, y should be the half length along the x and y axes, respectively
             // for a ball type you'd use a radius instead. this creates a representation of
@@ -49,7 +51,7 @@ impl<'s> System<'s> for CollisionSystem {
             // a bounding volume is the combination of a shape and a position
             let aabb_cube1 = bounding_volume::aabb(&laser_cube, &laser_cube_pos);
 
-            for (entity_b, enemy_b, transform_b) in (&entities, &enemies, &transforms).join() {
+            for (entity_b, _enemy_b, transform_b) in (&entities, &enemies, &transforms).join() {
 
                 let enemy_cube = Cuboid::new(Vector2::new(70.0, 70.0));
                 let enemy_cube_pos = Isometry2::new(
@@ -68,10 +70,10 @@ impl<'s> System<'s> for CollisionSystem {
                 //info!("does it collide? {:?}", aabb_cube1.intersects(&aabb_cube2));
                 if aabb_cube1.intersects(&aabb_cube2) {
                     // this should be a call to some enemy method for reducing health
-                    entities.delete(entity_b);
+                    entities.delete(entity_b).unwrap();
 
                     // we should probably destroy the laser too
-                    entities.delete(entity_a);
+                    entities.delete(entity_a).unwrap();
                 }
             }
         }

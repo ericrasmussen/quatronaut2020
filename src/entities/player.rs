@@ -2,9 +2,7 @@
 /// The robot has its own movement speed and fire delay, the latter of which
 /// is used to prevent the laser firing as fast as possible based on the
 /// current framerate.
-use amethyst::{
-    ecs::prelude::{Component, DenseVecStorage}
-};
+use amethyst::ecs::prelude::{Component, DenseVecStorage};
 
 pub struct Player {
     speed: f32,
@@ -16,8 +14,8 @@ pub struct Player {
 impl Player {
     pub fn new(speed: f32, fire_delay: f32) -> Player {
         Player {
-            speed: speed,
-            fire_delay: fire_delay,
+            speed,
+            fire_delay,
             // we don't want a delay for the very first laser blast
             seconds_since_firing: fire_delay,
         }
@@ -38,14 +36,11 @@ impl Player {
         if self.seconds_since_firing >= self.fire_delay {
             self.seconds_since_firing = 0.0;
             true
-        }
-        else {
+        } else {
             self.seconds_since_firing += time;
             false
         }
     }
-
-
 }
 
 impl Component for Player {

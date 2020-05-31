@@ -6,20 +6,16 @@
 //};
 
 use amethyst_rendy::sprite::prefab::{SpriteRenderPrefab,SpriteSheetPrefab};
-use amethyst::core::Transform;
 use amethyst::{
     assets::{
-        AssetStorage, Handle, Prefab, PrefabData, PrefabLoader, PrefabLoaderSystemDesc,
-        ProgressCounter, RonFormat,
+        PrefabData,
+        ProgressCounter,
     },
-    core::{Named, Parent},
     derive::PrefabData,
     ecs::{
-        storage::DenseVecStorage, Component, Entities, Entity, Join, ReadStorage, World,
+        storage::DenseVecStorage, Component, Entity,
         WriteStorage,
     },
-    prelude::*,
-    utils::application_root_dir,
     Error,
 };
 
@@ -86,7 +82,7 @@ pub struct Enemy {
 impl Enemy {
     pub fn new(speed: f32) -> Enemy {
         Enemy {
-            speed: speed,
+            speed,
             velocity_x: 0.0,
             velocity_y: 0.0,
         }
@@ -102,12 +98,7 @@ impl Enemy {
     // probably doesn't belong here but since only enemies need this for now,
     // here's a function to compute how to move towards another transform
     // based on speed
-    pub fn move_towards(&mut self,
-        target_x: f32,
-        target_y: f32,
-        current_x: f32,
-        current_y: f32,
-    ) {
+    pub fn move_towards(&mut self, target_x: f32, target_y: f32, current_x: f32, current_y: f32) {
         let dx = target_x - current_x;
         let dy = target_y - current_y;
         let angle = dy.atan2(dx);

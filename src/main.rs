@@ -2,6 +2,7 @@
 // from the main.rs file in https://github.com/amethyst/amethyst-starter-2d
 use amethyst::{
     core::transform::TransformBundle,
+    input::{InputBundle, StringBindings},
     prelude::*,
     renderer::{
         plugins::{RenderFlat2D, RenderToWindow},
@@ -10,12 +11,11 @@ use amethyst::{
     },
     assets::PrefabLoaderSystemDesc,
     utils::application_root_dir,
-    input::{InputBundle, StringBindings}
 };
 
+mod entities;
 mod state;
 mod systems;
-mod entities;
 use entities::enemy::EnemyPrefab;
 
 fn main() -> amethyst::Result<()> {
@@ -27,8 +27,7 @@ fn main() -> amethyst::Result<()> {
     let display_config = app_root.join("config").join("display_config.ron");
     let binding_path = app_root.join("config").join("bindings.ron");
 
-    let input_bundle = InputBundle::<StringBindings>::new()
-        .with_bindings_from_file(binding_path)?;
+    let input_bundle = InputBundle::<StringBindings>::new().with_bindings_from_file(binding_path)?;
 
     let game_data = GameDataBuilder::default()
         .with_bundle(TransformBundle::new())?

@@ -1,14 +1,13 @@
 /// This module implements and initializes game states to be used
 /// by main.rs
-
 use amethyst::{
     assets::{AssetStorage, Loader, Prefab, PrefabLoader, Handle, ProgressCounter, RonFormat},
+    core::math::{Translation3, UnitQuaternion, Vector3},
     core::transform::Transform,
     input::{is_close_requested, is_key_down, VirtualKeyCode},
     prelude::*,
     renderer::{Camera, ImageFormat, SpriteRender, SpriteSheet, SpriteSheetFormat, Texture},
     window::ScreenDimensions,
-    core::math::{Translation3, UnitQuaternion, Vector3},
 };
 use amethyst::core::timing::Time;
 
@@ -16,9 +15,7 @@ use derive_new::new;
 //use amethyst::input::get_key;
 //use log::info;
 
-use crate::entities::player::Player;
-use crate::entities::enemy::{Enemy, EnemyPrefab};
-use crate::entities::laser::Laser;
+use crate::entities::{enemy::{Enemy, EnemyPrefab}, laser::Laser, player::Player};
 
 #[derive(new)]
 pub struct GameplayState {
@@ -103,11 +100,7 @@ impl SimpleState for GameplayState {
         Trans::None
     }
 
-    fn handle_event(
-        &mut self,
-        mut _data: StateData<'_, GameData<'_, '_>>,
-        event: StateEvent,
-    ) -> SimpleTrans {
+    fn handle_event(&mut self, mut _data: StateData<'_, GameData<'_, '_>>, event: StateEvent) -> SimpleTrans {
         if let StateEvent::Window(event) = &event {
             // Check if the window should be closed
             if is_close_requested(&event) || is_key_down(&event, VirtualKeyCode::Escape) {
@@ -213,14 +206,10 @@ fn load_sprite_sheet(world: &mut World, name: &str) -> Handle<SpriteSheet> {
     )
 }
 
-
 // for now, all this does is create a player entity.
 // ideally we'll move even the player entity data (speed, fire_rate, sprite sheet)
 // to a prefab.
-fn init_characters(world: &mut World,
-        sprite_sheet_handle: Handle<SpriteSheet>,
-        dimensions: &ScreenDimensions) 
-    {
+fn init_characters(world: &mut World, sprite_sheet_handle: Handle<SpriteSheet>, dimensions: &ScreenDimensions) {
     let position = Translation3::new(dimensions.width() * 0.5, dimensions.height() * 0.5, 0.0);
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
     let scale = Vector3::new(5.0, 5.0, 5.0);
@@ -242,44 +231,3 @@ fn init_characters(world: &mut World,
         .with(player_transform)
         .build();
 }
-
-// for now, all this does is create an enemy entity.
-// this would also ideally go into a prefab
-
-// a wave generation feature would have to go into update and be score based or based on
-// how many enemies were left (e.g. enemy_count == 0)
-// at that point we'd either generate a number of enemies and coordinates
-// or use some fixed algorithm
-/* fn init_enemies(world: &mut World,
-    sprite_sheet_handle: Handle<SpriteSheet>)
-{
-
-    let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
-    let scale = Vector3::new(5.0, 5.0, 5.0);
-
-
-    // the enemy has a separate sprite sheet until I have real assets to work with and can
-    // make a shared sprite sheet (preferably as a prefab)
-    let sprite_render = SpriteRender {
-        sprite_sheet: sprite_sheet_handle,
-        sprite_number: 0,
-    };
-
-    // we'll eventually need to define waves of enemies outside of state.rs. they
-    // should be generated for each level/wave.
-    let coordinates = vec![2.0, 8.0, 12.0, 16.0, 30.0, 40.0, 45.0, 50.0, 55.0, 60.0, 65.0];
-
-    for n in coordinates {
-        let position = Translation3::new(40.0 * n as f32, 40.0 * n as f32, 0.0);
-        let enemy_transform = Transform::new(position, rotation, scale);
-
-         world
-         .create_entity()
-         .with(sprite_render.clone())
-         // this sets the speed, which should also be from a config file
-         .with(Enemy::new(200.0))
-         .with(enemy_transform)
-         .build();
-    }
-}
- */
