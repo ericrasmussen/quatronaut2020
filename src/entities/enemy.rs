@@ -80,14 +80,6 @@ pub struct Enemy {
 }
 
 impl Enemy {
-    pub fn new(speed: f32) -> Enemy {
-        Enemy {
-            speed,
-            velocity_x: 0.0,
-            velocity_y: 0.0,
-        }
-    }
-
     // this is mainly so callers cannot modify the speed directly. we could
     // also have the player track momentum to compute a speed, but it seems
     // unnecessary

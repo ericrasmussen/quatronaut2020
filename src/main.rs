@@ -17,6 +17,7 @@ mod entities;
 mod state;
 mod systems;
 use entities::enemy::EnemyPrefab;
+use entities::player::PlayerPrefab;
 
 fn main() -> amethyst::Result<()> {
     amethyst::start_logger(Default::default());
@@ -33,6 +34,7 @@ fn main() -> amethyst::Result<()> {
         .with_bundle(TransformBundle::new())?
         .with_bundle(input_bundle)?
         .with_system_desc(PrefabLoaderSystemDesc::<EnemyPrefab>::default(), "", &[])
+        .with_system_desc(PrefabLoaderSystemDesc::<PlayerPrefab>::default(), "", &[])
         .with(systems::PlayerSystem, "player_system", &["input_system"])
         // TODO: not sure if the input system is needed here?
         .with(systems::LaserSystem, "laser_system", &["input_system"])

@@ -1,12 +1,12 @@
 /// This module implements and initializes game states to be used
 /// by main.rs
 use amethyst::{
-    assets::{AssetStorage, Loader, Prefab, PrefabLoader, Handle, ProgressCounter, RonFormat},
+    assets::{Prefab, PrefabLoader, Handle, ProgressCounter, RonFormat},
     core::math::{Translation3, UnitQuaternion, Vector3},
     core::transform::Transform,
     input::{is_close_requested, is_key_down, VirtualKeyCode},
     prelude::*,
-    renderer::{Camera, ImageFormat, SpriteRender, SpriteSheet, SpriteSheetFormat, Texture},
+    renderer::Camera,
     window::ScreenDimensions,
 };
 use amethyst::core::timing::Time;
@@ -15,7 +15,7 @@ use derive_new::new;
 //use amethyst::input::get_key;
 //use log::info;
 
-use crate::entities::{enemy::{Enemy, EnemyPrefab}, laser::Laser, player::Player};
+use crate::entities::{enemy::{Enemy, EnemyPrefab}, laser::Laser, player::{Player, PlayerPrefab}};
 
 #[derive(new)]
 pub struct GameplayState {
@@ -24,12 +24,17 @@ pub struct GameplayState {
     pub progress_counter: ProgressCounter,
     /// Handle to the loaded prefab.
     #[new(default)]
-    pub prefab_handle: Option<Handle<Prefab<EnemyPrefab>>>,
+    pub enemy_prefab_handle: Option<Handle<Prefab<EnemyPrefab>>>,
     /// Haven't decided how/when to spawn enemy waves yet. This
     /// lets us spawn after a certain amount of time has elapsed,
     /// but will probably be replaced with something that spawns based
     /// on score, or launches a new wave when the enemy count is 0.
     pub wave_timer: f32,
+    // player prefab. we could also use a config and one-time instantiation,
+    // although at least for testing it's nice to spawn players as needed
+    #[new(default)]
+    pub player_prefab_handle: Option<Handle<Prefab<PlayerPrefab>>>,
+
 }
 
 impl SimpleState for GameplayState {
@@ -47,8 +52,12 @@ impl SimpleState for GameplayState {
         // Place the camera
         init_camera(world, &dimensions);
 
-        // TODO: why is this enemy?
-        let prefab_handle = world.exec(|loader: PrefabLoader<'_, EnemyPrefab>| {
+        // need to register this type of entry before init
+        world.register::<Player>();
+        world.register::<Laser>();
+        world.register::<Enemy>();
+
+        let enemy_prefab_handle = world.exec(|loader: PrefabLoader<'_, EnemyPrefab>| {
             loader.load(
                 "prefabs/enemy.ron",
                 RonFormat,
@@ -56,28 +65,27 @@ impl SimpleState for GameplayState {
             )
         });
 
-        // Create one set of entities from the prefab.
+        // keep a handle on the enemies so they don't get out of control
+        self.enemy_prefab_handle = Some(enemy_prefab_handle);
+
+
+        // player prefab instantiation
+        let player_prefab_handle = world.exec(|loader: PrefabLoader<'_, PlayerPrefab>| {
+            loader.load(
+                "prefabs/player.ron",
+                RonFormat,
+                &mut self.progress_counter,
+            )
+        });
+        // Create one player
         (0..1).for_each(|_| {
             world
-                .create_entity()
-                .with(prefab_handle.clone())
-                .build();
+            .create_entity()
+            .with(player_prefab_handle.clone())
+            .build();
         });
 
-        self.prefab_handle = Some(prefab_handle);
-
-        // get a handle on the sprite sheet
-        let sprite_sheet_handle = load_sprite_sheet(world, "sprite_sheet");
-
-        // get the enemy sprite sheet. it's separate for now since the assets
-        // will all be changing anyway
-        //let enemy_sprite_sheet_handle = load_sprite_sheet(world, "enemy_sprites");
-        // need to register this type of entry before init
-        world.register::<Player>();
-        world.register::<Laser>();
-        world.register::<Enemy>();
-        init_characters(world, sprite_sheet_handle, &dimensions);
-        //init_enemies(world, enemy_sprite_sheet_handle);
+        self.player_prefab_handle = Some(player_prefab_handle);
     }
 
     fn update(&mut self, data: &mut StateData<'_, GameData<'_, '_>>) -> SimpleTrans {
@@ -94,7 +102,7 @@ impl SimpleState for GameplayState {
             // TODO: decide how to handle unwrapping here, or if we even
             // need an `Option` type (since we shouldn't be this far into playing
             // the game if we didn't get this required prefab)
-            init_enemy_wave(data.world, self.prefab_handle.clone().unwrap());
+            init_enemy_wave(data.world, self.enemy_prefab_handle.clone().unwrap());
 
         }
         Trans::None
@@ -182,52 +190,4 @@ fn init_enemy_wave(world: &mut World, prefab_handle: Handle<Prefab<EnemyPrefab>>
 
 }
 
-// sprite_sheet
-// enemy_sprites
-fn load_sprite_sheet(world: &mut World, name: &str) -> Handle<SpriteSheet> {
-    let texture_handle = {
-        let loader = world.read_resource::<Loader>();
-        let texture_storage = world.read_resource::<AssetStorage<Texture>>();
-        loader.load(
-            format!("sprites/{}.png", name),
-            ImageFormat::default(),
-            (),
-            &texture_storage,
-        )
-    };
 
-    let loader = world.read_resource::<Loader>();
-    let sprite_sheet_store = world.read_resource::<AssetStorage<SpriteSheet>>();
-    loader.load(
-        format!("sprites/{}.ron", name),
-        SpriteSheetFormat(texture_handle),
-        (),
-        &sprite_sheet_store,
-    )
-}
-
-// for now, all this does is create a player entity.
-// ideally we'll move even the player entity data (speed, fire_rate, sprite sheet)
-// to a prefab.
-fn init_characters(world: &mut World, sprite_sheet_handle: Handle<SpriteSheet>, dimensions: &ScreenDimensions) {
-    let position = Translation3::new(dimensions.width() * 0.5, dimensions.height() * 0.5, 0.0);
-    let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
-    let scale = Vector3::new(5.0, 5.0, 5.0);
-    let player_transform = Transform::new(position, rotation, scale);
-
-    // we can fire 4 times a second
-    let fire_delay = 0.17;
-
-    // Assign the sprites for the player
-    let sprite_render = SpriteRender {
-        sprite_sheet: sprite_sheet_handle,
-        sprite_number: 0, // player is the first sprite in the sprite_sheet
-    };
-
-    world
-        .create_entity()
-        .with(sprite_render.clone())
-        .with(Player::new(10.0, fire_delay))
-        .with(player_transform)
-        .build();
-}

@@ -39,10 +39,10 @@ impl<'s> System<'s> for CollisionSystem {
             // this number should be in a config somewhere... it's the pixel width 7 and height 1,
             // both scaled by 5, and then divided in two to get the half length
             let laser_cube = Cuboid::new(Vector2::new(17.5, 2.5));
-    
+
             // next we need to create an isometry representation of the position, which for 2d
             // ncollide is a vector of the x and y coordinates and a rotation (zero() for no rotation).
-            // the actual rotation is available via some_transform.isometry(), but 
+            // the actual rotation is available via some_transform.isometry(), but
             let laser_cube_pos = Isometry2::new(
                 Vector2::new(transform_a.translation().x, transform_a.translation().y),
                 nalgebra::zero()
