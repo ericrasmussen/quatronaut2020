@@ -1,12 +1,13 @@
-pub use self::player::PlayerSystem;
-pub use self::laser::LaserSystem;
-pub use self::collision::CollisionSystem;
-pub use self::attacked::AttackedSystem;
-pub use self::enemy::EnemyTrackingSystem;
-pub use self::enemy::EnemyMoveSystem;
+pub use self::{
+    attacked::AttackedSystem,
+    collision::CollisionSystem,
+    enemy::{EnemyMoveSystem, EnemyTrackingSystem},
+    laser::LaserSystem,
+    player::PlayerSystem,
+};
 
-mod player;
-mod laser;
-mod collision;
 mod attacked;
+mod collision;
 mod enemy;
+mod laser;
+mod player;

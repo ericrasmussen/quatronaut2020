@@ -1,22 +1,19 @@
 /// This module implements and initializes game states to be used
 /// by main.rs
-
 use amethyst::{
-    assets::{AssetStorage, Loader, Handle},
+    assets::{AssetStorage, Handle, Loader},
+    core::math::{Translation3, UnitQuaternion, Vector3},
     core::transform::Transform,
     input::{is_close_requested, is_key_down, VirtualKeyCode},
     prelude::*,
     renderer::{Camera, ImageFormat, SpriteRender, SpriteSheet, SpriteSheetFormat, Texture},
     window::ScreenDimensions,
-    core::math::{Translation3, UnitQuaternion, Vector3},
 };
 
 //use amethyst::input::get_key;
 //use log::info;
 
-use crate::entities::player::Player;
-use crate::entities::enemy::Enemy;
-use crate::entities::laser::Laser;
+use crate::entities::{enemy::Enemy, laser::Laser, player::Player};
 
 pub struct MyState;
 
@@ -49,11 +46,7 @@ impl SimpleState for MyState {
         init_enemies(world, enemy_sprite_sheet_handle);
     }
 
-    fn handle_event(
-        &mut self,
-        mut _data: StateData<'_, GameData<'_, '_>>,
-        event: StateEvent,
-    ) -> SimpleTrans {
+    fn handle_event(&mut self, mut _data: StateData<'_, GameData<'_, '_>>, event: StateEvent) -> SimpleTrans {
         if let StateEvent::Window(event) = &event {
             // Check if the window should be closed
             if is_close_requested(&event) || is_key_down(&event, VirtualKeyCode::Escape) {
@@ -115,14 +108,10 @@ fn load_sprite_sheet(world: &mut World, name: &str) -> Handle<SpriteSheet> {
     )
 }
 
-
 // for now, all this does is create a player entity.
 // ideally we'll move even the player entity data (speed, fire_rate, sprite sheet)
 // to a prefab.
-fn init_characters(world: &mut World,
-        sprite_sheet_handle: Handle<SpriteSheet>,
-        dimensions: &ScreenDimensions) 
-    {
+fn init_characters(world: &mut World, sprite_sheet_handle: Handle<SpriteSheet>, dimensions: &ScreenDimensions) {
     let position = Translation3::new(dimensions.width() * 0.5, dimensions.height() * 0.5, 0.0);
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
     let scale = Vector3::new(5.0, 5.0, 5.0);
@@ -147,13 +136,9 @@ fn init_characters(world: &mut World,
 
 // for now, all this does is create an enemy entity.
 // this would also ideally go into a prefab
-fn init_enemies(world: &mut World,
-    sprite_sheet_handle: Handle<SpriteSheet>)
-{
-
+fn init_enemies(world: &mut World, sprite_sheet_handle: Handle<SpriteSheet>) {
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
     let scale = Vector3::new(5.0, 5.0, 5.0);
-
 
     // the enemy has a separate sprite sheet until I have real assets to work with and can
     // make a shared sprite sheet (preferably as a prefab)
