@@ -2,12 +2,13 @@
 
 A work-in-progress robotron style game made using https://amethyst.rs.
 
-### Quick build
+### Quick Build and Run
 
 ```bash
 git clone https://github.com/ericrasmussen/benitron3000.git
 cd benitron3000
-make
+cargo run --features "metal"    # if on macOS
+cargo run --features "vulkan"   # if on Linux or win32
 ```
 
 ### Gameplay notes
