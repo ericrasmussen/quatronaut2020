@@ -152,7 +152,7 @@ fn init_enemies(world: &mut World, sprite_sheet_handle: Handle<SpriteSheet>) {
     let coordinates = vec![2.0, 8.0, 12.0, 16.0, 22.0, 30.0];
 
     for n in coordinates {
-        let position = Translation3::new(40.0 * n as f32, 40.0 * n as f32, 0.0);
+        let position = Translation3::new(40.0 * n, 40.0 * n, 0.0);
         let enemy_transform = Transform::new(position, rotation, scale);
 
         world
