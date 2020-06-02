@@ -1,7 +1,7 @@
 use amethyst::{
-    core::Transform,
+    core::{timing::Time, Transform},
     derive::SystemDesc,
-    ecs::{Entities, Join, System, SystemData, WriteStorage},
+    ecs::{Entities, Join, Read, System, SystemData, WriteStorage},
 };
 
 use crate::entities::laser::{Direction::*, Laser};
@@ -15,16 +15,21 @@ use log::info;
 pub struct LaserSystem;
 
 impl<'s> System<'s> for LaserSystem {
-    type SystemData = (WriteStorage<'s, Transform>, WriteStorage<'s, Laser>, Entities<'s>);
+    type SystemData = (
+        WriteStorage<'s, Transform>,
+        WriteStorage<'s, Laser>,
+        Entities<'s>,
+        Read<'s, Time>,
+    );
 
-    fn run(&mut self, (mut transforms, lasers, entities): Self::SystemData) {
+    fn run(&mut self, (mut transforms, lasers, entities, time): Self::SystemData) {
         for (entity, laser, transform) in (&entities, &lasers, &mut transforms).join() {
             // constant laser speed.. still shouldn't be hardcoded though.
             let &trans = transform.translation();
-            let neg_x = trans.x - 20.0;
-            let neg_y = trans.y - 20.0;
-            let pos_x = trans.x + 20.0;
-            let pos_y = trans.y + 20.0;
+            let neg_x = trans.x - laser.speed * time.delta_seconds();
+            let neg_y = trans.y - laser.speed * time.delta_seconds();
+            let pos_x = trans.x + laser.speed * time.delta_seconds();
+            let pos_y = trans.y + laser.speed * time.delta_seconds();
 
             // probably no reason to compute this every frame for every laser
             // it'd be easier to have the laser track `.next_change` or something

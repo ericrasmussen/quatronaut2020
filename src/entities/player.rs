@@ -70,6 +70,7 @@ impl<'a> PrefabData<'a> for PlayerPrefab {
 #[serde(deny_unknown_fields)]
 pub struct Player {
     pub speed: f32,
+    pub laser_speed: f32,
     // time to delay laser shots in seconds
     pub fire_delay: f32,
     pub seconds_since_firing: f32,

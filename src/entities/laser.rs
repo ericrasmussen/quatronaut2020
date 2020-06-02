@@ -75,18 +75,19 @@ impl Direction {
 #[derive(Debug)]
 pub struct Laser {
     pub direction: Direction,
+    pub speed: f32,
 }
 
 impl Laser {
-    pub fn new(dir: Direction) -> Laser {
-        Laser { direction: dir }
+    pub fn new(direction: Direction, speed: f32) -> Laser {
+        Laser { direction, speed }
     }
 
     // we're receiving two types of inputs that may or may not be directional.
     // we need to decide if they are directional (e.g. Up, or Right and Up),
     // combine the horizontal and vertical directions if possible, and finally
     // create a new laser.
-    pub fn from_coordinates(x: Option<f32>, y: Option<f32>) -> Option<Laser> {
+    pub fn from_coordinates(x: Option<f32>, y: Option<f32>, speed: f32) -> Option<Laser> {
         // inputs come from the amethyst input manager
         let maybe_x = Direction::horizontal(x.unwrap_or(0.0));
         let maybe_y = Direction::vertical(y.unwrap_or(0.0));
@@ -98,7 +99,7 @@ impl Laser {
         // once we have determined the one true direction or no
         // direction at all, we can return our Option<Laser>
         match maybe_composite {
-            Some(dir) => Some(Laser::new(dir)),
+            Some(dir) => Some(Laser::new(dir, speed)),
             _ => None,
         }
     }
