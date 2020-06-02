@@ -36,12 +36,11 @@ fn main() -> amethyst::Result<()> {
         .with_system_desc(PrefabLoaderSystemDesc::<EnemyPrefab>::default(), "", &[])
         .with_system_desc(PrefabLoaderSystemDesc::<PlayerPrefab>::default(), "", &[])
         .with(systems::PlayerSystem, "player_system", &["input_system"])
-        // TODO: not sure if the input system is needed here?
-        .with(systems::LaserSystem, "laser_system", &["input_system"])
-        .with(systems::CollisionSystem, "collision_system", &["input_system"])
-        .with(systems::AttackedSystem, "attacked_system", &["input_system"])
-        .with(systems::EnemyTrackingSystem, "enemy_tracking_system", &["input_system"])
-        .with(systems::EnemyMoveSystem, "enemy_move_system", &["input_system"])
+        .with(systems::LaserSystem, "laser_system", &[])
+        .with(systems::CollisionSystem, "collision_system", &[])
+        .with(systems::AttackedSystem, "attacked_system", &[])
+        .with(systems::EnemyTrackingSystem, "enemy_tracking_system", &[])
+        .with(systems::EnemyMoveSystem, "enemy_move_system", &[])
         .with_bundle(
             RenderingBundle::<DefaultBackend>::new()
                 .with_plugin(

@@ -3,17 +3,14 @@
 use amethyst::{
     assets::{Prefab, PrefabLoader, Handle, ProgressCounter, RonFormat},
     core::math::{Translation3, UnitQuaternion, Vector3},
-    core::transform::Transform,
+    core::{transform::Transform,Time},
     input::{is_close_requested, is_key_down, VirtualKeyCode},
     prelude::*,
     renderer::Camera,
     window::ScreenDimensions,
 };
-use amethyst::core::timing::Time;
 
 use derive_new::new;
-//use amethyst::input::get_key;
-//use log::info;
 
 use crate::entities::{enemy::{Enemy, EnemyPrefab}, laser::Laser, player::{Player, PlayerPrefab}};
 
@@ -36,6 +33,8 @@ pub struct GameplayState {
     pub player_prefab_handle: Option<Handle<Prefab<PlayerPrefab>>>,
 
 }
+
+pub struct PausedState;
 
 impl SimpleState for GameplayState {
     // On start will run when this state is initialized. For more
@@ -108,27 +107,40 @@ impl SimpleState for GameplayState {
         Trans::None
     }
 
-    fn handle_event(&mut self, mut _data: StateData<'_, GameData<'_, '_>>, event: StateEvent) -> SimpleTrans {
+    fn handle_event(&mut self, data: StateData<'_, GameData<'_, '_>>, event: StateEvent) -> SimpleTrans {
         if let StateEvent::Window(event) = &event {
             // Check if the window should be closed
             if is_close_requested(&event) || is_key_down(&event, VirtualKeyCode::Escape) {
                 return Trans::Quit;
             }
 
-            // Listen to any key events
-            //if let Some(event) = get_key(&event) {
-            //    info!("handling key event: {:?}", event);
-            //}
-
-            // TODO: eventually need to add a menu type screen for state
-            // transitions. this doesn't really work because it doesn't clean up
-            // the current state
-            //if let Some((VirtualKeyCode::R, _)) = get_key(&event) {
-            //    return Trans::Switch(Box::new(MyState));
-            //}
+            // simple pausing system that works only as long as we use delta timing
+            //if let Some((VirtualKeyCode::P, _)) = get_key(&event) {
+            if is_key_down(&event, VirtualKeyCode::P) {
+                data.world.write_resource::<Time>().set_time_scale(0.0);
+                return Trans::Push(Box::new(PausedState));
+            }
         }
 
         // Keep going
+        Trans::None
+    }
+}
+
+// the state for pausing the game and going back to it
+
+
+impl SimpleState for PausedState {
+    fn handle_event(&mut self, data: StateData<'_, GameData<'_, '_>>, event: StateEvent) -> SimpleTrans {
+        if let StateEvent::Window(event) = &event {
+            if is_key_down(&event, VirtualKeyCode::P) {
+                // Go back to the `GameplayState` and reset the time scale
+                data.world.write_resource::<Time>().set_time_scale(1.0);
+                return Trans::Pop;
+            }
+        }
+
+        // Escape isn't pressed, so we stay in this `State`.
         Trans::None
     }
 }
