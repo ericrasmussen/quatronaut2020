@@ -12,7 +12,13 @@ use amethyst::{
 
 use derive_new::new;
 
-use crate::entities::{enemy::{Enemy, EnemyPrefab}, laser::Laser, player::{Player, PlayerPrefab}};
+use crate::entities::{
+    enemy::{Enemy, EnemyPrefab},
+    laser::Laser,
+    player::{Player, PlayerPrefab}
+};
+
+use crate::components::collider::Collider;
 
 #[derive(new)]
 pub struct GameplayState {
@@ -55,6 +61,7 @@ impl SimpleState for GameplayState {
         world.register::<Player>();
         world.register::<Laser>();
         world.register::<Enemy>();
+        world.register::<Collider>();
 
         let enemy_prefab_handle = world.exec(|loader: PrefabLoader<'_, EnemyPrefab>| {
             loader.load(

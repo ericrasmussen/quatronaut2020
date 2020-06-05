@@ -50,21 +50,24 @@ Prefab (
                 ),
                 // END render: SpriteRenderPrefab
 
-                // BEGIN transform: Transform
-                // NOTE: if we use this prefab handle for generating waves of enemies,
-                // we probably only need scale. translation would be chosen at random
-                // by a spawn point, or generated randomly or procedurally
-                //transform: (translation: (30.0, 30.0, 0.0), scale: (5.0, 5.0, 5.0)),
-                // END transform: Transform
-
                 // BEGIN enemy: Enemy
                 enemy: Enemy(
-                        speed: 100,
-                        // not clear if we need these yet
-                        velocity_x: 0,
-                        velocity_y: 0,
+                    speed: 100,
+                    velocity_x: 0,
+                    velocity_y: 0,
                 ),
                 // END enemy: Enemy
+
+                // BEGIN collider: Collider
+                collider: Collider(
+                    // sprite width or height * 0.5 * scale
+                    // TODO: scale hardcoded to 5.0 in state.rs because
+                    // it needs to be created separately from the enemy
+                    // entity and components defined here
+                    half_width: 70.0,
+                    half_height: 70.0,
+                ),
+                // END collider: Collider
             ),
         ),
     ]

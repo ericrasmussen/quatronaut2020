@@ -21,6 +21,8 @@ use amethyst::{
 
 use serde::{Deserialize, Serialize};
 
+use crate::components::collider::Collider;
+
 //use log::info;
 
 // this entity is a grouping of components, which allows the prefab loads to aggregate
@@ -30,6 +32,7 @@ pub struct EnemyPrefab {
     pub sheet: SpriteSheetPrefab,
     pub render: SpriteRenderPrefab,
     pub enemy: Enemy,
+    pub collider: Collider,
 }
 
 impl<'a> PrefabData<'a> for EnemyPrefab {
@@ -37,7 +40,9 @@ impl<'a> PrefabData<'a> for EnemyPrefab {
         <SpriteSheetPrefab as PrefabData<'a>>::SystemData,
         <SpriteRenderPrefab as PrefabData<'a>>::SystemData,
         <Enemy as PrefabData<'a>>::SystemData,
+        <Collider as PrefabData<'a>>::SystemData,
     );
+
     type Result = ();
 
     fn add_to_entity(
@@ -49,6 +54,7 @@ impl<'a> PrefabData<'a> for EnemyPrefab {
     ) -> Result<(), Error> {
         &self.render.add_to_entity(entity, &mut system_data.1, entities, children)?;
         &self.enemy.add_to_entity(entity, &mut system_data.2, entities, children)?;
+        &self.collider.add_to_entity(entity, &mut system_data.3, entities, children)?;
         Ok(())
     }
 
@@ -73,8 +79,7 @@ impl<'a> PrefabData<'a> for EnemyPrefab {
 #[prefab(Component)]
 #[serde(deny_unknown_fields)]
 pub struct Enemy {
-    speed: f32,
-    // TODO: write a function to provide these
+    pub speed: f32,
     pub velocity_x: f32,
     pub velocity_y: f32,
 }

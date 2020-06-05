@@ -18,6 +18,9 @@ use amethyst::{
 };
 
 use serde::{Deserialize, Serialize};
+
+use crate::components::collider::Collider;
+
 // this entity is a grouping of components, which allows the prefab loads to aggregate
 // components from a config file (`prefabs/enemy.ron` in our case)
 #[derive(Debug, Deserialize, Serialize)]
@@ -26,6 +29,7 @@ pub struct PlayerPrefab {
     pub render: SpriteRenderPrefab,
     pub transform: Transform,
     pub player: Player,
+    pub player_collider: Collider,
 }
 
 impl<'a> PrefabData<'a> for PlayerPrefab {
@@ -34,6 +38,7 @@ impl<'a> PrefabData<'a> for PlayerPrefab {
         <SpriteRenderPrefab as PrefabData<'a>>::SystemData,
         <Transform as PrefabData<'a>>::SystemData,
         <Player as PrefabData<'a>>::SystemData,
+        <Collider as PrefabData<'a>>::SystemData,
     );
     type Result = ();
 
@@ -47,6 +52,7 @@ impl<'a> PrefabData<'a> for PlayerPrefab {
         &self.render.add_to_entity(entity, &mut system_data.1, entities, children)?;
         &self.transform.add_to_entity(entity, &mut system_data.2, entities, children)?;
         &self.player.add_to_entity(entity, &mut system_data.3, entities, children)?;
+        &self.player_collider.add_to_entity(entity, &mut system_data.4, entities, children)?;
         Ok(())
     }
 
