@@ -19,6 +19,7 @@ pub struct PlayerSystem;
 // this system is likely too complicated, but it's not clear if there's a benefit
 // to breaking some of it into separate systems (for instance, one system to track
 // input, another to modify the transform, another to spawn lasers, etc)
+#[allow(clippy::type_complexity)]
 impl<'s> System<'s> for PlayerSystem {
     type SystemData = (
         WriteStorage<'s, Transform>,
@@ -70,7 +71,7 @@ impl<'s> System<'s> for PlayerSystem {
             // to the sprite sheet the player is using
             if let Some(laser) = maybe_laser {
                 if character.can_fire(time.delta_seconds()) {
-                    spawn_laser(sprite.clone().sprite_sheet, laser, &transform, &entities, &lazy_update);
+                    spawn_laser(sprite.clone().sprite_sheet, laser,  &transform, &entities, &lazy_update);
                 }
             }
         }

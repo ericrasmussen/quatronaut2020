@@ -52,9 +52,9 @@ impl<'a> PrefabData<'a> for EnemyPrefab {
         entities: &[Entity],
         children: &[Entity],
     ) -> Result<(), Error> {
-        &self.render.add_to_entity(entity, &mut system_data.1, entities, children)?;
-        &self.enemy.add_to_entity(entity, &mut system_data.2, entities, children)?;
-        &self.collider.add_to_entity(entity, &mut system_data.3, entities, children)?;
+        self.render.add_to_entity(entity, &mut system_data.1, entities, children)?;
+        self.enemy.add_to_entity(entity, &mut system_data.2, entities, children)?;
+        self.collider.add_to_entity(entity, &mut system_data.3, entities, children)?;
         Ok(())
     }
 
@@ -100,8 +100,8 @@ impl Enemy {
         let dy = target_y - current_y;
         let angle = dy.atan2(dx);
 
-        self.velocity_x = &self.get_speed() * angle.cos();
-        self.velocity_y = &self.get_speed() * angle.sin();
+        self.velocity_x = self.get_speed() * angle.cos();
+        self.velocity_y = self.get_speed() * angle.sin();
     }
 }
 

@@ -8,6 +8,8 @@ use amethyst::{
     renderer::{sprite::SpriteSheetHandle, SpriteRender},
 };
 
+use std::f32::consts::{FRAC_PI_2, FRAC_PI_4};
+
 //use log::info;
 
 #[derive(Debug)]
@@ -92,9 +94,11 @@ impl Laser {
         let maybe_x = Direction::horizontal(x.unwrap_or(0.0));
         let maybe_y = Direction::vertical(y.unwrap_or(0.0));
 
-        // we try to create a composite direction (e.g. LeftUp) or
-        // return a single direction (e.g. Up).
-        let maybe_composite = maybe_x.and_then(|x_dir| Some(x_dir.combine(&maybe_y))).or(maybe_y);
+        // if there's input on the horizontal axis, try to combine it with any vertical
+        // input, otherwise use any vertical input
+        let maybe_composite = maybe_x.map(
+            |x_dir| x_dir.combine(&maybe_y)
+        ).or(maybe_y);
 
         // once we have determined the one true direction or no
         // direction at all, we can return our Option<Laser>
@@ -136,13 +140,13 @@ pub fn spawn_laser(
     // (e.g. `rad(90)`)
     match laser.direction {
         Left => transform.set_rotation_2d(0.0),
-        LeftUp => transform.set_rotation_2d(-0.7853981633974483),
-        Up => transform.set_rotation_2d(1.5707963267948966),
-        RightUp => transform.set_rotation_2d(0.7853981633974483),
+        LeftUp => transform.set_rotation_2d(-FRAC_PI_4),
+        Up => transform.set_rotation_2d(FRAC_PI_2),
+        RightUp => transform.set_rotation_2d(FRAC_PI_4),
         Right => transform.set_rotation_2d(0.0),
-        RightDown => transform.set_rotation_2d(2.356194490192345),
-        Down => transform.set_rotation_2d(1.5707963267948966),
-        LeftDown => transform.set_rotation_2d(-2.356194490192345),
+        RightDown => transform.set_rotation_2d(2.356_194_5),
+        Down => transform.set_rotation_2d(FRAC_PI_2),
+        LeftDown => transform.set_rotation_2d(-2.356_194_5),
     };
 
     let laser_entity: Entity = entities.create();

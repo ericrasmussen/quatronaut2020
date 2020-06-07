@@ -33,6 +33,7 @@ pub struct PlayerPrefab {
 }
 
 impl<'a> PrefabData<'a> for PlayerPrefab {
+    #[allow(clippy::type_complexity)]
     type SystemData = (
         <SpriteSheetPrefab as PrefabData<'a>>::SystemData,
         <SpriteRenderPrefab as PrefabData<'a>>::SystemData,
@@ -49,10 +50,10 @@ impl<'a> PrefabData<'a> for PlayerPrefab {
         entities: &[Entity],
         children: &[Entity],
     ) -> Result<(), Error> {
-        &self.render.add_to_entity(entity, &mut system_data.1, entities, children)?;
-        &self.transform.add_to_entity(entity, &mut system_data.2, entities, children)?;
-        &self.player.add_to_entity(entity, &mut system_data.3, entities, children)?;
-        &self.player_collider.add_to_entity(entity, &mut system_data.4, entities, children)?;
+        self.render.add_to_entity(entity, &mut system_data.1, entities, children)?;
+        self.transform.add_to_entity(entity, &mut system_data.2, entities, children)?;
+        self.player.add_to_entity(entity, &mut system_data.3, entities, children)?;
+        self.player_collider.add_to_entity(entity, &mut system_data.4, entities, children)?;
         Ok(())
     }
 
