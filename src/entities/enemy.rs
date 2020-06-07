@@ -1,23 +1,11 @@
-/// An existential horror brought to life by the complexities of ECS.
-//use amethyst::{
-//    ecs::prelude::{Component, DenseVecStorage},
-//    derive::PrefabData,
-//    assets::PrefabData
-//};
-
-use amethyst_rendy::sprite::prefab::{SpriteRenderPrefab,SpriteSheetPrefab};
 use amethyst::{
-    assets::{
-        PrefabData,
-        ProgressCounter,
-    },
+    assets::{PrefabData, ProgressCounter},
     derive::PrefabData,
-    ecs::{
-        storage::DenseVecStorage, Component, Entity,
-        WriteStorage,
-    },
+    ecs::{storage::DenseVecStorage, Component, Entity, WriteStorage},
     Error,
 };
+
+use amethyst_rendy::sprite::prefab::{SpriteRenderPrefab, SpriteSheetPrefab};
 
 use serde::{Deserialize, Serialize};
 
@@ -36,14 +24,13 @@ pub struct EnemyPrefab {
 }
 
 impl<'a> PrefabData<'a> for EnemyPrefab {
+    type Result = ();
     type SystemData = (
         <SpriteSheetPrefab as PrefabData<'a>>::SystemData,
         <SpriteRenderPrefab as PrefabData<'a>>::SystemData,
         <Enemy as PrefabData<'a>>::SystemData,
         <Collider as PrefabData<'a>>::SystemData,
     );
-
-    type Result = ();
 
     fn add_to_entity(
         &self,
@@ -52,9 +39,12 @@ impl<'a> PrefabData<'a> for EnemyPrefab {
         entities: &[Entity],
         children: &[Entity],
     ) -> Result<(), Error> {
-        self.render.add_to_entity(entity, &mut system_data.1, entities, children)?;
-        self.enemy.add_to_entity(entity, &mut system_data.2, entities, children)?;
-        self.collider.add_to_entity(entity, &mut system_data.3, entities, children)?;
+        self.render
+            .add_to_entity(entity, &mut system_data.1, entities, children)?;
+        self.enemy
+            .add_to_entity(entity, &mut system_data.2, entities, children)?;
+        self.collider
+            .add_to_entity(entity, &mut system_data.3, entities, children)?;
         Ok(())
     }
 
@@ -65,8 +55,8 @@ impl<'a> PrefabData<'a> for EnemyPrefab {
     ) -> Result<bool, Error> {
         let mut ret = false;
         if self.sheet.load_sub_assets(progress, &mut system_data.0)? {
-                ret = true;
-            }
+            ret = true;
+        }
         self.render.load_sub_assets(progress, &mut system_data.1)?;
 
         Ok(ret)

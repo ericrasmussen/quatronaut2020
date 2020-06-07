@@ -1,8 +1,5 @@
 use nalgebra::{Isometry2, Vector2};
-use ncollide2d::{
-    bounding_volume,
-    shape::Cuboid,
-};
+use ncollide2d::{bounding_volume, shape::Cuboid};
 
 use amethyst::{
     core::Transform,
@@ -10,8 +7,10 @@ use amethyst::{
     ecs::{Entities, Join, ReadStorage, System, SystemData, WriteStorage},
 };
 
-use crate::entities::{enemy::Enemy, laser::Laser};
-use crate::components::collider::Collider;
+use crate::{
+    components::collider::Collider,
+    entities::{enemy::Enemy, laser::Laser},
+};
 //use log::info;
 
 // big TODO: as this system gets more complicated, at some point it'll probably
@@ -46,14 +45,15 @@ impl<'s> System<'s> for CollisionSystem {
             // the actual rotation is available via some_transform.isometry(), but
             let laser_cube_pos = Isometry2::new(
                 Vector2::new(transform_a.translation().x, transform_a.translation().y),
-                nalgebra::zero()
+                nalgebra::zero(),
             );
 
             // a bounding volume is the combination of a shape and a position
             let aabb_cube1 = bounding_volume::aabb(&laser_cube, &laser_cube_pos);
 
-            for (enemy_entity, _enemy, enemy_transform, enemy_collider) in (&entities, &enemies, &transforms, &colliders).join() {
-
+            for (enemy_entity, _enemy, enemy_transform, enemy_collider) in
+                (&entities, &enemies, &transforms, &colliders).join()
+            {
                 let collides = enemy_collider.intersects(
                     enemy_transform.translation().x,
                     enemy_transform.translation().y,

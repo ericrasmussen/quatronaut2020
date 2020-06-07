@@ -5,12 +5,9 @@ use ncollide2d::{
 };
 
 use amethyst::{
-    ecs::{
-        storage::DenseVecStorage, Component, Entity,
-        WriteStorage,
-    },
     assets::PrefabData,
     derive::PrefabData,
+    ecs::{storage::DenseVecStorage, Component, Entity, WriteStorage},
     Error,
 };
 
@@ -26,7 +23,7 @@ use serde::{Deserialize, Serialize};
 /// components can be part of the prefabs that contain sprite information.
 pub struct Collider {
     pub half_width: f32,
-    pub half_height: f32
+    pub half_height: f32,
 }
 
 impl Collider {
@@ -38,10 +35,7 @@ impl Collider {
 
         let cube = Cuboid::new(half_extents);
 
-        let pos = Isometry2::new(
-            Vector2::new(x, y),
-            nalgebra::zero()
-        );
+        let pos = Isometry2::new(Vector2::new(x, y), nalgebra::zero());
         bounding_volume::aabb(&cube, &pos)
     }
 
@@ -52,11 +46,8 @@ impl Collider {
         let this_aabb = self.aabb_from_coordinates(x, y);
         this_aabb.intersects(other)
     }
-
-
 }
 
 impl Component for Collider {
     type Storage = DenseVecStorage<Self>;
 }
-

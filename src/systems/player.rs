@@ -60,18 +60,14 @@ impl<'s> System<'s> for PlayerSystem {
 
             // this computes Some(laser_with_direction) or None, based on input
             // (e.g. right and up arrows will create Some(Laser::new(RightUp)))
-            let maybe_laser = Laser::from_coordinates(
-                laser_x,
-                laser_y,
-                character.laser_speed
-            );
+            let maybe_laser = Laser::from_coordinates(laser_x, laser_y, character.laser_speed);
 
             // cloning the sprite sheet here is pretty hacky...
             // it should be a prefab or shared resource of some kind, not tied
             // to the sprite sheet the player is using
             if let Some(laser) = maybe_laser {
                 if character.can_fire(time.delta_seconds()) {
-                    spawn_laser(sprite.clone().sprite_sheet, laser,  &transform, &entities, &lazy_update);
+                    spawn_laser(sprite.clone().sprite_sheet, laser, &transform, &entities, &lazy_update);
                 }
             }
         }

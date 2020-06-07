@@ -96,9 +96,7 @@ impl Laser {
 
         // if there's input on the horizontal axis, try to combine it with any vertical
         // input, otherwise use any vertical input
-        let maybe_composite = maybe_x.map(
-            |x_dir| x_dir.combine(&maybe_y)
-        ).or(maybe_y);
+        let maybe_composite = maybe_x.map(|x_dir| x_dir.combine(&maybe_y)).or(maybe_y);
 
         // once we have determined the one true direction or no
         // direction at all, we can return our Option<Laser>

@@ -1,21 +1,15 @@
+use amethyst::{
+    assets::{PrefabData, ProgressCounter},
+    core::Transform,
+    derive::PrefabData,
+    ecs::{storage::DenseVecStorage, Component, Entity, WriteStorage},
+    Error,
+};
 /// The `Player` in our game is a robot, presumably named Benitron 3000.
 /// The robot has its own movement speed and fire delay, the latter of which
 /// is used to prevent the laser firing as fast as possible based on the
 /// current framerate.
-use amethyst_rendy::sprite::prefab::{SpriteRenderPrefab,SpriteSheetPrefab};
-use amethyst::{
-    assets::{
-        PrefabData,
-        ProgressCounter,
-    },
-    core::Transform,
-    derive::PrefabData,
-    ecs::{
-        storage::DenseVecStorage, Component, WriteStorage,
-        Entity,
-    },
-    Error,
-};
+use amethyst_rendy::sprite::prefab::{SpriteRenderPrefab, SpriteSheetPrefab};
 
 use serde::{Deserialize, Serialize};
 
@@ -33,6 +27,7 @@ pub struct PlayerPrefab {
 }
 
 impl<'a> PrefabData<'a> for PlayerPrefab {
+    type Result = ();
     #[allow(clippy::type_complexity)]
     type SystemData = (
         <SpriteSheetPrefab as PrefabData<'a>>::SystemData,
@@ -41,7 +36,6 @@ impl<'a> PrefabData<'a> for PlayerPrefab {
         <Player as PrefabData<'a>>::SystemData,
         <Collider as PrefabData<'a>>::SystemData,
     );
-    type Result = ();
 
     fn add_to_entity(
         &self,
@@ -50,10 +44,14 @@ impl<'a> PrefabData<'a> for PlayerPrefab {
         entities: &[Entity],
         children: &[Entity],
     ) -> Result<(), Error> {
-        self.render.add_to_entity(entity, &mut system_data.1, entities, children)?;
-        self.transform.add_to_entity(entity, &mut system_data.2, entities, children)?;
-        self.player.add_to_entity(entity, &mut system_data.3, entities, children)?;
-        self.player_collider.add_to_entity(entity, &mut system_data.4, entities, children)?;
+        self.render
+            .add_to_entity(entity, &mut system_data.1, entities, children)?;
+        self.transform
+            .add_to_entity(entity, &mut system_data.2, entities, children)?;
+        self.player
+            .add_to_entity(entity, &mut system_data.3, entities, children)?;
+        self.player_collider
+            .add_to_entity(entity, &mut system_data.4, entities, children)?;
         Ok(())
     }
 
@@ -64,8 +62,8 @@ impl<'a> PrefabData<'a> for PlayerPrefab {
     ) -> Result<bool, Error> {
         let mut ret = false;
         if self.sheet.load_sub_assets(progress, &mut system_data.0)? {
-                ret = true;
-            }
+            ret = true;
+        }
         self.render.load_sub_assets(progress, &mut system_data.1)?;
 
         Ok(ret)

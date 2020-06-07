@@ -1,9 +1,9 @@
 /// This module implements and initializes game states to be used
 /// by main.rs
 use amethyst::{
-    assets::{Prefab, PrefabLoader, Handle, ProgressCounter, RonFormat},
+    assets::{Handle, Prefab, PrefabLoader, ProgressCounter, RonFormat},
     core::math::{Translation3, UnitQuaternion, Vector3},
-    core::{transform::Transform,Time},
+    core::{transform::Transform, Time},
     input::{is_close_requested, is_key_down, VirtualKeyCode},
     prelude::*,
     renderer::Camera,
@@ -15,7 +15,7 @@ use derive_new::new;
 use crate::entities::{
     enemy::{Enemy, EnemyPrefab},
     laser::Laser,
-    player::{Player, PlayerPrefab}
+    player::{Player, PlayerPrefab},
 };
 
 use crate::components::collider::Collider;
@@ -37,7 +37,6 @@ pub struct GameplayState {
     // although at least for testing it's nice to spawn players as needed
     #[new(default)]
     pub player_prefab_handle: Option<Handle<Prefab<PlayerPrefab>>>,
-
 }
 
 pub struct PausedState;
@@ -64,31 +63,19 @@ impl SimpleState for GameplayState {
         world.register::<Collider>();
 
         let enemy_prefab_handle = world.exec(|loader: PrefabLoader<'_, EnemyPrefab>| {
-            loader.load(
-                "prefabs/enemy.ron",
-                RonFormat,
-                &mut self.progress_counter,
-            )
+            loader.load("prefabs/enemy.ron", RonFormat, &mut self.progress_counter)
         });
 
         // keep a handle on the enemies so they don't get out of control
         self.enemy_prefab_handle = Some(enemy_prefab_handle);
 
-
         // player prefab instantiation
         let player_prefab_handle = world.exec(|loader: PrefabLoader<'_, PlayerPrefab>| {
-            loader.load(
-                "prefabs/player.ron",
-                RonFormat,
-                &mut self.progress_counter,
-            )
+            loader.load("prefabs/player.ron", RonFormat, &mut self.progress_counter)
         });
         // Create one player
-        (0..1).for_each(|_| {
-            world
-            .create_entity()
-            .with(player_prefab_handle.clone())
-            .build();
+        (0 .. 1).for_each(|_| {
+            world.create_entity().with(player_prefab_handle.clone()).build();
         });
 
         self.player_prefab_handle = Some(player_prefab_handle);
@@ -109,7 +96,6 @@ impl SimpleState for GameplayState {
             // need an `Option` type (since we shouldn't be this far into playing
             // the game if we didn't get this required prefab)
             init_enemy_wave(data.world, self.enemy_prefab_handle.clone().unwrap());
-
         }
         Trans::None
     }
@@ -135,7 +121,6 @@ impl SimpleState for GameplayState {
 }
 
 // the state for pausing the game and going back to it
-
 
 impl SimpleState for PausedState {
     fn handle_event(&mut self, data: StateData<'_, GameData<'_, '_>>, event: StateEvent) -> SimpleTrans {
@@ -166,47 +151,44 @@ fn init_camera(world: &mut World, dimensions: &ScreenDimensions) {
 }
 
 fn init_enemy_wave(world: &mut World, prefab_handle: Handle<Prefab<EnemyPrefab>>) {
-        // Create one set of entities from the prefab.
-        let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
-        let scale = Vector3::new(5.0, 5.0, 5.0);
-        let mut offset = 250.0;
+    // Create one set of entities from the prefab.
+    let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
+    let scale = Vector3::new(5.0, 5.0, 5.0);
+    let mut offset = 250.0;
 
-        // bottom wave
-        (0..15).for_each(|_| {
-            let position = Translation3::new(offset, 20.0, 0.0);
-            offset += 250.0;
-            let transform = Transform::new(position, rotation, scale);
-            world
-                .create_entity()
-                .with(prefab_handle.clone())
-                .with(transform)
-                .build();
-        });
-        // top wave
-        offset = 0.0;
-        (0..15).for_each(|_| {
-            let position = Translation3::new(offset, 1600.0, 0.0);
-            offset += 250.0;
-            let transform = Transform::new(position, rotation, scale);
-            world
-                .create_entity()
-                .with(prefab_handle.clone())
-                .with(transform)
-                .build();
-        });
-        // left wave
-        offset = 0.0;
-        (0..10).for_each(|_| {
-            let position = Translation3::new(0.0, offset, 0.0);
-            offset += 250.0;
-            let transform = Transform::new(position, rotation, scale);
-            world
-                .create_entity()
-                .with(prefab_handle.clone())
-                .with(transform)
-                .build();
-        });
-
+    // bottom wave
+    (0 .. 15).for_each(|_| {
+        let position = Translation3::new(offset, 20.0, 0.0);
+        offset += 250.0;
+        let transform = Transform::new(position, rotation, scale);
+        world
+            .create_entity()
+            .with(prefab_handle.clone())
+            .with(transform)
+            .build();
+    });
+    // top wave
+    offset = 0.0;
+    (0 .. 15).for_each(|_| {
+        let position = Translation3::new(offset, 1600.0, 0.0);
+        offset += 250.0;
+        let transform = Transform::new(position, rotation, scale);
+        world
+            .create_entity()
+            .with(prefab_handle.clone())
+            .with(transform)
+            .build();
+    });
+    // left wave
+    offset = 0.0;
+    (0 .. 10).for_each(|_| {
+        let position = Translation3::new(0.0, offset, 0.0);
+        offset += 250.0;
+        let transform = Transform::new(position, rotation, scale);
+        world
+            .create_entity()
+            .with(prefab_handle.clone())
+            .with(transform)
+            .build();
+    });
 }
-
-
