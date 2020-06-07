@@ -1,10 +1,10 @@
 .PHONY: build
 build:
-	cargo build -Z features=itarget
+	cargo build
 
 .PHONY: check
 check:
-	cargo check -Z features=itarget --all-features --all-targets --benches --bins --examples --tests --workspace
+	cargo check --features "vulkan" --all-targets --benches --bins --examples --tests --workspace
 
 .PHONY: clean
 clean:
@@ -12,11 +12,11 @@ clean:
 
 .PHONY: clippy
 clippy:
-	cargo clippy -Z features=itarget --all-features --all-targets --benches --bins --examples --tests --workspace -- -D warnings
+	cargo clippy --features "vulkan" --all-targets --benches --bins --examples --tests --workspace -- -D warnings
 
 .PHONY: doc
 doc:
-	cargo +nightly doc -Z features=itarget --all-features --no-deps --package benitron3000
+	cargo +nightly doc --features "vulkan" --no-deps --package benitron3000
 
 .PHONY: fmt
 format:
@@ -24,8 +24,8 @@ format:
 
 .PHONY: run
 run:
-	cargo run -Z features=itarget
+	cargo run
 
 .PHONY: test
 test:
-	cargo test -Z features=itarget --all-features --all-targets --benches --bins --examples --tests --workspace
+	cargo test --features "vulkan" --all-targets --benches --bins --examples --tests --workspace
