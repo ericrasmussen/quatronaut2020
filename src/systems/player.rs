@@ -19,6 +19,7 @@ pub struct PlayerSystem;
 // this system is likely too complicated, but it's not clear if there's a benefit
 // to breaking some of it into separate systems (for instance, one system to track
 // input, another to modify the transform, another to spawn lasers, etc)
+#[allow(clippy::type_complexity)]
 impl<'s> System<'s> for PlayerSystem {
     type SystemData = (
         WriteStorage<'s, Transform>,
@@ -38,20 +39,16 @@ impl<'s> System<'s> for PlayerSystem {
             let movement_x = input.axis_value("x_axis");
             let movement_y = input.axis_value("y_axis");
 
-            // originally added this as a modifier separate from speed, though
-            // in its current form its not doing much. may end up removing it
-            let scale: f32 = 1.2;
-
             // update the x and y coordinates based on current input (if there is
             // no movement then new_x and new_y will equal 0 and the transform
             // coordinates will not be changed)
             if let Some(x_amt) = movement_x {
-                let new_x = scale * x_amt * character.get_speed();
+                let new_x = time.delta_seconds() * x_amt * character.get_speed();
                 transform.set_translation_x(transform.translation().x + new_x);
             }
 
             if let Some(y_amt) = movement_y {
-                let new_y = scale * y_amt * character.get_speed();
+                let new_y = time.delta_seconds() * y_amt * character.get_speed();
                 transform.set_translation_y(transform.translation().y + new_y);
             }
 
@@ -63,7 +60,7 @@ impl<'s> System<'s> for PlayerSystem {
 
             // this computes Some(laser_with_direction) or None, based on input
             // (e.g. right and up arrows will create Some(Laser::new(RightUp)))
-            let maybe_laser = Laser::from_coordinates(laser_x, laser_y);
+            let maybe_laser = Laser::from_coordinates(laser_x, laser_y, character.laser_speed);
 
             // cloning the sprite sheet here is pretty hacky...
             // it should be a prefab or shared resource of some kind, not tied

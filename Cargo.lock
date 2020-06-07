@@ -507,9 +507,11 @@ version = "0.1.0"
 dependencies = [
  "amethyst",
  "amethyst_rendy",
+ "derive-new",
  "log",
  "nalgebra 0.20.0",
  "ncollide2d",
+ "serde",
 ]
 
 [[package]]

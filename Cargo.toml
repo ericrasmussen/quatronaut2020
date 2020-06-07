@@ -7,9 +7,14 @@ edition = "2018"
 [dependencies]
 amethyst = "0.15.0"
 amethyst_rendy = "0.5.0"
+# note: use this version to speed up image rendering for builds:
+# amethyst_rendy = { version = "0.5.0", features = ["no-slow-safety-checks"] }
 log = { version = "0.4.8", features = ["serde"] }
 nalgebra = "0.20"
 ncollide2d = "0.22"
+serde = { version = "1.0.104", features = ["derive"] }
+# used only for a default implementation of GameplayState. probably not really needed
+derive-new = "0.5.8"
 
 [features]
 empty = ["amethyst/empty"]
