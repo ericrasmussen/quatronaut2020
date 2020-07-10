@@ -1,11 +1,9 @@
 use amethyst::{
-    assets::{PrefabData, ProgressCounter},
+    assets::PrefabData,
     derive::PrefabData,
     ecs::{storage::DenseVecStorage, Component, Entity, WriteStorage},
     Error,
 };
-
-use amethyst_rendy::sprite::prefab::{SpriteRenderPrefab, SpriteSheetPrefab};
 
 use serde::{Deserialize, Serialize};
 

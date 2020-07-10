@@ -10,8 +10,6 @@ use amethyst::{
     window::ScreenDimensions,
 };
 
-use amethyst_rendy::sprite::prefab::SpriteSheetPrefab;
-
 use derive_new::new;
 
 use crate::entities::{
@@ -192,9 +190,14 @@ fn init_enemy_wave(world: &mut World, prefab_handle: Handle<Prefab<EnemyPrefab>>
     let scale = Vector3::new(5.0, 5.0, 5.0);
     let mut offset = 250.0;
 
-    let sprite_render = SpriteRender {
-        sprite_sheet: sprite_sheet_handle,
-        sprite_number: 0, // this will need to vary
+    let blob_render = SpriteRender {
+        sprite_sheet: sprite_sheet_handle.clone(),
+        sprite_number: 1,
+    };
+
+    let flying_render = SpriteRender {
+        sprite_sheet: sprite_sheet_handle.clone(),
+        sprite_number: 0,
     };
 
     // bottom wave
@@ -205,7 +208,7 @@ fn init_enemy_wave(world: &mut World, prefab_handle: Handle<Prefab<EnemyPrefab>>
         world
             .create_entity()
             .with(prefab_handle.clone())
-            .with(sprite_render.clone())
+            .with(blob_render.clone())
             .with(transform)
             .build();
     });
@@ -218,7 +221,7 @@ fn init_enemy_wave(world: &mut World, prefab_handle: Handle<Prefab<EnemyPrefab>>
         world
             .create_entity()
             .with(prefab_handle.clone())
-            .with(sprite_render.clone())
+            .with(blob_render.clone())
             .with(transform)
             .build();
     });
@@ -231,7 +234,7 @@ fn init_enemy_wave(world: &mut World, prefab_handle: Handle<Prefab<EnemyPrefab>>
         world
             .create_entity()
             .with(prefab_handle.clone())
-            .with(sprite_render.clone())
+            .with(flying_render.clone())
             .with(transform)
             .build();
     });

@@ -43,7 +43,7 @@ fn main() -> amethyst::Result<()> {
         .with(systems::EnemyMoveSystem, "enemy_move_system", &[])
         .with_bundle(
             RenderingBundle::<DefaultBackend>::new()
-                .with_plugin(RenderToWindow::from_config_path(display_config)?.with_clear([0.34, 0.36, 0.52, 1.0]))
+                .with_plugin(RenderToWindow::from_config_path(display_config)?.with_clear([255.0, 255.0, 255.0, 1.0]))
                 .with_plugin(RenderFlat2D::default()),
         )?;
 
