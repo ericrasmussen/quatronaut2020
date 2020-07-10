@@ -17,8 +17,6 @@ use crate::components::collider::Collider;
 // components from a config file (`prefabs/enemy.ron` in our case)
 #[derive(Debug, Deserialize, Serialize)]
 pub struct EnemyPrefab {
-    pub sheet: SpriteSheetPrefab,
-    pub render: SpriteRenderPrefab,
     pub enemy: Enemy,
     pub collider: Collider,
 }
@@ -26,8 +24,6 @@ pub struct EnemyPrefab {
 impl<'a> PrefabData<'a> for EnemyPrefab {
     type Result = ();
     type SystemData = (
-        <SpriteSheetPrefab as PrefabData<'a>>::SystemData,
-        <SpriteRenderPrefab as PrefabData<'a>>::SystemData,
         <Enemy as PrefabData<'a>>::SystemData,
         <Collider as PrefabData<'a>>::SystemData,
     );
@@ -39,27 +35,11 @@ impl<'a> PrefabData<'a> for EnemyPrefab {
         entities: &[Entity],
         children: &[Entity],
     ) -> Result<(), Error> {
-        self.render
-            .add_to_entity(entity, &mut system_data.1, entities, children)?;
         self.enemy
-            .add_to_entity(entity, &mut system_data.2, entities, children)?;
+            .add_to_entity(entity, &mut system_data.0, entities, children)?;
         self.collider
-            .add_to_entity(entity, &mut system_data.3, entities, children)?;
+            .add_to_entity(entity, &mut system_data.1, entities, children)?;
         Ok(())
-    }
-
-    fn load_sub_assets(
-        &mut self,
-        progress: &mut ProgressCounter,
-        system_data: &mut Self::SystemData,
-    ) -> Result<bool, Error> {
-        let mut ret = false;
-        if self.sheet.load_sub_assets(progress, &mut system_data.0)? {
-            ret = true;
-        }
-        self.render.load_sub_assets(progress, &mut system_data.1)?;
-
-        Ok(ret)
     }
 }
 

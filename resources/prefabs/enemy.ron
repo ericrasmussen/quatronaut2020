@@ -4,52 +4,6 @@ Prefab (
     entities: [
         PrefabEntity(
             data: EnemyPrefab(
-                // BEGIN sheet: SpriteSheetPrefab
-                sheet: Sheet(
-                    // many of these attributes are taken from a prefab example and probably
-                    // don't apply. if they can be left off entirely that's best
-                    texture: File("sprites/enemy_sprites.png", (
-                                "IMAGE", (
-                                    sampler_info: (
-                                        min_filter: Nearest,
-                                        mag_filter: Nearest,
-                                        mip_filter: Nearest,
-                                        wrap_mode: (Tile, Tile, Tile),
-                                        lod_bias: (0),
-                                        lod_range: (
-                                            start: ( 0 ),
-                                            end: ( 8000 ),
-                                        ),
-                                        comparison: None,
-                                        border: (0),
-                                        normalized: true,
-                                        anisotropic: Off,
-                                    ),
-                                )
-                    )),
-                    sprites: [
-                        List((
-                            texture_width: 28,
-                            texture_height: 28,
-                            sprites: [(
-                                x: 0,
-                                y: 0,
-                                width: 28,
-                                height: 28,
-                            )],
-                        ))
-                    ],
-                    name: "enemy_sprite_sheet",
-                ),
-                // END sheet: SpriteSheetPrefab
-
-                // BEGIN render: SpriteRenderPrefab
-                render: (
-                    sheet: "enemy_sprite_sheet",
-                    sprite_number: 0,
-                ),
-                // END render: SpriteRenderPrefab
-
                 // BEGIN enemy: Enemy
                 enemy: Enemy(
                     speed: 100,

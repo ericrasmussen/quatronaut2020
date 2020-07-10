@@ -1,14 +1,16 @@
 /// This module implements and initializes game states to be used
 /// by main.rs
 use amethyst::{
-    assets::{Handle, Prefab, PrefabLoader, ProgressCounter, RonFormat},
+    assets::{AssetStorage, Handle, Loader, Prefab, PrefabLoader, ProgressCounter, RonFormat},
     core::math::{Translation3, UnitQuaternion, Vector3},
     core::{transform::Transform, Time},
     input::{is_close_requested, is_key_down, VirtualKeyCode},
     prelude::*,
-    renderer::Camera,
+    renderer::{Camera, ImageFormat, SpriteRender, SpriteSheet, SpriteSheetFormat, Texture},
     window::ScreenDimensions,
 };
+
+use amethyst_rendy::sprite::prefab::SpriteSheetPrefab;
 
 use derive_new::new;
 
@@ -25,6 +27,10 @@ pub struct GameplayState {
     /// Tracks loaded assets.
     #[new(default)]
     pub progress_counter: ProgressCounter,
+
+    // handle to clone for the sprite sheet containing enemies
+    #[new(default)]
+    pub enemy_sprites_handle: Option<Handle<SpriteSheet>>,
     /// Handle to the loaded prefab.
     #[new(default)]
     pub enemy_prefab_handle: Option<Handle<Prefab<EnemyPrefab>>>,
@@ -55,6 +61,11 @@ impl SimpleState for GameplayState {
 
         // Place the camera
         init_camera(world, &dimensions);
+
+        // get a handle on the sprite sheet
+        let enemy_sprite_sheet_handle = load_sprite_sheet(world, "enemy_sprites");
+
+        self.enemy_sprites_handle = Some(enemy_sprite_sheet_handle);
 
         // need to register this type of entry before init
         world.register::<Player>();
@@ -95,7 +106,8 @@ impl SimpleState for GameplayState {
             // TODO: decide how to handle unwrapping here, or if we even
             // need an `Option` type (since we shouldn't be this far into playing
             // the game if we didn't get this required prefab)
-            init_enemy_wave(data.world, self.enemy_prefab_handle.clone().unwrap());
+            init_enemy_wave(data.world, self.enemy_prefab_handle.clone().unwrap(),
+                        self.enemy_sprites_handle.clone().unwrap());
         }
         Trans::None
     }
@@ -137,6 +149,29 @@ impl SimpleState for PausedState {
     }
 }
 
+// enemy_sprites
+fn load_sprite_sheet(world: &mut World, name: &str) -> Handle<SpriteSheet> {
+    let texture_handle = {
+        let loader = world.read_resource::<Loader>();
+        let texture_storage = world.read_resource::<AssetStorage<Texture>>();
+        loader.load(
+            format!("sprites/{}.png", name),
+            ImageFormat::default(),
+            (),
+            &texture_storage,
+        )
+    };
+
+    let loader = world.read_resource::<Loader>();
+    let sprite_sheet_store = world.read_resource::<AssetStorage<SpriteSheet>>();
+    loader.load(
+        format!("sprites/{}.ron", name),
+        SpriteSheetFormat(texture_handle),
+        (),
+        &sprite_sheet_store,
+    )
+}
+
 fn init_camera(world: &mut World, dimensions: &ScreenDimensions) {
     // Center the camera in the middle of the screen, and let it cover
     // the entire screen
@@ -150,11 +185,17 @@ fn init_camera(world: &mut World, dimensions: &ScreenDimensions) {
         .build();
 }
 
-fn init_enemy_wave(world: &mut World, prefab_handle: Handle<Prefab<EnemyPrefab>>) {
+fn init_enemy_wave(world: &mut World, prefab_handle: Handle<Prefab<EnemyPrefab>>,
+                   sprite_sheet_handle: Handle<SpriteSheet>) {
     // Create one set of entities from the prefab.
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
     let scale = Vector3::new(5.0, 5.0, 5.0);
     let mut offset = 250.0;
+
+    let sprite_render = SpriteRender {
+        sprite_sheet: sprite_sheet_handle,
+        sprite_number: 0, // this will need to vary
+    };
 
     // bottom wave
     (0 .. 15).for_each(|_| {
@@ -164,6 +205,7 @@ fn init_enemy_wave(world: &mut World, prefab_handle: Handle<Prefab<EnemyPrefab>>
         world
             .create_entity()
             .with(prefab_handle.clone())
+            .with(sprite_render.clone())
             .with(transform)
             .build();
     });
@@ -176,6 +218,7 @@ fn init_enemy_wave(world: &mut World, prefab_handle: Handle<Prefab<EnemyPrefab>>
         world
             .create_entity()
             .with(prefab_handle.clone())
+            .with(sprite_render.clone())
             .with(transform)
             .build();
     });
@@ -188,6 +231,7 @@ fn init_enemy_wave(world: &mut World, prefab_handle: Handle<Prefab<EnemyPrefab>>
         world
             .create_entity()
             .with(prefab_handle.clone())
+            .with(sprite_render.clone())
             .with(transform)
             .build();
     });
