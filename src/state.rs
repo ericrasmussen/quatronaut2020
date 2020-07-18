@@ -4,6 +4,7 @@ use amethyst::{
     assets::{AssetStorage, Handle, Loader, Prefab, PrefabLoader, ProgressCounter, RonFormat},
     core::math::{Translation3, UnitQuaternion, Vector3},
     core::{transform::Transform, Time},
+    ecs::{storage::DenseVecStorage, Component},
     input::{is_close_requested, is_key_down, VirtualKeyCode},
     prelude::*,
     renderer::{Camera, ImageFormat, SpriteRender, SpriteSheet, SpriteSheetFormat, Texture},
@@ -20,6 +21,8 @@ use crate::entities::{
 
 use crate::components::collider::Collider;
 
+use log::info;
+
 #[derive(new)]
 pub struct GameplayState {
     /// Tracks loaded assets.
@@ -32,6 +35,9 @@ pub struct GameplayState {
     /// Handle to the loaded prefab.
     #[new(default)]
     pub enemy_prefab_handle: Option<Handle<Prefab<EnemyPrefab>>>,
+
+    #[new(default)]
+    pub flying_enemy_prefab_handle: Option<Handle<Prefab<EnemyPrefab>>>,
     /// Haven't decided how/when to spawn enemy waves yet. This
     /// lets us spawn after a certain amount of time has elapsed,
     /// but will probably be replaced with something that spawns based
@@ -41,6 +47,26 @@ pub struct GameplayState {
     // although at least for testing it's nice to spawn players as needed
     #[new(default)]
     pub player_prefab_handle: Option<Handle<Prefab<PlayerPrefab>>>,
+}
+
+// this is all kind of hacky... if this is going to be a global resource
+// (which does kind of make sense, given how much game logic depends on the
+// player's current position), then it should be used to update the player
+// transform. right now the player system has to update this and the transform.
+#[derive(Clone)]
+pub struct PlayerPosition {
+    pub x: f32,
+    pub y: f32,
+}
+
+impl Default for PlayerPosition {
+    fn default() -> Self {
+        PlayerPosition { x: 512.0, y: 384.0 }
+    }
+}
+
+impl Component for PlayerPosition {
+    type Storage = DenseVecStorage<Self>;
 }
 
 pub struct PausedState;
@@ -70,32 +96,50 @@ impl SimpleState for GameplayState {
         world.register::<Laser>();
         world.register::<Enemy>();
         world.register::<Collider>();
+        world.register::<PlayerPosition>();
 
         let enemy_prefab_handle = world.exec(|loader: PrefabLoader<'_, EnemyPrefab>| {
             loader.load("prefabs/enemy.ron", RonFormat, &mut self.progress_counter)
         });
 
+        let flying_enemy_prefab_handle = world.exec(|loader: PrefabLoader<'_, EnemyPrefab>| {
+            loader.load("prefabs/flying_enemy.ron", RonFormat, &mut self.progress_counter)
+        });
+
         // keep a handle on the enemies so they don't get out of control
         self.enemy_prefab_handle = Some(enemy_prefab_handle);
+
+        // keep a handle on the enemies so they don't get out of control
+        self.flying_enemy_prefab_handle = Some(flying_enemy_prefab_handle);
 
         // player prefab instantiation
         let player_prefab_handle = world.exec(|loader: PrefabLoader<'_, PlayerPrefab>| {
             loader.load("prefabs/player.ron", RonFormat, &mut self.progress_counter)
         });
+
         // Create one player
-        (0 .. 1).for_each(|_| {
-            world.create_entity().with(player_prefab_handle.clone()).build();
-        });
+        world.create_entity().with(player_prefab_handle.clone()).build();
+
+        // this is a really hacky way to use coordinates as a resource. if this
+        // approach works out then the spawn enemy logic should probably
+        // move to a system, or at the very least the player transform becomes
+        // a resource.
+        let position = PlayerPosition { x: 512.0, y: 384.0 };
+        world.insert(position);
 
         self.player_prefab_handle = Some(player_prefab_handle);
     }
 
+    // need to review https://docs.amethyst.rs/stable/amethyst/prelude/struct.World.html
+    // for other options
     fn update(&mut self, data: &mut StateData<'_, GameData<'_, '_>>) -> SimpleTrans {
         // check the time in a separate scope we can use `data.world` later
         {
             let time = data.world.fetch::<Time>();
             self.wave_timer -= time.delta_seconds();
         }
+        let position = (*data.world.fetch::<PlayerPosition>()).clone();
+
         if self.wave_timer <= 0.0 {
             // set the timer to 10 seconds before the next wave starts.
             // again, mostly a placeholder until deciding on what makes sense for
@@ -104,8 +148,13 @@ impl SimpleState for GameplayState {
             // TODO: decide how to handle unwrapping here, or if we even
             // need an `Option` type (since we shouldn't be this far into playing
             // the game if we didn't get this required prefab)
-            init_enemy_wave(data.world, self.enemy_prefab_handle.clone().unwrap(),
-                        self.enemy_sprites_handle.clone().unwrap());
+            init_enemy_wave(
+                position,
+                data.world,
+                self.enemy_prefab_handle.clone().unwrap(),
+                self.flying_enemy_prefab_handle.clone().unwrap(),
+                self.enemy_sprites_handle.clone().unwrap(),
+            );
         }
         Trans::None
     }
@@ -183,8 +232,16 @@ fn init_camera(world: &mut World, dimensions: &ScreenDimensions) {
         .build();
 }
 
-fn init_enemy_wave(world: &mut World, prefab_handle: Handle<Prefab<EnemyPrefab>>,
-                   sprite_sheet_handle: Handle<SpriteSheet>) {
+fn init_enemy_wave(
+    position: PlayerPosition,
+    world: &mut World,
+    prefab_handle: Handle<Prefab<EnemyPrefab>>,
+    flying_prefab_handle: Handle<Prefab<EnemyPrefab>>,
+    sprite_sheet_handle: Handle<SpriteSheet>,
+) {
+    // TODO: ok, we have coordinates! wave logic can spawn around it now.
+    info!("{:?}", position.x);
+
     // Create one set of entities from the prefab.
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
     let scale = Vector3::new(5.0, 5.0, 5.0);
@@ -200,8 +257,10 @@ fn init_enemy_wave(world: &mut World, prefab_handle: Handle<Prefab<EnemyPrefab>>
         sprite_number: 0,
     };
 
+    // OK, probably just spawn from set coordinates
+    // but if anyone collides with
     // bottom wave
-    (0 .. 15).for_each(|_| {
+    for _n in 0 .. 15 {
         let position = Translation3::new(offset, 20.0, 0.0);
         offset += 250.0;
         let transform = Transform::new(position, rotation, scale);
@@ -211,7 +270,8 @@ fn init_enemy_wave(world: &mut World, prefab_handle: Handle<Prefab<EnemyPrefab>>
             .with(blob_render.clone())
             .with(transform)
             .build();
-    });
+    }
+
     // top wave
     offset = 0.0;
     (0 .. 15).for_each(|_| {
@@ -228,12 +288,12 @@ fn init_enemy_wave(world: &mut World, prefab_handle: Handle<Prefab<EnemyPrefab>>
     // left wave
     offset = 0.0;
     (0 .. 10).for_each(|_| {
-        let position = Translation3::new(0.0, offset, 0.0);
+        let position = Translation3::new(-75.0, offset, 0.0);
         offset += 250.0;
         let transform = Transform::new(position, rotation, scale);
         world
             .create_entity()
-            .with(prefab_handle.clone())
+            .with(flying_prefab_handle.clone())
             .with(flying_render.clone())
             .with(transform)
             .build();

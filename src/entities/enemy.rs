@@ -41,6 +41,18 @@ impl<'a> PrefabData<'a> for EnemyPrefab {
     }
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+pub enum Movement {
+    Gravitate,
+    HorizontalRush,
+}
+
+impl Default for Movement {
+    fn default() -> Self {
+        Movement::Gravitate
+    }
+}
+
 // this is the enemy component, which should go in a separate components/enemy.rs mod.
 // the velocity is used for our tracking system, which isn't able to update transforms
 #[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PrefabData)]
@@ -50,6 +62,7 @@ pub struct Enemy {
     pub speed: f32,
     pub velocity_x: f32,
     pub velocity_y: f32,
+    pub movement: Movement,
 }
 
 impl Enemy {
@@ -58,6 +71,13 @@ impl Enemy {
     // unnecessary
     pub fn get_speed(&self) -> f32 {
         self.speed
+    }
+
+    pub fn next_move(&mut self, target_x: f32, target_y: f32, current_x: f32, current_y: f32) {
+        match self.movement {
+            Movement::Gravitate => self.move_towards(target_x, target_y, current_x, current_y),
+            Movement::HorizontalRush => self.rush_towards(target_x, target_y, current_x, current_y),
+        }
     }
 
     // probably doesn't belong here but since only enemies need this for now,
@@ -70,6 +90,14 @@ impl Enemy {
 
         self.velocity_x = self.get_speed() * angle.cos();
         self.velocity_y = self.get_speed() * angle.sin();
+    }
+
+    // need to see how this develops... we could have a standard API for movement decisions
+    // and then swap out the strategies as needed
+    pub fn rush_towards(&mut self, _target_x: f32, target_y: f32, _current_x: f32, current_y: f32) {
+        if (current_y - target_y).abs() <= 150.0 {
+            self.velocity_x = self.get_speed() * 6.0;
+        }
     }
 }
 

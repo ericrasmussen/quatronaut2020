@@ -34,7 +34,7 @@ impl<'s> System<'s> for EnemyTrackingSystem {
                 // we can't modify it here because we can't take ownership of mut
                 // transforms in the outer join and still get player transforms in the
                 // inner join
-                enemy.move_towards(
+                enemy.next_move(
                     player_transform.translation().x,
                     player_transform.translation().y,
                     enemy_transform.translation().x,
