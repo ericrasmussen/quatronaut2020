@@ -61,7 +61,7 @@ pub struct PlayerPosition {
 
 impl Default for PlayerPosition {
     fn default() -> Self {
-        PlayerPosition { x: 512.0, y: 384.0 }
+        PlayerPosition { x: 1024.0, y: 768.0 }
     }
 }
 
@@ -124,7 +124,7 @@ impl SimpleState for GameplayState {
         // approach works out then the spawn enemy logic should probably
         // move to a system, or at the very least the player transform becomes
         // a resource.
-        let position = PlayerPosition { x: 512.0, y: 384.0 };
+        let position = PlayerPosition { x: 1024.0, y: 768.0 };
         world.insert(position);
 
         self.player_prefab_handle = Some(player_prefab_handle);
@@ -144,7 +144,7 @@ impl SimpleState for GameplayState {
             // set the timer to 10 seconds before the next wave starts.
             // again, mostly a placeholder until deciding on what makes sense for
             // actual gameplay
-            self.wave_timer = 20.0;
+            self.wave_timer = 10.0;
             // TODO: decide how to handle unwrapping here, or if we even
             // need an `Option` type (since we shouldn't be this far into playing
             // the game if we didn't get this required prefab)
@@ -245,7 +245,6 @@ fn init_enemy_wave(
     // Create one set of entities from the prefab.
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
     let scale = Vector3::new(5.0, 5.0, 5.0);
-    let mut offset = 250.0;
 
     let blob_render = SpriteRender {
         sprite_sheet: sprite_sheet_handle.clone(),
@@ -257,12 +256,26 @@ fn init_enemy_wave(
         sprite_number: 0,
     };
 
-    // OK, probably just spawn from set coordinates
-    // but if anyone collides with
-    // bottom wave
-    for _n in 0 .. 15 {
-        let position = Translation3::new(offset, 20.0, 0.0);
-        offset += 250.0;
+    // can't decide on a direction for spawning (designing levels, randomizing, etc).
+    // these locations work for now
+    // had around 45 total, modifying by 250 on x or y
+    let mut blob_locations: Vec<(f32, f32)> = vec![
+        // spawn points above the player
+        (55.0, 1400.0), (1024.0, 1300.0), (1800.0, 1350.0),
+        // spawn points below the player
+        (250.0, 80.0), (725.0, 50.0), (1000.0, 10.0), (1500.0, 500.0),
+        // spawn points on the right
+        (1500.0, 700.0), (1650.0, 350.0), (1700.0, 1200.0), (1400.0, 1400.0),
+        // spawn points on the left
+        (30.0, 720.0), (400.0, 425.0), (200.0, 1100.0), (100.0, 1300.0),
+    ];
+
+    // here is where we need to double check no one collides with the player and then
+    // shift them over a bit, and/or we could just use this opportunity to reset the player
+    // to the center (note: will need the player transform to be based on the shared position
+    // resource for this to work)
+    for (x, y) in blob_locations.drain(..) {
+        let position = Translation3::new(x, y, 0.0);
         let transform = Transform::new(position, rotation, scale);
         world
             .create_entity()
@@ -271,24 +284,10 @@ fn init_enemy_wave(
             .with(transform)
             .build();
     }
-
-    // top wave
-    offset = 0.0;
-    (0 .. 15).for_each(|_| {
-        let position = Translation3::new(offset, 1600.0, 0.0);
-        offset += 250.0;
-        let transform = Transform::new(position, rotation, scale);
-        world
-            .create_entity()
-            .with(prefab_handle.clone())
-            .with(blob_render.clone())
-            .with(transform)
-            .build();
-    });
-    // left wave
-    offset = 0.0;
+    // off-screen flying units
+    let mut offset = 0.0;
     (0 .. 10).for_each(|_| {
-        let position = Translation3::new(-75.0, offset, 0.0);
+        let position = Translation3::new(-90.0, offset, 0.0);
         offset += 250.0;
         let transform = Transform::new(position, rotation, scale);
         world
