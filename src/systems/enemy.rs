@@ -27,6 +27,8 @@ impl<'s> System<'s> for EnemyTrackingSystem {
         // this always be a for loop for a single player. and if it's not, enemies would be
         // moving at high speeds towards groups of players, or not at all if players are
         // in opposite directions
+
+        // TODO: use the player position resource here
         for (enemy, enemy_transform) in (&mut enemies, &transforms).join() {
             for (_player, player_transform) in (&players, &transforms).join() {
                 // this updates the x and y velocities on the enemy struct, which
@@ -34,7 +36,7 @@ impl<'s> System<'s> for EnemyTrackingSystem {
                 // we can't modify it here because we can't take ownership of mut
                 // transforms in the outer join and still get player transforms in the
                 // inner join
-                enemy.move_towards(
+                enemy.next_move(
                     player_transform.translation().x,
                     player_transform.translation().y,
                     enemy_transform.translation().x,
@@ -55,11 +57,9 @@ pub struct EnemyMoveSystem;
 impl<'s> System<'s> for EnemyMoveSystem {
     type SystemData = (WriteStorage<'s, Transform>, ReadStorage<'s, Enemy>, Read<'s, Time>);
 
+    // TODO: delete enemies that go way out of bounds. maybe using arena bounds + generous
+    // padding. this is necesary because some enemies will continue in one direction forever
     fn run(&mut self, (mut transforms, enemies, time): Self::SystemData) {
-        // seems like we should have another way to get to the player transform since
-        // this always be a for loop for a single player. and if it's not, enemies would be
-        // moving at high speeds towards groups of players, or not at all if players are
-        // in opposite directions
         for (enemy, enemy_transform) in (&enemies, &mut transforms).join() {
             enemy_transform.prepend_translation_x(enemy.velocity_x * time.delta_seconds());
             enemy_transform.prepend_translation_y(enemy.velocity_y * time.delta_seconds());

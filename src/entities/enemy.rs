@@ -1,11 +1,9 @@
 use amethyst::{
-    assets::{PrefabData, ProgressCounter},
+    assets::PrefabData,
     derive::PrefabData,
     ecs::{storage::DenseVecStorage, Component, Entity, WriteStorage},
     Error,
 };
-
-use amethyst_rendy::sprite::prefab::{SpriteRenderPrefab, SpriteSheetPrefab};
 
 use serde::{Deserialize, Serialize};
 
@@ -17,8 +15,6 @@ use crate::components::collider::Collider;
 // components from a config file (`prefabs/enemy.ron` in our case)
 #[derive(Debug, Deserialize, Serialize)]
 pub struct EnemyPrefab {
-    pub sheet: SpriteSheetPrefab,
-    pub render: SpriteRenderPrefab,
     pub enemy: Enemy,
     pub collider: Collider,
 }
@@ -26,8 +22,6 @@ pub struct EnemyPrefab {
 impl<'a> PrefabData<'a> for EnemyPrefab {
     type Result = ();
     type SystemData = (
-        <SpriteSheetPrefab as PrefabData<'a>>::SystemData,
-        <SpriteRenderPrefab as PrefabData<'a>>::SystemData,
         <Enemy as PrefabData<'a>>::SystemData,
         <Collider as PrefabData<'a>>::SystemData,
     );
@@ -39,27 +33,23 @@ impl<'a> PrefabData<'a> for EnemyPrefab {
         entities: &[Entity],
         children: &[Entity],
     ) -> Result<(), Error> {
-        self.render
-            .add_to_entity(entity, &mut system_data.1, entities, children)?;
         self.enemy
-            .add_to_entity(entity, &mut system_data.2, entities, children)?;
+            .add_to_entity(entity, &mut system_data.0, entities, children)?;
         self.collider
-            .add_to_entity(entity, &mut system_data.3, entities, children)?;
+            .add_to_entity(entity, &mut system_data.1, entities, children)?;
         Ok(())
     }
+}
 
-    fn load_sub_assets(
-        &mut self,
-        progress: &mut ProgressCounter,
-        system_data: &mut Self::SystemData,
-    ) -> Result<bool, Error> {
-        let mut ret = false;
-        if self.sheet.load_sub_assets(progress, &mut system_data.0)? {
-            ret = true;
-        }
-        self.render.load_sub_assets(progress, &mut system_data.1)?;
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+pub enum Movement {
+    Gravitate,
+    HorizontalRush,
+}
 
-        Ok(ret)
+impl Default for Movement {
+    fn default() -> Self {
+        Movement::Gravitate
     }
 }
 
@@ -72,6 +62,7 @@ pub struct Enemy {
     pub speed: f32,
     pub velocity_x: f32,
     pub velocity_y: f32,
+    pub movement: Movement,
 }
 
 impl Enemy {
@@ -80,6 +71,13 @@ impl Enemy {
     // unnecessary
     pub fn get_speed(&self) -> f32 {
         self.speed
+    }
+
+    pub fn next_move(&mut self, target_x: f32, target_y: f32, current_x: f32, current_y: f32) {
+        match self.movement {
+            Movement::Gravitate => self.move_towards(target_x, target_y, current_x, current_y),
+            Movement::HorizontalRush => self.rush_towards(target_x, target_y, current_x, current_y),
+        }
     }
 
     // probably doesn't belong here but since only enemies need this for now,
@@ -92,6 +90,14 @@ impl Enemy {
 
         self.velocity_x = self.get_speed() * angle.cos();
         self.velocity_y = self.get_speed() * angle.sin();
+    }
+
+    // need to see how this develops... we could have a standard API for movement decisions
+    // and then swap out the strategies as needed
+    pub fn rush_towards(&mut self, _target_x: f32, target_y: f32, _current_x: f32, current_y: f32) {
+        if (current_y - target_y).abs() <= 150.0 {
+            self.velocity_x = self.get_speed() * 6.0;
+        }
     }
 }
 

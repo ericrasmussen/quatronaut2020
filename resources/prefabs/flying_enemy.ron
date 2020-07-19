@@ -1,15 +1,17 @@
 #![enable(implicit_some)]
 
+// flying enemy
+// eventually should reference which sprite to use, somehow...
 Prefab (
     entities: [
         PrefabEntity(
             data: EnemyPrefab(
                 // BEGIN enemy: Enemy
                 enemy: Enemy(
-                    speed: 100,
+                    speed: 200,
                     velocity_x: 0,
                     velocity_y: 0,
-                    movement: Gravitate,
+                    movement: HorizontalRush,
                 ),
                 // END enemy: Enemy
 
@@ -27,3 +29,4 @@ Prefab (
         ),
     ]
 )
+
