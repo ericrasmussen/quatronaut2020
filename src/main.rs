@@ -15,6 +15,7 @@ use amethyst::{
 
 mod components;
 mod entities;
+mod level;
 mod state;
 mod systems;
 use entities::{enemy::EnemyPrefab, player::PlayerPrefab};
@@ -48,7 +49,7 @@ fn main() -> amethyst::Result<()> {
         )?;
 
     // 2.0 is the seconds to delay before enemy wave 1 spawns
-    let mut game = Application::new(resources, state::GameplayState::new(2.0), game_data)?;
+    let mut game = Application::new(resources, state::GameplayState::new(0), game_data)?;
     game.run();
 
     Ok(())

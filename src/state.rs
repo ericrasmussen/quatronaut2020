@@ -21,6 +21,8 @@ use crate::entities::{
 
 use crate::components::collider::Collider;
 
+use crate::level;
+
 use log::info;
 
 #[derive(new)]
@@ -28,6 +30,10 @@ pub struct GameplayState {
     /// Tracks loaded assets.
     #[new(default)]
     pub progress_counter: ProgressCounter,
+
+    // we may need a more generic way to track victory conditions
+    // at some point, but enemy count works for now
+    pub enemy_count: i32,
 
     // handle to clone for the sprite sheet containing enemies
     #[new(default)]
@@ -38,15 +44,35 @@ pub struct GameplayState {
 
     #[new(default)]
     pub flying_enemy_prefab_handle: Option<Handle<Prefab<EnemyPrefab>>>,
-    /// Haven't decided how/when to spawn enemy waves yet. This
-    /// lets us spawn after a certain amount of time has elapsed,
-    /// but will probably be replaced with something that spawns based
-    /// on score, or launches a new wave when the enemy count is 0.
-    pub wave_timer: f32,
     // player prefab. we could also use a config and one-time instantiation,
     // although at least for testing it's nice to spawn players as needed
     #[new(default)]
     pub player_prefab_handle: Option<Handle<Prefab<PlayerPrefab>>>,
+}
+
+#[derive(Clone, Debug)]
+pub struct EnemyCount {
+    pub count: i32,
+}
+
+impl EnemyCount {
+    pub fn increment_by(&mut self, amt: i32) {
+        self.count += amt;
+    }
+
+    pub fn decrement_by(&mut self, amt: i32) {
+        self.count -= amt;
+    }
+}
+
+impl Default for EnemyCount {
+    fn default() -> Self {
+        EnemyCount { count: 0 }
+    }
+}
+
+impl Component for EnemyCount {
+    type Storage = DenseVecStorage<Self>;
 }
 
 // this is all kind of hacky... if this is going to be a global resource
@@ -97,6 +123,7 @@ impl SimpleState for GameplayState {
         world.register::<Enemy>();
         world.register::<Collider>();
         world.register::<PlayerPosition>();
+        world.register::<EnemyCount>();
 
         let enemy_prefab_handle = world.exec(|loader: PrefabLoader<'_, EnemyPrefab>| {
             loader.load("prefabs/enemy.ron", RonFormat, &mut self.progress_counter)
@@ -128,34 +155,55 @@ impl SimpleState for GameplayState {
         world.insert(position);
 
         self.player_prefab_handle = Some(player_prefab_handle);
+
+        let enemy_count = EnemyCount { count: 0 };
+
+        world.insert(enemy_count);
     }
 
     // need to review https://docs.amethyst.rs/stable/amethyst/prelude/struct.World.html
     // for other options
     fn update(&mut self, data: &mut StateData<'_, GameData<'_, '_>>) -> SimpleTrans {
-        // check the time in a separate scope we can use `data.world` later
-        {
-            let time = data.world.fetch::<Time>();
-            self.wave_timer -= time.delta_seconds();
-        }
-        let position = (*data.world.fetch::<PlayerPosition>()).clone();
+        // probably a better way to do this, but we get the count as read only first
+        // to avoid borrowing data.world
+        let enemy_count = (*data.world.fetch::<EnemyCount>()).clone();
+        //info!("enemy count is: {:?}", enemy_count);
 
-        if self.wave_timer <= 0.0 {
-            // set the timer to 10 seconds before the next wave starts.
-            // again, mostly a placeholder until deciding on what makes sense for
-            // actual gameplay
-            self.wave_timer = 10.0;
-            // TODO: decide how to handle unwrapping here, or if we even
-            // need an `Option` type (since we shouldn't be this far into playing
-            // the game if we didn't get this required prefab)
-            init_enemy_wave(
-                position,
+        if enemy_count.count == 0 {
+            // short form random thoughts:
+            // the most basic implementation would be something like --
+            // world.delete_all()
+            // init_next_level()
+            // this means I need to set the new enemy count by querying the level
+            // information. remember to delete flying enemies if they go offscreen.
+            // then have a system update a resource to decrement the enemy count
+            // add a loop here to delete game entities
+            // and grab the next level in some set of levels
+            // make sure to add a few warmup levels
+
+            // those flying enemies though... they need to be deleted off screen
+
+            // longer form random thoughts:
+            // TODO: choose the next level from some vector of levels
+            // clear the game area? change the backdrop, remove the player, etc
+            // initialize the next level, but possibly not the player yet
+            // some kind of countdown so the player can prepare
+            // does this mean we have a level complete transition screen?
+            // delete everything, new game state, start over
+            let level_entities = level::get_level_one();
+            info!("level entities: {:?}", level_entities);
+            let new_count = init_level(
                 data.world,
+                level_entities,
                 self.enemy_prefab_handle.clone().unwrap(),
                 self.flying_enemy_prefab_handle.clone().unwrap(),
                 self.enemy_sprites_handle.clone().unwrap(),
             );
+
+            let mut write_enemy_count = data.world.write_resource::<EnemyCount>();
+            write_enemy_count.increment_by(new_count);
         }
+
         Trans::None
     }
 
@@ -232,17 +280,15 @@ fn init_camera(world: &mut World, dimensions: &ScreenDimensions) {
         .build();
 }
 
-fn init_enemy_wave(
-    position: PlayerPosition,
+// this could return the number of enemies generated, and a system
+// could reduce that number as they're defeated
+fn init_level(
     world: &mut World,
+    entity_recs: Vec<level::EntityRecord>,
     prefab_handle: Handle<Prefab<EnemyPrefab>>,
     flying_prefab_handle: Handle<Prefab<EnemyPrefab>>,
     sprite_sheet_handle: Handle<SpriteSheet>,
-) {
-    // TODO: ok, we have coordinates! wave logic can spawn around it now.
-    info!("{:?}", position.x);
-
-    // Create one set of entities from the prefab.
+) -> i32 {
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
     let scale = Vector3::new(5.0, 5.0, 5.0);
 
@@ -252,49 +298,42 @@ fn init_enemy_wave(
     };
 
     let flying_render = SpriteRender {
-        sprite_sheet: sprite_sheet_handle.clone(),
+        sprite_sheet: sprite_sheet_handle,
         sprite_number: 0,
     };
 
-    // can't decide on a direction for spawning (designing levels, randomizing, etc).
-    // these locations work for now
-    // had around 45 total, modifying by 250 on x or y
-    let mut blob_locations: Vec<(f32, f32)> = vec![
-        // spawn points above the player
-        (55.0, 1400.0), (1024.0, 1300.0), (1800.0, 1350.0),
-        // spawn points below the player
-        (250.0, 80.0), (725.0, 50.0), (1000.0, 10.0), (1500.0, 500.0),
-        // spawn points on the right
-        (1500.0, 700.0), (1650.0, 350.0), (1700.0, 1200.0), (1400.0, 1400.0),
-        // spawn points on the left
-        (30.0, 720.0), (400.0, 425.0), (200.0, 1100.0), (100.0, 1300.0),
-    ];
+    let mut count = 0;
 
-    // here is where we need to double check no one collides with the player and then
-    // shift them over a bit, and/or we could just use this opportunity to reset the player
-    // to the center (note: will need the player transform to be based on the shared position
-    // resource for this to work)
-    for (x, y) in blob_locations.drain(..) {
-        let position = Translation3::new(x, y, 0.0);
-        let transform = Transform::new(position, rotation, scale);
-        world
-            .create_entity()
-            .with(prefab_handle.clone())
-            .with(blob_render.clone())
-            .with(transform)
-            .build();
+    for rec in entity_recs {
+        if let (level::EntityType::BlobEnemy, x, y) = rec {
+            let position = Translation3::new(x, y, 0.0);
+            let transform = Transform::new(position, rotation, scale);
+            world
+                .create_entity()
+                .with(prefab_handle.clone())
+                .with(blob_render.clone())
+                .with(transform)
+                .build();
+
+            count += 1;
+        }
+
+        if let (level::EntityType::FlyingEnemy, x, y) = rec {
+            let position = Translation3::new(x, y, 0.0);
+            let transform = Transform::new(position, rotation, scale);
+            world
+                .create_entity()
+                .with(flying_prefab_handle.clone())
+                .with(flying_render.clone())
+                .with(transform)
+                .build();
+
+            count += 1;
+        }
     }
-    // off-screen flying units
-    let mut offset = 0.0;
-    (0 .. 10).for_each(|_| {
-        let position = Translation3::new(-90.0, offset, 0.0);
-        offset += 250.0;
-        let transform = Transform::new(position, rotation, scale);
-        world
-            .create_entity()
-            .with(flying_prefab_handle.clone())
-            .with(flying_render.clone())
-            .with(transform)
-            .build();
-    });
+
+    // should probably return this in a more helpful struct,
+    // but as long as we make level decisions based on enemy
+    // counts it's fine
+    count
 }

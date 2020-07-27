@@ -11,6 +11,7 @@ Prefab (
                     speed: 200,
                     velocity_x: 0,
                     velocity_y: 0,
+                    health: 1,
                     movement: HorizontalRush,
                 ),
                 // END enemy: Enemy
