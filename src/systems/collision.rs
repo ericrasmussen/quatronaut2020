@@ -54,7 +54,6 @@ impl<'s> System<'s> for CollisionSystem {
             // a bounding volume is the combination of a shape and a position
             let aabb_laser = bounding_volume::aabb(&laser_cube, &laser_cube_pos);
 
-            // TODO: have an out of bounds check here too
             for (enemy_entity, enemy, enemy_transform, enemy_collider) in
                 (&entities, &mut enemies, &transforms, &colliders).join()
             {
@@ -63,21 +62,21 @@ impl<'s> System<'s> for CollisionSystem {
 
                 let collides = enemy_collider.intersects(x, y, &aabb_laser);
 
-                // these values should be based on game dimensions. the check is needed
-                // for enemies that move off screen before getting hit
-                let out_of_bounds = x < -500.0 || x > 2500.0 || y < -500.0 || y > 2500.0;
-
-                if collides {
+                // we don't want lasers to hit an enemy that is dead, which is
+                // possible if more than one laser hits in a frame
+                if collides && !enemy.is_dead() {
                     enemy.take_damage(20.0);
                     // we should probably destroy the laser too
                     entities.delete(laser_entity).unwrap();
-                }
 
-                // if the enemy has taken enough damage or is out of bounds, delete them
-                if enemy.is_dead() || out_of_bounds {
-                    entities.delete(enemy_entity).unwrap();
-                    enemy_count.decrement_by(1);
-                    info!("enemy deleted!!!!!");
+                    // if the enemy has taken enough damage, delete them
+                    // TODO: may be a latent bug in associating this with laser hits...
+                    if enemy.is_dead() {
+                        if let Ok(_) = entities.delete(enemy_entity) {
+                            enemy_count.decrement_by(1);
+                            info!("enemy deleted due to laser hit");
+                        }
+                    }
                 }
             }
         }

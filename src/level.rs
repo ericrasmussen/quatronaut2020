@@ -2,21 +2,6 @@
 //  - take a vector of strings where each character represents an entity
 //  - load a level based on that string
 
-// trying out dimensions 11x7
-pub fn get_level_one() -> Vec<EntityRecord> {
-    let mut level_vec = vec![
-        "FBBBBBBBBBB".to_string(),
-        "F     B  B ".to_string(),
-        "F  B      B".to_string(),
-        "B    P     ".to_string(),
-        "F        B ".to_string(),
-        "F  B  B    ".to_string(),
-        "F   B    B ".to_string(),
-    ];
-
-    get_level_entities(&mut level_vec)
-}
-
 #[derive(Debug)]
 pub enum EntityType {
     FlyingEnemy,
@@ -26,6 +11,9 @@ pub enum EntityType {
 
 // entity to create, x coordinate, y coordinate
 pub type EntityRecord = (EntityType, f32, f32);
+
+// type alias for levels
+pub type Levels = Vec<Vec<EntityRecord>>;
 
 // loop through our grid to get a vector containing only entities
 // and transform coordinates
@@ -73,4 +61,41 @@ fn get_coordinates(x_grid_pos: usize, y_grid_pos: usize) -> (f32, f32) {
     let y = (y_grid_pos as f32 / num_rows) * height;
 
     (x, y)
+}
+
+pub fn get_all_levels() -> Levels {
+    let mut levels = vec![get_level_one(), get_level_two()];
+    levels.reverse();
+
+    levels
+}
+
+// trying out dimensions 11x7
+pub fn get_level_two() -> Vec<EntityRecord> {
+    let mut level_vec = vec![
+        "FBBBBBBBBBB".to_string(),
+        "F     B  B ".to_string(),
+        "F  B      B".to_string(),
+        "B    PP    ".to_string(),
+        "F    PP  B ".to_string(),
+        "F  B  B    ".to_string(),
+        "F   B    B ".to_string(),
+    ];
+
+    get_level_entities(&mut level_vec)
+}
+
+// trying out dimensions 11x7
+pub fn get_level_one() -> Vec<EntityRecord> {
+    let mut level_vec = vec![
+        "F          ".to_string(),
+        "F          ".to_string(),
+        "F          ".to_string(),
+        "          P".to_string(),
+        "F          ".to_string(),
+        "F          ".to_string(),
+        "F          ".to_string(),
+    ];
+
+    get_level_entities(&mut level_vec)
 }

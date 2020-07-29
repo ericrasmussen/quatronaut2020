@@ -35,6 +35,9 @@ pub struct GameplayState {
     // at some point, but enemy count works for now
     pub enemy_count: i32,
 
+    // keeps track of all the levels in our game
+    pub levels: level::Levels,
+
     // handle to clone for the sprite sheet containing enemies
     #[new(default)]
     pub enemy_sprites_handle: Option<Handle<SpriteSheet>>,
@@ -75,26 +78,6 @@ impl Component for EnemyCount {
     type Storage = DenseVecStorage<Self>;
 }
 
-// this is all kind of hacky... if this is going to be a global resource
-// (which does kind of make sense, given how much game logic depends on the
-// player's current position), then it should be used to update the player
-// transform. right now the player system has to update this and the transform.
-#[derive(Clone)]
-pub struct PlayerPosition {
-    pub x: f32,
-    pub y: f32,
-}
-
-impl Default for PlayerPosition {
-    fn default() -> Self {
-        PlayerPosition { x: 1024.0, y: 768.0 }
-    }
-}
-
-impl Component for PlayerPosition {
-    type Storage = DenseVecStorage<Self>;
-}
-
 pub struct PausedState;
 
 impl SimpleState for GameplayState {
@@ -122,7 +105,6 @@ impl SimpleState for GameplayState {
         world.register::<Laser>();
         world.register::<Enemy>();
         world.register::<Collider>();
-        world.register::<PlayerPosition>();
         world.register::<EnemyCount>();
 
         let enemy_prefab_handle = world.exec(|loader: PrefabLoader<'_, EnemyPrefab>| {
@@ -143,16 +125,6 @@ impl SimpleState for GameplayState {
         let player_prefab_handle = world.exec(|loader: PrefabLoader<'_, PlayerPrefab>| {
             loader.load("prefabs/player.ron", RonFormat, &mut self.progress_counter)
         });
-
-        // Create one player
-        world.create_entity().with(player_prefab_handle.clone()).build();
-
-        // this is a really hacky way to use coordinates as a resource. if this
-        // approach works out then the spawn enemy logic should probably
-        // move to a system, or at the very least the player transform becomes
-        // a resource.
-        let position = PlayerPosition { x: 1024.0, y: 768.0 };
-        world.insert(position);
 
         self.player_prefab_handle = Some(player_prefab_handle);
 
@@ -190,18 +162,25 @@ impl SimpleState for GameplayState {
             // some kind of countdown so the player can prepare
             // does this mean we have a level complete transition screen?
             // delete everything, new game state, start over
-            let level_entities = level::get_level_one();
-            info!("level entities: {:?}", level_entities);
-            let new_count = init_level(
-                data.world,
-                level_entities,
-                self.enemy_prefab_handle.clone().unwrap(),
-                self.flying_enemy_prefab_handle.clone().unwrap(),
-                self.enemy_sprites_handle.clone().unwrap(),
-            );
 
-            let mut write_enemy_count = data.world.write_resource::<EnemyCount>();
-            write_enemy_count.increment_by(new_count);
+            let next_level = self.levels.pop();
+
+            match next_level {
+                Some(level_entities) => {
+                    let new_count = init_level(
+                        data.world,
+                        level_entities,
+                        self.enemy_prefab_handle.clone().unwrap(),
+                        self.flying_enemy_prefab_handle.clone().unwrap(),
+                        self.enemy_sprites_handle.clone().unwrap(),
+                        self.player_prefab_handle.clone().unwrap(),
+                    );
+
+                    let mut write_enemy_count = data.world.write_resource::<EnemyCount>();
+                    write_enemy_count.increment_by(new_count);
+                },
+                None => {}, // info!("game over!!!"),
+            }
         }
 
         Trans::None
@@ -288,7 +267,18 @@ fn init_level(
     prefab_handle: Handle<Prefab<EnemyPrefab>>,
     flying_prefab_handle: Handle<Prefab<EnemyPrefab>>,
     sprite_sheet_handle: Handle<SpriteSheet>,
+    player_prefab_handle: Handle<Prefab<PlayerPrefab>>,
 ) -> i32 {
+    // well, this feels quite destructive
+    //world.delete_all();
+
+    //let entities = world.entities();
+    //info!("entities: {:?}", entities);
+    // clear existing players in storage
+    // this kind of works, but not really
+    // we should clear game state between levels in a smarter way
+    world.write_storage::<Player>().clear();
+
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
     let scale = Vector3::new(5.0, 5.0, 5.0);
 
@@ -329,6 +319,16 @@ fn init_level(
                 .build();
 
             count += 1;
+        }
+
+        if let (level::EntityType::Player, x, y) = rec {
+            let position = Translation3::new(x, y, 0.0);
+            let transform = Transform::new(position, rotation, scale);
+            world
+                .create_entity()
+                .with(player_prefab_handle.clone())
+                .with(transform)
+                .build();
         }
     }
 

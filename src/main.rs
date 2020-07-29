@@ -49,7 +49,11 @@ fn main() -> amethyst::Result<()> {
         )?;
 
     // 2.0 is the seconds to delay before enemy wave 1 spawns
-    let mut game = Application::new(resources, state::GameplayState::new(0), game_data)?;
+    let mut game = Application::new(
+        resources,
+        state::GameplayState::new(0, level::get_all_levels()),
+        game_data,
+    )?;
     game.run();
 
     Ok(())
