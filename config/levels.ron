@@ -2,6 +2,17 @@
   // this is for the LevelConfig struct
   rows: [
 
+    // level 6
+    [
+      "BBBBBBBBBBB",
+      "BBBBBBBBBBB",
+      "BBBBBBBBBBB",
+      "BBBBBBBBBBB",
+      "           ",
+      "    PPP    ",
+      "PPPPPPPPPPP",
+    ],
+
     // level 5
     [
       "FB       BB",
@@ -44,7 +55,7 @@
       "F     B  B ",
       "F  B      B",
       "B    PP    ",
-      "F    P   B ",
+      "F    PP  B ",
       "F  B  B    ",
       "F   B    B ",
     ],
