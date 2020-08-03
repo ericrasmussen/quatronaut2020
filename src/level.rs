@@ -72,7 +72,6 @@ fn get_coordinates(x_grid_pos: usize, y_grid_pos: usize) -> (f32, f32) {
 // all the config files. if it's not a bundle then we can
 // derive serialize/deserialize for serde and load it that way from a config
 pub fn get_all_levels(mut level_config: LevelConfig) -> Levels {
-
     level_config.rows.reverse();
 
     let mut levels_vec = Vec::new();
@@ -80,7 +79,6 @@ pub fn get_all_levels(mut level_config: LevelConfig) -> Levels {
     for mut level in level_config.rows.iter_mut() {
         let next_level = get_level_entities(&mut level);
         levels_vec.push(next_level);
-
     }
     levels_vec.reverse();
 

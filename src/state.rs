@@ -63,7 +63,7 @@ pub struct EnemyCount {
 }
 
 impl EnemyCount {
-    pub fn increment_by(&mut self, amt: i32) {
+    pub fn _increment_by(&mut self, amt: i32) {
         self.count += amt;
     }
 
@@ -149,7 +149,8 @@ impl SimpleState for GameplayState {
         if enemy_count.count == 0 {
             info!("enemy count reached 0");
             // this seems unnecessarily destructive, though it works
-            // some additional discussion on https://community.amethyst.rs/t/cleanup-of-entities-associated-with-states/241/8
+            // some additional discussion on:
+            // https://community.amethyst.rs/t/cleanup-of-entities-associated-with-states/241/8
             data.world.delete_all();
             Trans::Switch(Box::new(GameplayState::new(10, self.levels.clone(), true)))
         }
