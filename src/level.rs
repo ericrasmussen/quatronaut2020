@@ -1,8 +1,13 @@
-// goals:
-//  - take a vector of strings where each character represents an entity
-//  - load a level based on that string
+use serde::{Deserialize, Serialize};
 
-#[derive(Debug)]
+// TODO: use slices here for the intermediary type
+// e.g. LevelConfig<'a>(&'a [&'a [&'a str]])
+#[derive(Debug, Deserialize, Serialize)]
+pub struct LevelConfig {
+    pub rows: Vec<Vec<String>>,
+}
+
+#[derive(Debug, Clone)]
 pub enum EntityType {
     FlyingEnemy,
     BlobEnemy,
@@ -63,39 +68,21 @@ fn get_coordinates(x_grid_pos: usize, y_grid_pos: usize) -> (f32, f32) {
     (x, y)
 }
 
-pub fn get_all_levels() -> Levels {
-    let mut levels = vec![get_level_one(), get_level_two()];
-    levels.reverse();
+// this is beginning to feel like a bundle... maybe we include a level bundle to get
+// all the config files. if it's not a bundle then we can
+// derive serialize/deserialize for serde and load it that way from a config
+pub fn get_all_levels(mut level_config: LevelConfig) -> Levels {
 
-    levels
-}
+    level_config.rows.reverse();
 
-// trying out dimensions 11x7
-pub fn get_level_two() -> Vec<EntityRecord> {
-    let mut level_vec = vec![
-        "FBBBBBBBBBB".to_string(),
-        "F     B  B ".to_string(),
-        "F  B      B".to_string(),
-        "B    PP    ".to_string(),
-        "F    PP  B ".to_string(),
-        "F  B  B    ".to_string(),
-        "F   B    B ".to_string(),
-    ];
+    let mut levels_vec = Vec::new();
 
-    get_level_entities(&mut level_vec)
-}
+    for mut level in level_config.rows.iter_mut() {
+        let next_level = get_level_entities(&mut level);
+        levels_vec.push(next_level);
 
-// trying out dimensions 11x7
-pub fn get_level_one() -> Vec<EntityRecord> {
-    let mut level_vec = vec![
-        "F          ".to_string(),
-        "F          ".to_string(),
-        "F          ".to_string(),
-        "          P".to_string(),
-        "F          ".to_string(),
-        "F          ".to_string(),
-        "F          ".to_string(),
-    ];
+    }
+    levels_vec.reverse();
 
-    get_level_entities(&mut level_vec)
+    levels_vec
 }

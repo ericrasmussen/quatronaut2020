@@ -84,6 +84,7 @@ impl<'s> System<'s> for EnemyMoveSystem {
                 if let Ok(_) = entities.delete(enemy_entity) {
                     enemy_count.decrement_by(1);
                     info!("enemy out of bounds");
+                    info!("new enemy count is: {}", enemy_count.count);
                 }
             }
         }

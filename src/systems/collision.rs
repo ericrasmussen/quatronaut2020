@@ -75,6 +75,7 @@ impl<'s> System<'s> for CollisionSystem {
                         if let Ok(_) = entities.delete(enemy_entity) {
                             enemy_count.decrement_by(1);
                             info!("enemy deleted due to laser hit");
+                            info!("new enemy count is: {}", enemy_count.count);
                         }
                     }
                 }

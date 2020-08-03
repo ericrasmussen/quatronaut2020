@@ -38,6 +38,10 @@ pub struct GameplayState {
     // keeps track of all the levels in our game
     pub levels: level::Levels,
 
+    // decide whether or not to load a level. this is still experimental
+    // (using it to decide if we've entered a new game state)
+    pub init_level: bool,
+
     // handle to clone for the sprite sheet containing enemies
     #[new(default)]
     pub enemy_sprites_handle: Option<Handle<SpriteSheet>>,
@@ -128,7 +132,7 @@ impl SimpleState for GameplayState {
 
         self.player_prefab_handle = Some(player_prefab_handle);
 
-        let enemy_count = EnemyCount { count: 0 };
+        let enemy_count = EnemyCount { count: 6 };
 
         world.insert(enemy_count);
     }
@@ -141,28 +145,17 @@ impl SimpleState for GameplayState {
         let enemy_count = (*data.world.fetch::<EnemyCount>()).clone();
         //info!("enemy count is: {:?}", enemy_count);
 
+        // this is our victory condition that signals switching to a new state
         if enemy_count.count == 0 {
-            // short form random thoughts:
-            // the most basic implementation would be something like --
-            // world.delete_all()
-            // init_next_level()
-            // this means I need to set the new enemy count by querying the level
-            // information. remember to delete flying enemies if they go offscreen.
-            // then have a system update a resource to decrement the enemy count
-            // add a loop here to delete game entities
-            // and grab the next level in some set of levels
-            // make sure to add a few warmup levels
-
-            // those flying enemies though... they need to be deleted off screen
-
-            // longer form random thoughts:
-            // TODO: choose the next level from some vector of levels
-            // clear the game area? change the backdrop, remove the player, etc
-            // initialize the next level, but possibly not the player yet
-            // some kind of countdown so the player can prepare
-            // does this mean we have a level complete transition screen?
-            // delete everything, new game state, start over
-
+            info!("enemy count reached 0");
+            // this seems unnecessarily destructive, though it works
+            // some additional discussion on https://community.amethyst.rs/t/cleanup-of-entities-associated-with-states/241/8
+            data.world.delete_all();
+            Trans::Switch(Box::new(GameplayState::new(10, self.levels.clone(), true)))
+        }
+        // in this case we need to load the next level but not change state
+        else if self.init_level {
+            self.init_level = false;
             let next_level = self.levels.pop();
 
             match next_level {
@@ -177,13 +170,18 @@ impl SimpleState for GameplayState {
                     );
 
                     let mut write_enemy_count = data.world.write_resource::<EnemyCount>();
-                    write_enemy_count.increment_by(new_count);
+                    write_enemy_count.count = new_count;
+                    info!("new enemy count is: {}", new_count);
                 },
                 None => {}, // info!("game over!!!"),
             }
-        }
 
-        Trans::None
+            Trans::None
+        }
+        // otherwise, nothing to see here folks!
+        else {
+            Trans::None
+        }
     }
 
     fn handle_event(&mut self, data: StateData<'_, GameData<'_, '_>>, event: StateEvent) -> SimpleTrans {
