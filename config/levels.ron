@@ -10,7 +10,7 @@
       "BBBBBBBBBBB",
       "           ",
       "    PPP    ",
-      "PPPPPPPPPPP",
+      "    PPP    ",
     ],
 
     // level 5
@@ -27,7 +27,7 @@
 
   // level 4
     [
-      "     P     ",
+      "    PPP    ",
       "           ",
       "     B     ",
       "B         B",
@@ -41,8 +41,8 @@
     [
       "BBBBBBBBBBB",
       "B         B",
-      "B         B",
       "B    P    B",
+      "B   PP    B",
       "B         B",
       "B         B",
       "BBBBBBBBBBB",
