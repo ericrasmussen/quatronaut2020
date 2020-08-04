@@ -60,10 +60,6 @@ Prefab (
                 ),
                 // END render: SpriteRenderPrefab
 
-                // BEGIN transform: Transform
-                transform: (translation: (1024.0, 768.0, 0.0), scale: (5.0, 5.0, 5.0)),
-                // END transform: Transform
-
                 // BEGIN player: Player
                 player: Player(
                       speed: 600,

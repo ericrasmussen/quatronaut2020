@@ -1,7 +1,7 @@
 use amethyst::{
     core::{timing::Time, Transform},
     derive::SystemDesc,
-    ecs::{Entities, Join, LazyUpdate, Read, ReadExpect, ReadStorage, System, SystemData, Write, WriteStorage},
+    ecs::{Entities, Join, LazyUpdate, Read, ReadExpect, ReadStorage, System, SystemData, WriteStorage},
     input::{InputHandler, StringBindings},
 };
 
@@ -11,7 +11,6 @@ use crate::entities::{
 };
 use amethyst_rendy::sprite::SpriteRender;
 
-use crate::state::PlayerPosition;
 //use log::info;
 
 #[derive(SystemDesc)]
@@ -30,13 +29,9 @@ impl<'s> System<'s> for PlayerSystem {
         ReadStorage<'s, SpriteRender>,
         ReadExpect<'s, LazyUpdate>,
         Read<'s, Time>,
-        Write<'s, PlayerPosition>,
     );
 
-    fn run(
-        &mut self,
-        (mut transforms, mut characters, input, entities, sprites, lazy_update, time, mut pos): Self::SystemData,
-    ) {
+    fn run(&mut self, (mut transforms, mut characters, input, entities, sprites, lazy_update, time): Self::SystemData) {
         for (character, transform, sprite) in (&mut characters, &mut transforms, &sprites).join() {
             // the input names here are defined in config/bindings.ron.
             // in general 0 is no movement, 1 is positive, and -1 is negative
@@ -56,9 +51,6 @@ impl<'s> System<'s> for PlayerSystem {
                 let new_y = time.delta_seconds() * y_amt * character.get_speed();
                 transform.set_translation_y(transform.translation().y + new_y);
             }
-
-            pos.x = transform.translation().x;
-            pos.y = transform.translation().y;
 
             // this tracks whether or not the player is shooting. it makes sense to stay
             // here for now, mostly to avoid weird issues in the future that might allow

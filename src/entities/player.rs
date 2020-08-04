@@ -1,6 +1,5 @@
 use amethyst::{
     assets::{PrefabData, ProgressCounter},
-    core::Transform,
     derive::PrefabData,
     ecs::{storage::DenseVecStorage, Component, Entity, WriteStorage},
     Error,
@@ -21,7 +20,6 @@ use crate::components::collider::Collider;
 pub struct PlayerPrefab {
     pub sheet: SpriteSheetPrefab,
     pub render: SpriteRenderPrefab,
-    pub transform: Transform,
     pub player: Player,
     pub player_collider: Collider,
 }
@@ -32,7 +30,6 @@ impl<'a> PrefabData<'a> for PlayerPrefab {
     type SystemData = (
         <SpriteSheetPrefab as PrefabData<'a>>::SystemData,
         <SpriteRenderPrefab as PrefabData<'a>>::SystemData,
-        <Transform as PrefabData<'a>>::SystemData,
         <Player as PrefabData<'a>>::SystemData,
         <Collider as PrefabData<'a>>::SystemData,
     );
@@ -46,12 +43,10 @@ impl<'a> PrefabData<'a> for PlayerPrefab {
     ) -> Result<(), Error> {
         self.render
             .add_to_entity(entity, &mut system_data.1, entities, children)?;
-        self.transform
-            .add_to_entity(entity, &mut system_data.2, entities, children)?;
         self.player
-            .add_to_entity(entity, &mut system_data.3, entities, children)?;
+            .add_to_entity(entity, &mut system_data.2, entities, children)?;
         self.player_collider
-            .add_to_entity(entity, &mut system_data.4, entities, children)?;
+            .add_to_entity(entity, &mut system_data.3, entities, children)?;
         Ok(())
     }
 

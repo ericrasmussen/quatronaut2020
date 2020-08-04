@@ -62,6 +62,7 @@ pub struct Enemy {
     pub speed: f32,
     pub velocity_x: f32,
     pub velocity_y: f32,
+    pub health: f32,
     pub movement: Movement,
 }
 
@@ -71,6 +72,14 @@ impl Enemy {
     // unnecessary
     pub fn get_speed(&self) -> f32 {
         self.speed
+    }
+
+    pub fn is_dead(&self) -> bool {
+        self.health <= 0.0
+    }
+
+    pub fn take_damage(&mut self, damage: f32) {
+        self.health -= damage;
     }
 
     pub fn next_move(&mut self, target_x: f32, target_y: f32, current_x: f32, current_y: f32) {

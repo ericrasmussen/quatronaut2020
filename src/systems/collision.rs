@@ -4,14 +4,16 @@ use ncollide2d::{bounding_volume, shape::Cuboid};
 use amethyst::{
     core::Transform,
     derive::SystemDesc,
-    ecs::{Entities, Join, ReadStorage, System, SystemData, WriteStorage},
+    ecs::{Entities, Join, ReadStorage, System, SystemData, Write, WriteStorage},
 };
 
 use crate::{
     components::collider::Collider,
     entities::{enemy::Enemy, laser::Laser},
+    state::EnemyCount,
 };
-//use log::info;
+
+use log::info;
 
 // big TODO: as this system gets more complicated, at some point it'll probably
 // be worth using ncollide's broad phase collision
@@ -25,10 +27,11 @@ impl<'s> System<'s> for CollisionSystem {
         WriteStorage<'s, Enemy>,
         Entities<'s>,
         ReadStorage<'s, Collider>,
+        Write<'s, EnemyCount>,
     );
 
-    fn run(&mut self, (transforms, lasers, enemies, entities, colliders): Self::SystemData) {
-        for (entity_a, _laser_a, transform_a) in (&entities, &lasers, &transforms).join() {
+    fn run(&mut self, (transforms, lasers, mut enemies, entities, colliders, mut enemy_count): Self::SystemData) {
+        for (laser_entity, _laser_a, transform_a) in (&entities, &lasers, &transforms).join() {
             /*
              * Initialize the shapes.
              */
@@ -49,21 +52,32 @@ impl<'s> System<'s> for CollisionSystem {
             );
 
             // a bounding volume is the combination of a shape and a position
-            let aabb_cube1 = bounding_volume::aabb(&laser_cube, &laser_cube_pos);
+            let aabb_laser = bounding_volume::aabb(&laser_cube, &laser_cube_pos);
 
-            for (enemy_entity, _enemy, enemy_transform, enemy_collider) in
-                (&entities, &enemies, &transforms, &colliders).join()
+            for (enemy_entity, enemy, enemy_transform, enemy_collider) in
+                (&entities, &mut enemies, &transforms, &colliders).join()
             {
-                let collides = enemy_collider.intersects(
-                    enemy_transform.translation().x,
-                    enemy_transform.translation().y,
-                    &aabb_cube1,
-                );
+                let x = enemy_transform.translation().x;
+                let y = enemy_transform.translation().y;
 
-                if collides {
-                    entities.delete(enemy_entity).unwrap();
+                let collides = enemy_collider.intersects(x, y, &aabb_laser);
+
+                // we don't want lasers to hit an enemy that is dead, which is
+                // possible if more than one laser hits in a frame
+                if collides && !enemy.is_dead() {
+                    enemy.take_damage(20.0);
                     // we should probably destroy the laser too
-                    entities.delete(entity_a).unwrap();
+                    entities.delete(laser_entity).unwrap();
+
+                    // if the enemy has taken enough damage, delete them
+                    // TODO: may be a latent bug in associating this with laser hits...
+                    if enemy.is_dead() {
+                        if let Ok(_) = entities.delete(enemy_entity) {
+                            enemy_count.decrement_by(1);
+                            info!("enemy deleted due to laser hit");
+                            info!("new enemy count is: {}", enemy_count.count);
+                        }
+                    }
                 }
             }
         }

@@ -1,0 +1,75 @@
+(
+  // this is for the LevelConfig struct
+  rows: [
+
+    // level 6
+    [
+      "BBBBBBBBBBB",
+      "BBBBBBBBBBB",
+      "BBBBBBBBBBB",
+      "BBBBBBBBBBB",
+      "           ",
+      "    PPP    ",
+      "    PPP    ",
+    ],
+
+    // level 5
+    [
+      "FB       BB",
+      "F         B",
+      "F         B",
+      "F    P    B",
+      "F         B",
+      "F         B",
+      "FBBBBBBBBBB",
+
+    ],
+
+  // level 4
+    [
+      "    PPP    ",
+      "           ",
+      "     B     ",
+      "B         B",
+      "B    B    B",
+      "B  B   B  B",
+      "BBBBBBBBBBB",
+
+    ],
+
+  // level 3
+    [
+      "BBBBBBBBBBB",
+      "B         B",
+      "B    P    B",
+      "B   PP    B",
+      "B         B",
+      "B         B",
+      "BBBBBBBBBBB",
+
+    ],
+
+    // level 2
+    [
+      "FBBBBBBBBBB",
+      "F     B  B ",
+      "F  B      B",
+      "B    PP    ",
+      "F    PP  B ",
+      "F  B  B    ",
+      "F   B    B ",
+    ],
+
+    // level 1
+    [
+      "F          ",
+      "F          ",
+      "F      P   ",
+      "     PP  P ",
+      "F      P   ",
+      "F          ",
+      "F          ",
+    ],
+  ]
+)
+
