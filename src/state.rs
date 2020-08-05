@@ -42,6 +42,11 @@ pub struct GameplayState {
     // (using it to decide if we've entered a new game state)
     pub init_level: bool,
 
+    // not clear yet if we need to treat the single background image as a sprite
+    // sheet
+    #[new(default)]
+    pub background_sprite_handle: Option<Handle<SpriteSheet>>,
+
     // handle to clone for the sprite sheet containing enemies
     #[new(default)]
     pub enemy_sprites_handle: Option<Handle<SpriteSheet>>,
@@ -99,9 +104,16 @@ impl SimpleState for GameplayState {
         // Place the camera
         init_camera(world, &dimensions);
 
+        // render the background
+        // TODO: make this.. not awful? not clear that we actually need to save
+        // the handle in the game state, so this may be overly cautious (based on
+        // errors where the game engine would lose a reference to a sprite sheet handle)
+        let bg_sprite_sheet_handle = load_sprite_sheet(world, "background");
+        self.background_sprite_handle = Some(bg_sprite_sheet_handle);
+        init_background(world, &dimensions, self.background_sprite_handle.clone().unwrap());
+
         // get a handle on the sprite sheet
         let enemy_sprite_sheet_handle = load_sprite_sheet(world, "enemy_sprites");
-
         self.enemy_sprites_handle = Some(enemy_sprite_sheet_handle);
 
         // need to register this type of entry before init
@@ -251,11 +263,36 @@ fn init_camera(world: &mut World, dimensions: &ScreenDimensions) {
     let mut transform = Transform::default();
     transform.set_translation_xyz(dimensions.width() * 0.5, dimensions.height() * 0.5, 1.);
 
+    // many ameths
     world
         .create_entity()
-        .with(Camera::standard_2d(dimensions.width(), dimensions.height()))
+//        .with(Camera::standard_2d(dimensions.width(), dimensions.height()))
+        .with(Camera::standard_2d(1920.0, 1080.0))
         .with(transform)
         .build();
+}
+
+// render the background
+fn init_background(world: &mut World, dimensions: &ScreenDimensions, bg_sprite_sheet_handle: Handle<SpriteSheet>) {
+    // the z value is set to -25.0 for the position, to make sure the background stays in the back
+    let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
+
+    // TODO: figure out if there's a better way to handle the image. when using a retina display
+    // it changes the dimensions of the window size, which means the background image won't fit.
+    // ideally there's some way to reliably compute the difference (say, actual
+    // window height / image height as the scaling factor for height)
+    info!("all dimension info: {:?}", dimensions);
+//    let scale = Vector3::new(1.0 * 1.5, 1.0 * dimensions.aspect_ratio(), 1.0);
+    let scale = Vector3::new(1.0, 1.0, 1.0);
+    let position = Translation3::new(dimensions.width() * 0.5, dimensions.height() * 0.5, -25.0);
+    let transform = Transform::new(position, rotation, scale);
+
+    let bg_render = SpriteRender {
+        sprite_sheet: bg_sprite_sheet_handle.clone(),
+        sprite_number: 0,
+    };
+
+    world.create_entity().with(bg_render).with(transform).build();
 }
 
 // this could return the number of enemies generated, and a system
@@ -268,18 +305,14 @@ fn init_level(
     sprite_sheet_handle: Handle<SpriteSheet>,
     player_prefab_handle: Handle<Prefab<PlayerPrefab>>,
 ) -> i32 {
-    // well, this feels quite destructive
-    //world.delete_all();
 
-    //let entities = world.entities();
-    //info!("entities: {:?}", entities);
-    // clear existing players in storage
-    // this kind of works, but not really
-    // we should clear game state between levels in a smarter way
+    // we should clear game state between levels in a smarter way,
+    // but enemies and lasers are cleaned up/about to be cleaned up when
+    // a level ends
     world.write_storage::<Player>().clear();
 
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
-    let scale = Vector3::new(5.0, 5.0, 5.0);
+    let scale = Vector3::new(0.15, 0.15, 0.15);
 
     let blob_render = SpriteRender {
         sprite_sheet: sprite_sheet_handle.clone(),
@@ -288,7 +321,7 @@ fn init_level(
 
     let flying_render = SpriteRender {
         sprite_sheet: sprite_sheet_handle,
-        sprite_number: 0,
+        sprite_number: 2,
     };
 
     let mut count = 0;

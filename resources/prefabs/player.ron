@@ -29,22 +29,32 @@ Prefab (
                     )),
                     sprites: [
                       List((
-                          texture_width: 64,
-                          texture_height: 64,
+                          texture_width: 256,
+                          texture_height: 706,
                           sprites: [
                               // player
                               (
                                   x: 0,
                                   y: 0,
-                                  width: 16,
-                                  height: 23,
+                                  width: 256,
+                                  height: 256,
+                                  offsets: None,
                               ),
-                              // laser beam
+                              // laser blast/impact
                               (
-                                  x: 18,
-                                  y: 0,
-                                  width: 7,
-                                  height: 1,
+                                  x: 0,
+                                  y: 256,
+                                  width: 125,
+                                  height: 250,
+                                  offsets: None,
+                              ),
+                              // laser
+                              (
+                                  x: 0,
+                                  y: 506,
+                                  width: 100,
+                                  height: 200,
+                                  offsets: None,
                               ),
                           ]
                       ))

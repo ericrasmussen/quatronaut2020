@@ -57,8 +57,9 @@ fn get_coordinates(x_grid_pos: usize, y_grid_pos: usize) -> (f32, f32) {
     // of each string (horizontal position) and index of each row (vertical position)
     // and then multiplies it by width and height of our screen dimensions to pick
     // coordinates usable for transform components
-    let width = 1024.0 * 2.0;
-    let height = 768.0 * 2.0;
+    // these come from ScreenDimensions and should use that resource if possible
+    let width = 2880.0;
+    let height = 1710.0;
     let str_len = 11.0;
     let num_rows = 7.0;
 
