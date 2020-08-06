@@ -9,7 +9,7 @@ use crate::{
     state::EnemyCount,
 };
 
-use log::info;
+//use log::info;
 
 #[derive(SystemDesc)]
 pub struct EnemyTrackingSystem;
@@ -83,8 +83,8 @@ impl<'s> System<'s> for EnemyMoveSystem {
             if out_of_bounds {
                 if let Ok(_) = entities.delete(enemy_entity) {
                     enemy_count.decrement_by(1);
-                    info!("enemy out of bounds");
-                    info!("new enemy count is: {}", enemy_count.count);
+                    //info!("enemy out of bounds");
+                    //info!("new enemy count is: {}", enemy_count.count);
                 }
             }
         }

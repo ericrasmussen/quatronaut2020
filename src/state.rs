@@ -21,7 +21,7 @@ use crate::entities::{
 
 use crate::components::collider::Collider;
 
-use crate::level;
+use crate::level::{EntityRecord, EntityType, LevelComplete, Levels};
 
 use log::info;
 
@@ -31,16 +31,8 @@ pub struct GameplayState {
     #[new(default)]
     pub progress_counter: ProgressCounter,
 
-    // we may need a more generic way to track victory conditions
-    // at some point, but enemy count works for now
-    pub enemy_count: i32,
-
     // keeps track of all the levels in our game
-    pub levels: level::Levels,
-
-    // decide whether or not to load a level. this is still experimental
-    // (using it to decide if we've entered a new game state)
-    pub init_level: bool,
+    pub levels: Levels,
 
     // not clear yet if we need to treat the single background image as a sprite
     // sheet
@@ -68,10 +60,6 @@ pub struct EnemyCount {
 }
 
 impl EnemyCount {
-    pub fn _increment_by(&mut self, amt: i32) {
-        self.count += amt;
-    }
-
     pub fn decrement_by(&mut self, amt: i32) {
         self.count -= amt;
     }
@@ -108,12 +96,12 @@ impl SimpleState for GameplayState {
         // TODO: make this.. not awful? not clear that we actually need to save
         // the handle in the game state, so this may be overly cautious (based on
         // errors where the game engine would lose a reference to a sprite sheet handle)
-        let bg_sprite_sheet_handle = load_sprite_sheet(world, "background");
+        let bg_sprite_sheet_handle = load_sprite_sheet(world, "background", &mut self.progress_counter);
         self.background_sprite_handle = Some(bg_sprite_sheet_handle);
         init_background(world, &dimensions, self.background_sprite_handle.clone().unwrap());
 
         // get a handle on the sprite sheet
-        let enemy_sprite_sheet_handle = load_sprite_sheet(world, "enemy_sprites");
+        let enemy_sprite_sheet_handle = load_sprite_sheet(world, "enemy_sprites", &mut self.progress_counter);
         self.enemy_sprites_handle = Some(enemy_sprite_sheet_handle);
 
         // need to register this type of entry before init
@@ -121,6 +109,7 @@ impl SimpleState for GameplayState {
         world.register::<Laser>();
         world.register::<Enemy>();
         world.register::<Collider>();
+        world.register::<LevelComplete>();
         world.register::<EnemyCount>();
 
         let enemy_prefab_handle = world.exec(|loader: PrefabLoader<'_, EnemyPrefab>| {
@@ -144,31 +133,44 @@ impl SimpleState for GameplayState {
 
         self.player_prefab_handle = Some(player_prefab_handle);
 
+        // TODO: now that we don't change state, this should be 0 or default again
         let enemy_count = EnemyCount { count: 6 };
-
         world.insert(enemy_count);
+
+        let level_complete = LevelComplete::default();
+        info!("inserting new level complete struct: {:?}", level_complete);
+        world.insert(level_complete);
     }
 
     // need to review https://docs.amethyst.rs/stable/amethyst/prelude/struct.World.html
     // for other options
     fn update(&mut self, data: &mut StateData<'_, GameData<'_, '_>>) -> SimpleTrans {
+        // we set the time scale to 0 until all assets are loaded. this is known as
+        // the "I wasn't sure how to add a loading screen" technique
+        if self.progress_counter.is_complete() {
+            data.world.write_resource::<Time>().set_time_scale(1.0);
+        } else {
+            data.world.write_resource::<Time>().set_time_scale(0.0);
+        }
+
         // probably a better way to do this, but we get the count as read only first
         // to avoid borrowing data.world
         let enemy_count = (*data.world.fetch::<EnemyCount>()).clone();
         //info!("enemy count is: {:?}", enemy_count);
 
-        // this is our victory condition that signals switching to a new state
+        // this is our victory condition that lets us know the player finished
+        // the level
         if enemy_count.count == 0 {
             info!("enemy count reached 0");
-            // this seems unnecessarily destructive, though it works
-            // some additional discussion on:
-            // https://community.amethyst.rs/t/cleanup-of-entities-associated-with-states/241/8
-            data.world.delete_all();
-            Trans::Switch(Box::new(GameplayState::new(10, self.levels.clone(), true)))
+            data.world.write_resource::<LevelComplete>().success = true;
         }
-        // in this case we need to load the next level but not change state
-        else if self.init_level {
-            self.init_level = false;
+
+        let level_complete = (*data.world.fetch::<LevelComplete>()).clone();
+
+        // however, we're not ready for the next level until multiple conditions
+        // are met, so here we defer to `level_complete` (systems will write to
+        // this too)
+        if level_complete.ready_for_next_level() {
             let next_level = self.levels.pop();
 
             match next_level {
@@ -182,9 +184,17 @@ impl SimpleState for GameplayState {
                         self.player_prefab_handle.clone().unwrap(),
                     );
 
-                    let mut write_enemy_count = data.world.write_resource::<EnemyCount>();
-                    write_enemy_count.count = new_count;
-                    info!("new enemy count is: {}", new_count);
+                    {
+                        let mut write_enemy_count = data.world.write_resource::<EnemyCount>();
+                        write_enemy_count.count = new_count;
+                        //info!("new enemy count is: {}", new_count);
+                    }
+
+                    {
+                        let mut write_level_status = data.world.write_resource::<LevelComplete>();
+                        write_level_status.start_over();
+                        info!("current level complete resource says: {:?}", *write_level_status);
+                    }
                 },
                 None => {}, // info!("game over!!!"),
             }
@@ -235,14 +245,14 @@ impl SimpleState for PausedState {
 }
 
 // enemy_sprites
-fn load_sprite_sheet(world: &mut World, name: &str) -> Handle<SpriteSheet> {
+fn load_sprite_sheet(world: &mut World, name: &str, progress_counter: &mut ProgressCounter) -> Handle<SpriteSheet> {
     let texture_handle = {
         let loader = world.read_resource::<Loader>();
         let texture_storage = world.read_resource::<AssetStorage<Texture>>();
         loader.load(
             format!("sprites/{}.png", name),
             ImageFormat::default(),
-            (),
+            progress_counter,
             &texture_storage,
         )
     };
@@ -252,6 +262,7 @@ fn load_sprite_sheet(world: &mut World, name: &str) -> Handle<SpriteSheet> {
     loader.load(
         format!("sprites/{}.ron", name),
         SpriteSheetFormat(texture_handle),
+        // should be progress_counter
         (),
         &sprite_sheet_store,
     )
@@ -263,10 +274,11 @@ fn init_camera(world: &mut World, dimensions: &ScreenDimensions) {
     let mut transform = Transform::default();
     transform.set_translation_xyz(dimensions.width() * 0.5, dimensions.height() * 0.5, 1.);
 
-    // many ameths
+    // many amethyst examples show using dimensions here, but it turns out we want the
+    // intended dimensions (say, based on sprite sizes) and not the computed dimensions
+    // (which are affected by hidpi and other factors, and may not be what we intended)
     world
         .create_entity()
-//        .with(Camera::standard_2d(dimensions.width(), dimensions.height()))
         .with(Camera::standard_2d(1920.0, 1080.0))
         .with(transform)
         .build();
@@ -282,7 +294,7 @@ fn init_background(world: &mut World, dimensions: &ScreenDimensions, bg_sprite_s
     // ideally there's some way to reliably compute the difference (say, actual
     // window height / image height as the scaling factor for height)
     info!("all dimension info: {:?}", dimensions);
-//    let scale = Vector3::new(1.0 * 1.5, 1.0 * dimensions.aspect_ratio(), 1.0);
+    //    let scale = Vector3::new(1.0 * 1.5, 1.0 * dimensions.aspect_ratio(), 1.0);
     let scale = Vector3::new(1.0, 1.0, 1.0);
     let position = Translation3::new(dimensions.width() * 0.5, dimensions.height() * 0.5, -25.0);
     let transform = Transform::new(position, rotation, scale);
@@ -299,18 +311,12 @@ fn init_background(world: &mut World, dimensions: &ScreenDimensions, bg_sprite_s
 // could reduce that number as they're defeated
 fn init_level(
     world: &mut World,
-    entity_recs: Vec<level::EntityRecord>,
+    entity_recs: Vec<EntityRecord>,
     prefab_handle: Handle<Prefab<EnemyPrefab>>,
     flying_prefab_handle: Handle<Prefab<EnemyPrefab>>,
     sprite_sheet_handle: Handle<SpriteSheet>,
     player_prefab_handle: Handle<Prefab<PlayerPrefab>>,
 ) -> i32 {
-
-    // we should clear game state between levels in a smarter way,
-    // but enemies and lasers are cleaned up/about to be cleaned up when
-    // a level ends
-    world.write_storage::<Player>().clear();
-
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
     let scale = Vector3::new(0.15, 0.15, 0.15);
 
@@ -327,7 +333,7 @@ fn init_level(
     let mut count = 0;
 
     for rec in entity_recs {
-        if let (level::EntityType::BlobEnemy, x, y) = rec {
+        if let (EntityType::BlobEnemy, x, y) = rec {
             let position = Translation3::new(x, y, 0.0);
             let transform = Transform::new(position, rotation, scale);
             world
@@ -340,7 +346,7 @@ fn init_level(
             count += 1;
         }
 
-        if let (level::EntityType::FlyingEnemy, x, y) = rec {
+        if let (EntityType::FlyingEnemy, x, y) = rec {
             let position = Translation3::new(x, y, 0.0);
             let transform = Transform::new(position, rotation, scale);
             world
@@ -353,7 +359,7 @@ fn init_level(
             count += 1;
         }
 
-        if let (level::EntityType::Player, x, y) = rec {
+        if let (EntityType::Player, x, y) = rec {
             let position = Translation3::new(x, y, 0.0);
             let transform = Transform::new(position, rotation, scale);
             world

@@ -13,7 +13,7 @@ use crate::{
     state::EnemyCount,
 };
 
-use log::info;
+//use log::info;
 
 // big TODO: as this system gets more complicated, at some point it'll probably
 // be worth using ncollide's broad phase collision
@@ -74,8 +74,8 @@ impl<'s> System<'s> for CollisionSystem {
                     if enemy.is_dead() {
                         if let Ok(_) = entities.delete(enemy_entity) {
                             enemy_count.decrement_by(1);
-                            info!("enemy deleted due to laser hit");
-                            info!("new enemy count is: {}", enemy_count.count);
+                            //info!("enemy deleted due to laser hit");
+                            //info!("new enemy count is: {}", enemy_count.count);
                         }
                     }
                 }

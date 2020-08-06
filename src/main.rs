@@ -47,19 +47,15 @@ fn main() -> amethyst::Result<()> {
         .with(systems::AttackedSystem, "attacked_system", &[])
         .with(systems::EnemyTrackingSystem, "enemy_tracking_system", &[])
         .with(systems::EnemyMoveSystem, "enemy_move_system", &[])
+        .with(systems::CleanupSystem, "cleanup_system", &[])
         .with_bundle(
             RenderingBundle::<DefaultBackend>::new()
-                .with_plugin(RenderToWindow::from_config_path(display_config)?.with_clear([255.0, 255.0, 255.0, 1.0]))
+                .with_plugin(RenderToWindow::from_config_path(display_config)?.with_clear([0.0, 0.0, 0.0, 1.0]))
                 .with_plugin(RenderFlat2D::default()),
         )?;
 
     // 2.0 is the seconds to delay before enemy wave 1 spawns
-    let mut game = Application::new(
-        resources,
-        // the 10 here is a big hack. need to fix up enemy counting
-        state::GameplayState::new(10, all_levels, true),
-        game_data,
-    )?;
+    let mut game = Application::new(resources, state::GameplayState::new(all_levels), game_data)?;
     game.run();
 
     Ok(())

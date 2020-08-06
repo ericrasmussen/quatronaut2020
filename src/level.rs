@@ -1,4 +1,43 @@
+use amethyst::ecs::{storage::DenseVecStorage, Component};
+
 use serde::{Deserialize, Serialize};
+
+// we need systems and the update method to work together to handle
+// all aspects of clearing a level. a resource of this type can be used
+// to track all of the conditions
+#[derive(Clone, Debug)]
+pub struct LevelComplete {
+    // whether or not the player succeeded at finishing the level
+    pub success: bool,
+
+    pub cleanup_complete: bool,
+}
+
+impl LevelComplete {
+    pub fn ready_for_next_level(&self) -> bool {
+        self.success && self.cleanup_complete
+    }
+
+    pub fn start_over(&mut self) {
+        self.success = false;
+        self.cleanup_complete = false;
+    }
+}
+
+// the default condition is for the level to be complete,
+// indicating the game is ready for the next level
+impl Default for LevelComplete {
+    fn default() -> Self {
+        LevelComplete {
+            success: true,
+            cleanup_complete: true,
+        }
+    }
+}
+
+impl Component for LevelComplete {
+    type Storage = DenseVecStorage<Self>;
+}
 
 // TODO: use slices here for the intermediary type
 // e.g. LevelConfig<'a>(&'a [&'a [&'a str]])
@@ -60,8 +99,8 @@ fn get_coordinates(x_grid_pos: usize, y_grid_pos: usize) -> (f32, f32) {
     // these come from ScreenDimensions and should use that resource if possible
     let width = 2880.0;
     let height = 1710.0;
-    let str_len = 11.0;
-    let num_rows = 7.0;
+    let str_len = 50.0;
+    let num_rows = 25.0;
 
     let x = (x_grid_pos as f32 / str_len) * width;
     let y = (y_grid_pos as f32 / num_rows) * height;
