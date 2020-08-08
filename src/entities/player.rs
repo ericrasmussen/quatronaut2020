@@ -1,14 +1,9 @@
 use amethyst::{
-    assets::{PrefabData, ProgressCounter},
+    assets::PrefabData,
     derive::PrefabData,
     ecs::{storage::DenseVecStorage, Component, Entity, WriteStorage},
     Error,
 };
-/// The `Player` in our game is a robot, presumably named Benitron 3000.
-/// The robot has its own movement speed and fire delay, the latter of which
-/// is used to prevent the laser firing as fast as possible based on the
-/// current framerate.
-use amethyst_rendy::sprite::prefab::{SpriteRenderPrefab, SpriteSheetPrefab};
 
 use serde::{Deserialize, Serialize};
 
@@ -18,18 +13,13 @@ use crate::components::collider::Collider;
 // components from a config file (`prefabs/enemy.ron` in our case)
 #[derive(Debug, Deserialize, Serialize)]
 pub struct PlayerPrefab {
-    pub sheet: SpriteSheetPrefab,
-    pub render: SpriteRenderPrefab,
     pub player: Player,
     pub player_collider: Collider,
 }
 
 impl<'a> PrefabData<'a> for PlayerPrefab {
     type Result = ();
-    #[allow(clippy::type_complexity)]
     type SystemData = (
-        <SpriteSheetPrefab as PrefabData<'a>>::SystemData,
-        <SpriteRenderPrefab as PrefabData<'a>>::SystemData,
         <Player as PrefabData<'a>>::SystemData,
         <Collider as PrefabData<'a>>::SystemData,
     );
@@ -41,27 +31,11 @@ impl<'a> PrefabData<'a> for PlayerPrefab {
         entities: &[Entity],
         children: &[Entity],
     ) -> Result<(), Error> {
-        self.render
-            .add_to_entity(entity, &mut system_data.1, entities, children)?;
         self.player
-            .add_to_entity(entity, &mut system_data.2, entities, children)?;
+            .add_to_entity(entity, &mut system_data.0, entities, children)?;
         self.player_collider
-            .add_to_entity(entity, &mut system_data.3, entities, children)?;
+            .add_to_entity(entity, &mut system_data.1, entities, children)?;
         Ok(())
-    }
-
-    fn load_sub_assets(
-        &mut self,
-        progress: &mut ProgressCounter,
-        system_data: &mut Self::SystemData,
-    ) -> Result<bool, Error> {
-        let mut ret = false;
-        if self.sheet.load_sub_assets(progress, &mut system_data.0)? {
-            ret = true;
-        }
-        self.render.load_sub_assets(progress, &mut system_data.1)?;
-
-        Ok(ret)
     }
 }
 

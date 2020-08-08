@@ -9,6 +9,9 @@ Prefab (
                     speed: 100,
                     velocity_x: 0,
                     velocity_y: 0,
+                    already_rotated: false,
+                    freeze_direction: false,
+                    locked_direction: None,
                     health: 60,
                     movement: Gravitate,
                 ),
@@ -20,8 +23,8 @@ Prefab (
                     // TODO: scale hardcoded to 5.0 in state.rs because
                     // it needs to be created separately from the enemy
                     // entity and components defined here
-                    half_width: 70.0,
-                    half_height: 70.0,
+                    half_width: 32.0,
+                    half_height: 32.0,
                 ),
                 // END collider: Collider
             ),

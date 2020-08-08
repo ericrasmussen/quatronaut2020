@@ -1,5 +1,6 @@
 use amethyst::{
     assets::PrefabData,
+    core::math::Vector3,
     derive::PrefabData,
     ecs::{storage::DenseVecStorage, Component, Entity, WriteStorage},
     Error,
@@ -62,6 +63,9 @@ pub struct Enemy {
     pub speed: f32,
     pub velocity_x: f32,
     pub velocity_y: f32,
+    pub already_rotated: bool,
+    pub freeze_direction: bool,
+    pub locked_direction: Option<Vector3<f32>>,
     pub health: f32,
     pub movement: Movement,
 }
@@ -82,10 +86,10 @@ impl Enemy {
         self.health -= damage;
     }
 
-    pub fn next_move(&mut self, target_x: f32, target_y: f32, current_x: f32, current_y: f32) {
+    pub fn next_move(&mut self, target_x: f32, target_y: f32, target_z: f32, current_x: f32, current_y: f32) {
         match self.movement {
             Movement::Gravitate => self.move_towards(target_x, target_y, current_x, current_y),
-            Movement::HorizontalRush => self.rush_towards(target_x, target_y, current_x, current_y),
+            Movement::HorizontalRush => self.rush_towards(target_x, target_y, target_z, current_x, current_y),
         }
     }
 
@@ -101,11 +105,15 @@ impl Enemy {
         self.velocity_y = self.get_speed() * angle.sin();
     }
 
-    // need to see how this develops... we could have a standard API for movement decisions
-    // and then swap out the strategies as needed
-    pub fn rush_towards(&mut self, _target_x: f32, target_y: f32, _current_x: f32, current_y: f32) {
-        if (current_y - target_y).abs() <= 150.0 {
-            self.velocity_x = self.get_speed() * 6.0;
+    // the rush strategy should be for picking one direction and then rushing
+    pub fn rush_towards(&mut self, target_x: f32, target_y: f32, target_z: f32, current_x: f32, current_y: f32) {
+        if !self.freeze_direction && (current_x - target_x).abs() <= 150.0 {
+            // kind of hacky, trying to see what works
+            // the idea is that when the player is within a certain range, the enemy will
+            // set off once in that direction only and not change
+            self.move_towards(target_x, target_y, current_x, current_y);
+            self.locked_direction = Some(Vector3::new(target_x, target_y, target_z));
+            self.freeze_direction = true;
         }
     }
 }

@@ -9,7 +9,7 @@ use crate::{
     state::EnemyCount,
 };
 
-//use log::info;
+use std::f32::consts::PI;
 
 #[derive(SystemDesc)]
 pub struct EnemyTrackingSystem;
@@ -42,6 +42,7 @@ impl<'s> System<'s> for EnemyTrackingSystem {
                 enemy.next_move(
                     player_transform.translation().x,
                     player_transform.translation().y,
+                    player_transform.translation().z,
                     enemy_transform.translation().x,
                     enemy_transform.translation().y,
                 );
@@ -60,7 +61,7 @@ pub struct EnemyMoveSystem;
 impl<'s> System<'s> for EnemyMoveSystem {
     type SystemData = (
         WriteStorage<'s, Transform>,
-        ReadStorage<'s, Enemy>,
+        WriteStorage<'s, Enemy>,
         Read<'s, Time>,
         Write<'s, EnemyCount>,
         Entities<'s>,
@@ -68,8 +69,8 @@ impl<'s> System<'s> for EnemyMoveSystem {
 
     // TODO: delete enemies that go way out of bounds. maybe using arena bounds + generous
     // padding. this is necesary because some enemies will continue in one direction forever
-    fn run(&mut self, (mut transforms, enemies, time, mut enemy_count, entities): Self::SystemData) {
-        for (enemy, enemy_entity, enemy_transform) in (&enemies, &entities, &mut transforms).join() {
+    fn run(&mut self, (mut transforms, mut enemies, time, mut enemy_count, entities): Self::SystemData) {
+        for (enemy, enemy_entity, enemy_transform) in (&mut enemies, &entities, &mut transforms).join() {
             enemy_transform.prepend_translation_x(enemy.velocity_x * time.delta_seconds());
             enemy_transform.prepend_translation_y(enemy.velocity_y * time.delta_seconds());
 
@@ -78,14 +79,28 @@ impl<'s> System<'s> for EnemyMoveSystem {
             let x = enemy_transform.translation().x;
             let y = enemy_transform.translation().y;
 
+            // BIG TODO: the intended rotation here isn't working, probably due to some
+            // fundamental misunderstanding from the code commenting narrator. for now there's
+            // a quick hack to make sure the flying enemies at least point downward, and this can
+            // be revisited later
+            if let Some(_player_vec) = enemy.locked_direction {
+                if !enemy.already_rotated {
+                    enemy_transform.prepend_rotation_z_axis(PI);
+                    enemy.already_rotated = true;
+                    //let enemy_vec = enemy_transform.translation();
+                    //let radians = player_vec.dot(&enemy_vec).acos();
+                    //info!("prepending rotation for {} radians", radians);
+                    //enemy_transform.prepend_rotation_z_axis(radians); // + FRAC_PI_2);
+                    //enemy.already_rotated = true;
+                }
+            }
+
             let out_of_bounds = x < -500.0 || x > 2500.0 || y < -500.0 || y > 2500.0;
 
-            if out_of_bounds {
-                if let Ok(_) = entities.delete(enemy_entity) {
-                    enemy_count.decrement_by(1);
-                    //info!("enemy out of bounds");
-                    //info!("new enemy count is: {}", enemy_count.count);
-                }
+            if out_of_bounds && entities.delete(enemy_entity).is_ok() {
+                enemy_count.decrement_by(1);
+                //info!("enemy out of bounds");
+                //info!("new enemy count is: {}", enemy_count.count);
             }
         }
     }

@@ -4,75 +4,9 @@ Prefab (
     entities: [
         PrefabEntity(
             data: PlayerPrefab(
-                // BEGIN sheet: SpriteSheetPrefab
-                sheet: Sheet(
-                    // many of these attributes are taken from a prefab example and probably
-                    // don't apply. if they can be left off entirely that's best
-                    texture: File("sprites/sprite_sheet.png", (
-                                "IMAGE", (
-                                    sampler_info: (
-                                        min_filter: Nearest,
-                                        mag_filter: Nearest,
-                                        mip_filter: Nearest,
-                                        wrap_mode: (Tile, Tile, Tile),
-                                        lod_bias: (0),
-                                        lod_range: (
-                                            start: ( 0 ),
-                                            end: ( 8000 ),
-                                        ),
-                                        comparison: None,
-                                        border: (0),
-                                        normalized: true,
-                                        anisotropic: Off,
-                                    ),
-                                )
-                    )),
-                    sprites: [
-                      List((
-                          texture_width: 256,
-                          texture_height: 706,
-                          sprites: [
-                              // player
-                              (
-                                  x: 0,
-                                  y: 0,
-                                  width: 256,
-                                  height: 256,
-                                  offsets: None,
-                              ),
-                              // laser blast/impact
-                              (
-                                  x: 0,
-                                  y: 256,
-                                  width: 125,
-                                  height: 250,
-                                  offsets: None,
-                              ),
-                              // laser
-                              (
-                                  x: 0,
-                                  y: 506,
-                                  width: 100,
-                                  height: 200,
-                                  offsets: None,
-                              ),
-                          ]
-                      ))
-                    ],
-                    name: "player_sprite_sheet",
-                ),
-                // END sheet: SpriteSheetPrefab
-
-                // BEGIN render: SpriteRenderPrefab
-                render: (
-                    sheet: "player_sprite_sheet",
-                    sprite_number: 0,
-                ),
-                // END render: SpriteRenderPrefab
-
                 // BEGIN player: Player
                 player: Player(
-                      speed: 600,
+                      speed: 400,
                       laser_speed: 800,
                       // time to delay laser shots in seconds
                       fire_delay: 0.17,
@@ -87,8 +21,8 @@ Prefab (
                     // half extent = sprite dimension (width or height) * 0.5 * scale
                     // for the player it should be 40.0 and 57.5, but for gameplay
                     // it feels nicer to have a tiny bit of leeway
-                    half_width: 35.0,
-                    half_height: 52.5,
+                    half_width: 28.0,
+                    half_height: 28.0,
                 ),
                 // END player_collider: Collider
             ),

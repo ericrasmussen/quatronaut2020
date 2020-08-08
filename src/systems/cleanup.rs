@@ -5,7 +5,7 @@ use amethyst::{
 
 use crate::{entities::player::Player, level::LevelComplete};
 
-//use log::info;
+use log::info;
 
 #[derive(SystemDesc)]
 pub struct CleanupSystem;
@@ -23,7 +23,7 @@ impl<'s> System<'s> for CleanupSystem {
         if level_complete.success {
             for (player_entity, _player) in (&entities, &players).join() {
                 entities.delete(player_entity).unwrap();
-                //info!("deleted a player!!!!!");
+                info!("deleted a player!!!!!");
             }
         }
         if players.is_empty() {

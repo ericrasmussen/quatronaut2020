@@ -21,6 +21,7 @@ use crate::{
 pub struct CollisionSystem;
 
 impl<'s> System<'s> for CollisionSystem {
+    #[allow(clippy::type_complexity)]
     type SystemData = (
         ReadStorage<'s, Transform>,
         WriteStorage<'s, Laser>,
@@ -71,12 +72,10 @@ impl<'s> System<'s> for CollisionSystem {
 
                     // if the enemy has taken enough damage, delete them
                     // TODO: may be a latent bug in associating this with laser hits...
-                    if enemy.is_dead() {
-                        if let Ok(_) = entities.delete(enemy_entity) {
-                            enemy_count.decrement_by(1);
-                            //info!("enemy deleted due to laser hit");
-                            //info!("new enemy count is: {}", enemy_count.count);
-                        }
+                    if enemy.is_dead() && entities.delete(enemy_entity).is_ok() {
+                        enemy_count.decrement_by(1);
+                        //info!("enemy deleted due to laser hit");
+                        //info!("new enemy count is: {}", enemy_count.count);
                     }
                 }
             }

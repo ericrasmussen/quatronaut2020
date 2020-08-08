@@ -48,6 +48,11 @@ pub struct GameplayState {
 
     #[new(default)]
     pub flying_enemy_prefab_handle: Option<Handle<Prefab<EnemyPrefab>>>,
+
+    // handle to clone for the sprite sheet containing player and laser images
+    #[new(default)]
+    pub player_sprites_handle: Option<Handle<SpriteSheet>>,
+
     // player prefab. we could also use a config and one-time instantiation,
     // although at least for testing it's nice to spawn players as needed
     #[new(default)]
@@ -100,9 +105,12 @@ impl SimpleState for GameplayState {
         self.background_sprite_handle = Some(bg_sprite_sheet_handle);
         init_background(world, &dimensions, self.background_sprite_handle.clone().unwrap());
 
-        // get a handle on the sprite sheet
+        // get a handle on the sprite sheets
         let enemy_sprite_sheet_handle = load_sprite_sheet(world, "enemy_sprites", &mut self.progress_counter);
         self.enemy_sprites_handle = Some(enemy_sprite_sheet_handle);
+
+        let player_sprite_sheet_handle = load_sprite_sheet(world, "sprite_sheet", &mut self.progress_counter);
+        self.player_sprites_handle = Some(player_sprite_sheet_handle);
 
         // need to register this type of entry before init
         world.register::<Player>();
@@ -161,7 +169,7 @@ impl SimpleState for GameplayState {
         // this is our victory condition that lets us know the player finished
         // the level
         if enemy_count.count == 0 {
-            info!("enemy count reached 0");
+            //info!("enemy count reached 0");
             data.world.write_resource::<LevelComplete>().success = true;
         }
 
@@ -173,30 +181,28 @@ impl SimpleState for GameplayState {
         if level_complete.ready_for_next_level() {
             let next_level = self.levels.pop();
 
-            match next_level {
-                Some(level_entities) => {
-                    let new_count = init_level(
-                        data.world,
-                        level_entities,
-                        self.enemy_prefab_handle.clone().unwrap(),
-                        self.flying_enemy_prefab_handle.clone().unwrap(),
-                        self.enemy_sprites_handle.clone().unwrap(),
-                        self.player_prefab_handle.clone().unwrap(),
-                    );
+            if let Some(level_entities) = next_level {
+                let new_count = init_level(
+                    data.world,
+                    level_entities,
+                    self.enemy_prefab_handle.clone().unwrap(),
+                    self.flying_enemy_prefab_handle.clone().unwrap(),
+                    self.enemy_sprites_handle.clone().unwrap(),
+                    self.player_prefab_handle.clone().unwrap(),
+                    self.player_sprites_handle.clone().unwrap(),
+                );
 
-                    {
-                        let mut write_enemy_count = data.world.write_resource::<EnemyCount>();
-                        write_enemy_count.count = new_count;
-                        //info!("new enemy count is: {}", new_count);
-                    }
+                {
+                    let mut write_enemy_count = data.world.write_resource::<EnemyCount>();
+                    write_enemy_count.count = new_count;
+                    //info!("new enemy count is: {}", new_count);
+                }
 
-                    {
-                        let mut write_level_status = data.world.write_resource::<LevelComplete>();
-                        write_level_status.start_over();
-                        info!("current level complete resource says: {:?}", *write_level_status);
-                    }
-                },
-                None => {}, // info!("game over!!!"),
+                {
+                    let mut write_level_status = data.world.write_resource::<LevelComplete>();
+                    write_level_status.start_over();
+                    info!("current level complete resource says: {:?}", *write_level_status);
+                }
             }
 
             Trans::None
@@ -262,7 +268,7 @@ fn load_sprite_sheet(world: &mut World, name: &str, progress_counter: &mut Progr
     loader.load(
         format!("sprites/{}.ron", name),
         SpriteSheetFormat(texture_handle),
-        // should be progress_counter
+        // TODO: should be progress_counter here too
         (),
         &sprite_sheet_store,
     )
@@ -300,7 +306,7 @@ fn init_background(world: &mut World, dimensions: &ScreenDimensions, bg_sprite_s
     let transform = Transform::new(position, rotation, scale);
 
     let bg_render = SpriteRender {
-        sprite_sheet: bg_sprite_sheet_handle.clone(),
+        sprite_sheet: bg_sprite_sheet_handle,
         sprite_number: 0,
     };
 
@@ -314,19 +320,25 @@ fn init_level(
     entity_recs: Vec<EntityRecord>,
     prefab_handle: Handle<Prefab<EnemyPrefab>>,
     flying_prefab_handle: Handle<Prefab<EnemyPrefab>>,
-    sprite_sheet_handle: Handle<SpriteSheet>,
+    enemy_sprite_sheet_handle: Handle<SpriteSheet>,
     player_prefab_handle: Handle<Prefab<PlayerPrefab>>,
+    player_sprite_sheet_handle: Handle<SpriteSheet>,
 ) -> i32 {
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
-    let scale = Vector3::new(0.15, 0.15, 0.15);
+    let scale = Vector3::new(0.25, 0.25, 0.25);
+
+    let player_render = SpriteRender {
+        sprite_sheet: player_sprite_sheet_handle,
+        sprite_number: 0,
+    };
 
     let blob_render = SpriteRender {
-        sprite_sheet: sprite_sheet_handle.clone(),
+        sprite_sheet: enemy_sprite_sheet_handle.clone(),
         sprite_number: 1,
     };
 
     let flying_render = SpriteRender {
-        sprite_sheet: sprite_sheet_handle,
+        sprite_sheet: enemy_sprite_sheet_handle,
         sprite_number: 2,
     };
 
@@ -365,6 +377,7 @@ fn init_level(
             world
                 .create_entity()
                 .with(player_prefab_handle.clone())
+                .with(player_render.clone())
                 .with(transform)
                 .build();
         }
