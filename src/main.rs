@@ -16,7 +16,8 @@ use amethyst::{
 mod components;
 mod entities;
 mod level;
-mod state;
+mod resources;
+mod states;
 mod systems;
 use entities::{enemy::EnemyPrefab, player::PlayerPrefab};
 
@@ -25,7 +26,7 @@ fn main() -> amethyst::Result<()> {
 
     let app_root = application_root_dir()?;
 
-    let resources = app_root.join("resources");
+    let assets = app_root.join("assets");
     let display_config = app_root.join("config").join("display_config.ron");
     let binding_path = app_root.join("config").join("bindings.ron");
 
@@ -41,21 +42,13 @@ fn main() -> amethyst::Result<()> {
         .with_bundle(input_bundle)?
         .with_system_desc(PrefabLoaderSystemDesc::<EnemyPrefab>::default(), "", &[])
         .with_system_desc(PrefabLoaderSystemDesc::<PlayerPrefab>::default(), "", &[])
-        .with(systems::PlayerSystem, "player_system", &["input_system"])
-        .with(systems::LaserSystem, "laser_system", &[])
-        .with(systems::CollisionSystem, "collision_system", &[])
-        .with(systems::AttackedSystem, "attacked_system", &[])
-        .with(systems::EnemyTrackingSystem, "enemy_tracking_system", &[])
-        .with(systems::EnemyMoveSystem, "enemy_move_system", &[])
-        .with(systems::CleanupSystem, "cleanup_system", &[])
         .with_bundle(
             RenderingBundle::<DefaultBackend>::new()
                 .with_plugin(RenderToWindow::from_config_path(display_config)?.with_clear([0.0, 0.0, 0.0, 1.0]))
                 .with_plugin(RenderFlat2D::default()),
         )?;
 
-    // 2.0 is the seconds to delay before enemy wave 1 spawns
-    let mut game = Application::new(resources, state::GameplayState::new(all_levels), game_data)?;
+    let mut game = Application::new(assets, states::GameplayState::new(all_levels), game_data)?;
     game.run();
 
     Ok(())

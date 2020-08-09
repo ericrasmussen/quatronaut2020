@@ -2,6 +2,29 @@ use amethyst::ecs::{storage::DenseVecStorage, Component};
 
 use serde::{Deserialize, Serialize};
 
+// enemy count should be consolidated with the level tracker,
+// so putting it here during the refactor
+#[derive(Clone, Debug)]
+pub struct EnemyCount {
+    pub count: i32,
+}
+
+impl EnemyCount {
+    pub fn decrement_by(&mut self, amt: i32) {
+        self.count -= amt;
+    }
+}
+
+impl Default for EnemyCount {
+    fn default() -> Self {
+        EnemyCount { count: 0 }
+    }
+}
+
+impl Component for EnemyCount {
+    type Storage = DenseVecStorage<Self>;
+}
+
 // we need systems and the update method to work together to handle
 // all aspects of clearing a level. a resource of this type can be used
 // to track all of the conditions

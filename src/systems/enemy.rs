@@ -6,7 +6,7 @@ use amethyst::{
 
 use crate::{
     entities::{enemy::Enemy, player::Player},
-    state::EnemyCount,
+    level::EnemyCount,
 };
 
 use std::f32::consts::PI;
