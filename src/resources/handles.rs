@@ -1,20 +1,16 @@
 use amethyst::{
-    assets::{AssetStorage, Handle, Loader, Prefab, PrefabLoader, ProgressCounter, RonFormat},
+    assets::{AssetStorage, Handle, Loader, Prefab, ProgressCounter},
     prelude::*,
     renderer::{ImageFormat, SpriteSheet, SpriteSheetFormat, Texture},
 };
 
-
-use crate::entities::{
-    enemy::EnemyPrefab,
-    player::PlayerPrefab,
-};
+use crate::entities::{enemy::EnemyPrefab, player::PlayerPrefab};
 
 /// The `GameplayState` needs to keep track of man prefab and spritesheet
 /// handles to run. This struct mostly exists to organize all those handles
 /// into one namespace.
+#[derive(Clone, Debug)]
 pub struct GameplayHandles {
-
     // gameplay bg image
     pub background_sprite_handle: Handle<SpriteSheet>,
 
@@ -32,30 +28,29 @@ pub struct GameplayHandles {
     // player prefab. we could also use a config and one-time instantiation,
     // although at least for testing it's nice to spawn players as needed
     pub player_prefab_handle: Handle<Prefab<PlayerPrefab>>,
-
 }
 
-pub fn get_game_handles(world: &mut World, progress_counter: &mut ProgressCounter,
+pub fn get_game_handles(
+    world: &mut World,
+    progress_counter: &mut ProgressCounter,
     enemy_prefab_handle: Handle<Prefab<EnemyPrefab>>,
-    flying_prefab_handle: Handle<Prefab<EnemyPrefab>>,
+    flying_enemy_prefab_handle: Handle<Prefab<EnemyPrefab>>,
     player_prefab_handle: Handle<Prefab<PlayerPrefab>>,
 ) -> GameplayHandles {
-    let bg_sprite_sheet_handle = load_sprite_sheet(world, "background", &mut progress_counter);
-    let enemy_sprite_sheet_handle = load_sprite_sheet(world, "enemy_sprites", &mut progress_counter);
-    let player_sprite_sheet_handle = load_sprite_sheet(world, "sprite_sheet", &mut progress_counter);
+    let background_sprite_handle = load_sprite_sheet(world, "background", progress_counter);
+    let enemy_sprites_handle = load_sprite_sheet(world, "enemy_sprites", progress_counter);
+    let player_sprites_handle = load_sprite_sheet(world, "sprite_sheet", progress_counter);
 
-    let gameplay_handles = GameplayHandles {
-        background_sprite_handle: bg_sprite_sheet_handle,
-        enemy_sprites_handle: enemy_sprite_sheet_handle,
-        enemy_prefab_handle: enemy_prefab_handle,
-        flying_enemy_prefab_handle: flying_prefab_handle,
-        player_sprites_handle: player_sprite_sheet_handle,
-        player_prefab_handle: player_prefab_handle,
-    };
-
-    gameplay_handles
-
+    GameplayHandles {
+        background_sprite_handle,
+        enemy_sprites_handle,
+        enemy_prefab_handle,
+        flying_enemy_prefab_handle,
+        player_sprites_handle,
+        player_prefab_handle,
+    }
 }
+
 // helper for loading a spritesheet
 fn load_sprite_sheet(world: &mut World, name: &str, progress_counter: &mut ProgressCounter) -> Handle<SpriteSheet> {
     let texture_handle = {

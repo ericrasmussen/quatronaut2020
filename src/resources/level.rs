@@ -84,7 +84,7 @@ pub type Levels = Vec<Vec<EntityRecord>>;
 
 // loop through our grid to get a vector containing only entities
 // and transform coordinates
-pub fn get_level_entities(rows: &mut Vec<String>) -> Vec<EntityRecord> {
+fn get_level_entities(rows: &mut Vec<String>) -> Vec<EntityRecord> {
     let mut records = Vec::new();
 
     // make sure we reverse because y=0 is the bottom of the screen
@@ -131,9 +131,6 @@ fn get_coordinates(x_grid_pos: usize, y_grid_pos: usize) -> (f32, f32) {
     (x, y)
 }
 
-// this is beginning to feel like a bundle... maybe we include a level bundle to get
-// all the config files. if it's not a bundle then we can
-// derive serialize/deserialize for serde and load it that way from a config
 pub fn get_all_levels(mut level_config: LevelConfig) -> Levels {
     level_config.rows.reverse();
 

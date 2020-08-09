@@ -3,7 +3,7 @@ use amethyst::{
     ecs::{Entities, Join, System, SystemData, Write, WriteStorage},
 };
 
-use crate::{entities::player::Player, level::LevelComplete};
+use crate::{entities::player::Player, resources::level::LevelComplete};
 
 use log::info;
 

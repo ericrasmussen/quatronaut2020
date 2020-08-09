@@ -6,7 +6,7 @@ use amethyst::{
 
 use crate::{
     entities::{enemy::Enemy, player::Player},
-    level::EnemyCount,
+    resources::level::EnemyCount,
 };
 
 use std::f32::consts::PI;
@@ -26,12 +26,6 @@ impl<'s> System<'s> for EnemyTrackingSystem {
     );
 
     fn run(&mut self, (transforms, mut enemies, players, _time): Self::SystemData) {
-        // seems like we should have another way to get to the player transform since
-        // this always be a for loop for a single player. and if it's not, enemies would be
-        // moving at high speeds towards groups of players, or not at all if players are
-        // in opposite directions
-
-        // TODO: use the player position resource here
         for (enemy, enemy_transform) in (&mut enemies, &transforms).join() {
             for (_player, player_transform) in (&players, &transforms).join() {
                 // this updates the x and y velocities on the enemy struct, which
@@ -67,8 +61,6 @@ impl<'s> System<'s> for EnemyMoveSystem {
         Entities<'s>,
     );
 
-    // TODO: delete enemies that go way out of bounds. maybe using arena bounds + generous
-    // padding. this is necesary because some enemies will continue in one direction forever
     fn run(&mut self, (mut transforms, mut enemies, time, mut enemy_count, entities): Self::SystemData) {
         for (enemy, enemy_entity, enemy_transform) in (&mut enemies, &entities, &mut transforms).join() {
             enemy_transform.prepend_translation_x(enemy.velocity_x * time.delta_seconds());
@@ -95,6 +87,7 @@ impl<'s> System<'s> for EnemyMoveSystem {
                 }
             }
 
+            // TODO: this should be based on some kind of "playable area" dimensions resource
             let out_of_bounds = x < -500.0 || x > 2500.0 || y < -500.0 || y > 2500.0;
 
             if out_of_bounds && entities.delete(enemy_entity).is_ok() {

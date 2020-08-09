@@ -10,7 +10,7 @@ use amethyst::{
 use crate::{
     components::collider::Collider,
     entities::{enemy::Enemy, laser::Laser},
-    level::EnemyCount,
+    resources::level::EnemyCount,
 };
 
 //use log::info;
