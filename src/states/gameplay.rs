@@ -28,29 +28,26 @@ use crate::{
     resources::{
         handles,
         handles::GameplayHandles,
-        level::{EnemyCount, EntityRecord, EntityType, LevelComplete, Levels},
+        level::{EntityType, LevelMetadata, Levels},
     },
     states::paused::PausedState,
     systems,
 };
 
-use log::info;
-
+/// Collects our state-specific dispatcher, progress counter for asset
+/// loading, struct with gameplay handles, and levels. Note that the
+/// levels are loaded via `main.rs` (since they can be created from a
+/// config file without gameplay state knowledge)
 #[derive(new)]
 pub struct GameplayState<'a, 'b> {
-    // keeps track of all the levels in our game
     pub levels: Levels,
 
-    // collection of handles for creating sprites and prefabs
     #[new(default)]
     pub handles: Option<GameplayHandles>,
 
-    // lets us build logic around whether or not assets are loaded
     #[new(default)]
     pub progress_counter: ProgressCounter,
 
-    // dispatcher used to make sure this state's registered systems
-    // won't run when other systems are active
     #[new(default)]
     pub dispatcher: Option<Dispatcher<'a, 'b>>,
 }
@@ -124,19 +121,16 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         world.register::<Laser>();
         world.register::<Enemy>();
         world.register::<Collider>();
-        world.register::<LevelComplete>();
-        world.register::<EnemyCount>();
+        world.register::<LevelMetadata>();
 
-        let enemy_count = EnemyCount { count: 0 };
-        world.insert(enemy_count);
-
-        let level_complete = LevelComplete::default();
-        info!("inserting new level complete struct: {:?}", level_complete);
-        world.insert(level_complete);
+        // tracks level metadata for the current level, which will be needed
+        // by other states and systems. potential gotcha: the default will
+        // setup an empty level marked as completed. this is so `update` can
+        // manage all the level logic
+        let current_level = LevelMetadata::default();
+        world.insert(current_level);
     }
 
-    // need to review https://docs.amethyst.rs/stable/amethyst/prelude/struct.World.html
-    // for other options
     fn update(&mut self, data: &mut StateData<'_, GameData<'_, '_>>) -> SimpleTrans {
         if let Some(dispatcher) = self.dispatcher.as_mut() {
             // TODO: we could maybe push another state over `GameplayState` and push back
@@ -146,42 +140,20 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             }
         }
 
-        // probably a better way to do this, but we get the count as read only first
-        // to avoid borrowing data.world
-        let enemy_count = (*data.world.fetch::<EnemyCount>()).clone();
-        //info!("enemy count is: {:?}", enemy_count);
+        // check the level metadata and see if we're ready to load a new level
+        let level_metadata = (*data.world.fetch::<LevelMetadata>()).clone();
 
-        // this is our victory condition that lets us know the player finished
-        // the level
-        if enemy_count.count == 0 {
-            //info!("enemy count reached 0");
-            data.world.write_resource::<LevelComplete>().success = true;
-        }
-
-        let level_complete = (*data.world.fetch::<LevelComplete>()).clone();
-
-        // however, we're not ready for the next level until multiple conditions
-        // are met, so here we defer to `level_complete` (systems will write to
-        // this too)
-        if level_complete.ready_for_next_level() {
+        if level_metadata.ready_for_level_transition() {
             let next_level = self.levels.pop();
 
             let handles = self.handles.clone().expect("failure accessing GameplayHandles struct");
 
-            if let Some(level_entities) = next_level {
-                let new_count = init_level(data.world, level_entities, handles);
+            if let Some(next_level_metadata) = next_level {
+                init_level(data.world, next_level_metadata.clone(), handles);
 
-                {
-                    let mut write_enemy_count = data.world.write_resource::<EnemyCount>();
-                    write_enemy_count.count = new_count;
-                    //info!("new enemy count is: {}", new_count);
-                }
+                let mut write_level_metadata = data.world.write_resource::<LevelMetadata>();
 
-                {
-                    let mut write_level_status = data.world.write_resource::<LevelComplete>();
-                    write_level_status.start_over();
-                    info!("current level complete resource says: {:?}", *write_level_status);
-                }
+                write_level_metadata.replace_self_with(next_level_metadata);
             }
 
             Trans::None
@@ -243,9 +215,9 @@ fn init_background(world: &mut World, dimensions: &ScreenDimensions, bg_sprite_s
     world.create_entity().with(bg_render).with(transform).build();
 }
 
-// this could return the number of enemies generated, and a system
-// could reduce that number as they're defeated
-fn init_level(world: &mut World, entity_recs: Vec<EntityRecord>, handles: GameplayHandles) -> i32 {
+// takes the current level metadata and gameplay handles, then adds
+// all the associated entities and components to the world
+fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: GameplayHandles) {
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
     let scale = Vector3::new(0.25, 0.25, 0.25);
 
@@ -264,49 +236,36 @@ fn init_level(world: &mut World, entity_recs: Vec<EntityRecord>, handles: Gamepl
         sprite_number: 2,
     };
 
-    let mut count = 0;
+    for rec in level_metadata.get_layout() {
+        let (entity_type, x, y) = rec;
+        let position = Translation3::new(*x, *y, 0.0);
+        let transform = Transform::new(position, rotation, scale);
 
-    for rec in entity_recs {
-        if let (EntityType::BlobEnemy, x, y) = rec {
-            let position = Translation3::new(x, y, 0.0);
-            let transform = Transform::new(position, rotation, scale);
-            world
-                .create_entity()
-                .with(handles.enemy_prefab_handle.clone())
-                .with(blob_render.clone())
-                .with(transform)
-                .build();
-
-            count += 1;
-        }
-
-        if let (EntityType::FlyingEnemy, x, y) = rec {
-            let position = Translation3::new(x, y, 0.0);
-            let transform = Transform::new(position, rotation, scale);
-            world
-                .create_entity()
-                .with(handles.flying_enemy_prefab_handle.clone())
-                .with(flying_render.clone())
-                .with(transform)
-                .build();
-
-            count += 1;
-        }
-
-        if let (EntityType::Player, x, y) = rec {
-            let position = Translation3::new(x, y, 0.0);
-            let transform = Transform::new(position, rotation, scale);
-            world
-                .create_entity()
-                .with(handles.player_prefab_handle.clone())
-                .with(player_render.clone())
-                .with(transform)
-                .build();
+        match entity_type {
+            EntityType::BlobEnemy => {
+                world
+                    .create_entity()
+                    .with(handles.enemy_prefab_handle.clone())
+                    .with(blob_render.clone())
+                    .with(transform)
+                    .build();
+            },
+            EntityType::FlyingEnemy => {
+                world
+                    .create_entity()
+                    .with(handles.flying_enemy_prefab_handle.clone())
+                    .with(flying_render.clone())
+                    .with(transform)
+                    .build();
+            },
+            EntityType::Player => {
+                world
+                    .create_entity()
+                    .with(handles.player_prefab_handle.clone())
+                    .with(player_render.clone())
+                    .with(transform)
+                    .build();
+            },
         }
     }
-
-    // should probably return this in a more helpful struct,
-    // but as long as we make level decisions based on enemy
-    // counts it's fine
-    count
 }

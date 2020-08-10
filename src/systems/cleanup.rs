@@ -3,7 +3,7 @@ use amethyst::{
     ecs::{Entities, Join, System, SystemData, Write, WriteStorage},
 };
 
-use crate::{entities::player::Player, resources::level::LevelComplete};
+use crate::{entities::player::Player, resources::level::LevelMetadata};
 
 use log::info;
 
@@ -15,19 +15,19 @@ pub struct CleanupSystem;
 // resource that requires both enemy count <= 0 and some time elapsed since
 // the last enemy was removed
 impl<'s> System<'s> for CleanupSystem {
-    type SystemData = (WriteStorage<'s, Player>, Write<'s, LevelComplete>, Entities<'s>);
+    type SystemData = (WriteStorage<'s, Player>, Write<'s, LevelMetadata>, Entities<'s>);
 
     // open question: should lasers be deleted here too? otherwise they may still be flying
     // across the screen when a new level starts
-    fn run(&mut self, (players, mut level_complete, entities): Self::SystemData) {
-        if level_complete.success {
+    fn run(&mut self, (players, mut level_metadata, entities): Self::SystemData) {
+        if level_metadata.all_enemies_defeated() {
             for (player_entity, _player) in (&entities, &players).join() {
                 entities.delete(player_entity).unwrap();
                 info!("deleted a player!!!!!");
             }
         }
         if players.is_empty() {
-            level_complete.cleanup_complete = true;
+            level_metadata.mark_cleanup_complete();
             //info!("players is empty! wait what");
         }
     }

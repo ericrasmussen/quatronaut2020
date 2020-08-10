@@ -10,7 +10,7 @@ use amethyst::{
 use crate::{
     components::collider::Collider,
     entities::{enemy::Enemy, laser::Laser},
-    resources::level::EnemyCount,
+    resources::level::LevelMetadata,
 };
 
 //use log::info;
@@ -28,10 +28,10 @@ impl<'s> System<'s> for CollisionSystem {
         WriteStorage<'s, Enemy>,
         Entities<'s>,
         ReadStorage<'s, Collider>,
-        Write<'s, EnemyCount>,
+        Write<'s, LevelMetadata>,
     );
 
-    fn run(&mut self, (transforms, lasers, mut enemies, entities, colliders, mut enemy_count): Self::SystemData) {
+    fn run(&mut self, (transforms, lasers, mut enemies, entities, colliders, mut level_metadata): Self::SystemData) {
         for (laser_entity, _laser_a, transform_a) in (&entities, &lasers, &transforms).join() {
             /*
              * Initialize the shapes.
@@ -73,9 +73,9 @@ impl<'s> System<'s> for CollisionSystem {
                     // if the enemy has taken enough damage, delete them
                     // TODO: may be a latent bug in associating this with laser hits...
                     if enemy.is_dead() && entities.delete(enemy_entity).is_ok() {
-                        enemy_count.decrement_by(1);
+                        level_metadata.enemy_destroyed();
                         //info!("enemy deleted due to laser hit");
-                        //info!("new enemy count is: {}", enemy_count.count);
+                        //info!("new enemy count is: {}", level_metadata.count);
                     }
                 }
             }

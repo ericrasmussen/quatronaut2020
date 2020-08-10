@@ -6,7 +6,7 @@ use amethyst::{
 
 use crate::{
     entities::{enemy::Enemy, player::Player},
-    resources::level::EnemyCount,
+    resources::level::LevelMetadata,
 };
 
 use std::f32::consts::PI;
@@ -57,11 +57,11 @@ impl<'s> System<'s> for EnemyMoveSystem {
         WriteStorage<'s, Transform>,
         WriteStorage<'s, Enemy>,
         Read<'s, Time>,
-        Write<'s, EnemyCount>,
+        Write<'s, LevelMetadata>,
         Entities<'s>,
     );
 
-    fn run(&mut self, (mut transforms, mut enemies, time, mut enemy_count, entities): Self::SystemData) {
+    fn run(&mut self, (mut transforms, mut enemies, time, mut level_metadata, entities): Self::SystemData) {
         for (enemy, enemy_entity, enemy_transform) in (&mut enemies, &entities, &mut transforms).join() {
             enemy_transform.prepend_translation_x(enemy.velocity_x * time.delta_seconds());
             enemy_transform.prepend_translation_y(enemy.velocity_y * time.delta_seconds());
@@ -91,7 +91,7 @@ impl<'s> System<'s> for EnemyMoveSystem {
             let out_of_bounds = x < -500.0 || x > 2500.0 || y < -500.0 || y > 2500.0;
 
             if out_of_bounds && entities.delete(enemy_entity).is_ok() {
-                enemy_count.decrement_by(1);
+                level_metadata.enemy_destroyed();
                 //info!("enemy out of bounds");
                 //info!("new enemy count is: {}", enemy_count.count);
             }
