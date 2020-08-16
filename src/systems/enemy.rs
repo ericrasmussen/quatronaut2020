@@ -6,7 +6,7 @@ use amethyst::{
 
 use crate::{
     entities::{enemy::Enemy, player::Player},
-    resources::level::LevelMetadata,
+    resources::{level::LevelMetadata},
 };
 
 use std::f32::consts::PI;
@@ -22,10 +22,9 @@ impl<'s> System<'s> for EnemyTrackingSystem {
         ReadStorage<'s, Transform>,
         WriteStorage<'s, Enemy>,
         ReadStorage<'s, Player>,
-        Read<'s, Time>,
     );
 
-    fn run(&mut self, (transforms, mut enemies, players, _time): Self::SystemData) {
+    fn run(&mut self, (transforms, mut enemies, players): Self::SystemData) {
         for (enemy, enemy_transform) in (&mut enemies, &transforms).join() {
             for (_player, player_transform) in (&players, &transforms).join() {
                 // this updates the x and y velocities on the enemy struct, which
@@ -52,6 +51,7 @@ pub struct EnemyMoveSystem;
 // this system is likely too complicated, but it's not clear if there's a benefit
 // to breaking some of it into separate systems (for instance, one system to track
 // input, another to modify the transform, another to spawn lasers, etc)
+#[allow(clippy::type_complexity)]
 impl<'s> System<'s> for EnemyMoveSystem {
     type SystemData = (
         WriteStorage<'s, Transform>,
@@ -61,10 +61,21 @@ impl<'s> System<'s> for EnemyMoveSystem {
         Entities<'s>,
     );
 
-    fn run(&mut self, (mut transforms, mut enemies, time, mut level_metadata, entities): Self::SystemData) {
+    fn run(
+        &mut self,
+        (mut transforms, mut enemies, time, mut level_metadata, entities): Self::SystemData,
+    ) {
         for (enemy, enemy_entity, enemy_transform) in (&mut enemies, &entities, &mut transforms).join() {
+
             enemy_transform.prepend_translation_x(enemy.velocity_x * time.delta_seconds());
             enemy_transform.prepend_translation_y(enemy.velocity_y * time.delta_seconds());
+            // TODO: decide if we need to clamp movement for enemies. and if so, perhaps look into why
+            // this code causes the game to speed through levels and exit quickly
+            //let new_x = playable_area.clamp_x(enemy.velocity_x * time.delta_seconds());
+            //enemy_transform.prepend_translation_x(new_x);
+
+            //let new_y = playable_area.clamp_y(enemy.velocity_y * time.delta_seconds());
+            //enemy_transform.prepend_translation_y(new_y);
 
             // these values should be based on game dimensions. the check is needed
             // for enemies that move off screen before getting hit

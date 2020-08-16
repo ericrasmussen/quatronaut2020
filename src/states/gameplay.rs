@@ -26,13 +26,16 @@ use crate::entities::{
 use crate::{
     components::collider::Collider,
     resources::{
+        area::PlayableArea,
         handles,
         handles::GameplayHandles,
         level::{EntityType, LevelMetadata, Levels},
     },
-    states::paused::PausedState,
+    states::{paused::PausedState, transition::TransitionState},
     systems,
 };
+
+use log::info;
 
 /// Collects our state-specific dispatcher, progress counter for asset
 /// loading, struct with gameplay handles, and levels. Note that the
@@ -81,6 +84,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         // place our sprites correctly later. We'll clone this since we'll
         // pass the world mutably to the following functions.
         let dimensions = (*world.read_resource::<ScreenDimensions>()).clone();
+        info!("computed dimensions are: {:?}", &dimensions);
 
         // Place the camera
         init_camera(world, &dimensions);
@@ -122,6 +126,19 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         world.register::<Enemy>();
         world.register::<Collider>();
         world.register::<LevelMetadata>();
+        world.register::<PlayableArea>();
+
+        // setup the playable area. depending on how many backgrounds we have these
+        // percentages might go into the levels.ron config. these percentages are
+        // used to represent rectangular boundaries in a given background
+        let playable_area = PlayableArea::new(
+            dimensions.width() * 0.33,
+            dimensions.width() * 0.67,
+            dimensions.height() * 0.22,
+            dimensions.height() * 0.78,
+        );
+
+        world.insert(playable_area);
 
         // tracks level metadata for the current level, which will be needed
         // by other states and systems. potential gotcha: the default will
@@ -174,6 +191,13 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
             if is_key_down(&event, VirtualKeyCode::P) {
                 return Trans::Push(Box::new(PausedState));
+            }
+
+            // when should this actually run?
+            if is_key_down(&event, VirtualKeyCode::Space) {
+                return Trans::Push(Box::new(TransitionState::new(
+                    self.handles.clone().unwrap().overlay_sprite_handle,
+                )));
             }
         }
 

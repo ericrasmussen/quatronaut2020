@@ -7,7 +7,6 @@ use serde::{Deserialize, Serialize};
 /// clean up, and determine what happens if the player finishes the level
 #[derive(Clone, Debug)]
 pub struct LevelMetadata {
-
     // number of enemies in the level
     enemy_count: i32,
 
@@ -15,13 +14,15 @@ pub struct LevelMetadata {
 
     // TODO: post-refactor this might not make sense
     cleanup_complete: bool,
-
 }
 
 impl LevelMetadata {
-
     pub fn new(enemy_count: i32, layout: Vec<EntityRecord>) -> LevelMetadata {
-        LevelMetadata { enemy_count, layout, cleanup_complete: false }
+        LevelMetadata {
+            enemy_count,
+            layout,
+            cleanup_complete: false,
+        }
     }
 
     // this seems unnecessary, but world resources are easier to modify than
@@ -99,8 +100,14 @@ fn get_level_entities(rows: &mut Vec<String>) -> LevelMetadata {
     for (y_index, r) in rows.iter().enumerate() {
         for (x_index, s) in r.chars().enumerate() {
             let entity = match s {
-                'F' => { enemy_count += 1; Some(EntityType::FlyingEnemy) },
-                'B' => { enemy_count += 1; Some(EntityType::BlobEnemy) },
+                'F' => {
+                    enemy_count += 1;
+                    Some(EntityType::FlyingEnemy)
+                },
+                'B' => {
+                    enemy_count += 1;
+                    Some(EntityType::BlobEnemy)
+                },
                 'P' => Some(EntityType::Player),
                 _ => None,
             };
@@ -133,7 +140,6 @@ fn get_coordinates(x_grid_pos: usize, y_grid_pos: usize) -> (f32, f32) {
 
     (x, y)
 }
-
 
 pub fn get_all_levels(mut level_config: LevelConfig) -> Levels {
     level_config.rows.reverse();

@@ -9,9 +9,10 @@ use crate::entities::{
     laser::{spawn_laser, Laser},
     player::Player,
 };
-use amethyst_rendy::sprite::SpriteRender;
 
-//use log::info;
+use crate::resources::area::PlayableArea;
+
+use amethyst_rendy::sprite::SpriteRender;
 
 #[derive(SystemDesc)]
 pub struct PlayerSystem;
@@ -29,9 +30,13 @@ impl<'s> System<'s> for PlayerSystem {
         ReadStorage<'s, SpriteRender>,
         ReadExpect<'s, LazyUpdate>,
         Read<'s, Time>,
+        Read<'s, PlayableArea>,
     );
 
-    fn run(&mut self, (mut transforms, mut characters, input, entities, sprites, lazy_update, time): Self::SystemData) {
+    fn run(
+        &mut self,
+        (mut transforms, mut characters, input, entities, sprites, lazy_update, time, playable_area): Self::SystemData,
+    ) {
         for (character, transform, sprite) in (&mut characters, &mut transforms, &sprites).join() {
             // the input names here are defined in config/bindings.ron.
             // in general 0 is no movement, 1 is positive, and -1 is negative
@@ -43,13 +48,13 @@ impl<'s> System<'s> for PlayerSystem {
             // no movement then new_x and new_y will equal 0 and the transform
             // coordinates will not be changed)
             if let Some(x_amt) = movement_x {
-                let new_x = time.delta_seconds() * x_amt * character.get_speed();
-                transform.set_translation_x(transform.translation().x + new_x);
+                let new_x = time.delta_seconds() * x_amt * character.get_speed() + transform.translation().x;
+                transform.set_translation_x(playable_area.clamp_x(new_x));
             }
 
             if let Some(y_amt) = movement_y {
-                let new_y = time.delta_seconds() * y_amt * character.get_speed();
-                transform.set_translation_y(transform.translation().y + new_y);
+                let new_y = time.delta_seconds() * y_amt * character.get_speed() + transform.translation().y;
+                transform.set_translation_y(playable_area.clamp_y(new_y));
             }
 
             // this tracks whether or not the player is shooting. it makes sense to stay
