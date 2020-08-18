@@ -26,7 +26,7 @@ use crate::entities::{
 use crate::{
     components::collider::Collider,
     resources::{
-        area::PlayableArea,
+        playablearea::PlayableArea,
         handles,
         handles::GameplayHandles,
         level::{EntityType, LevelMetadata, Levels},

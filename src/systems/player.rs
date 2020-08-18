@@ -10,7 +10,7 @@ use crate::entities::{
     player::Player,
 };
 
-use crate::resources::area::PlayableArea;
+use crate::resources::playablearea::PlayableArea;
 
 use amethyst_rendy::sprite::SpriteRender;
 
