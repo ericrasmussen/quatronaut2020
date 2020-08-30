@@ -20,17 +20,14 @@ pub struct GameplayHandles {
     // handle to clone for the sprite sheet containing enemies
     pub enemy_sprites_handle: Handle<SpriteSheet>,
 
-    /// Handle to the loaded prefab.
+    // all the prefab handles
     pub enemy_prefab_handle: Handle<Prefab<EnemyPrefab>>,
-
     pub flying_enemy_prefab_handle: Handle<Prefab<EnemyPrefab>>,
+    pub player_prefab_handle: Handle<Prefab<PlayerPrefab>>,
+    pub boss_prefab_handle: Handle<Prefab<EnemyPrefab>>,
 
     // handle to clone for the sprite sheet containing player and laser images
     pub player_sprites_handle: Handle<SpriteSheet>,
-
-    // player prefab. we could also use a config and one-time instantiation,
-    // although at least for testing it's nice to spawn players as needed
-    pub player_prefab_handle: Handle<Prefab<PlayerPrefab>>,
 }
 
 pub fn get_game_handles(
@@ -39,6 +36,7 @@ pub fn get_game_handles(
     enemy_prefab_handle: Handle<Prefab<EnemyPrefab>>,
     flying_enemy_prefab_handle: Handle<Prefab<EnemyPrefab>>,
     player_prefab_handle: Handle<Prefab<PlayerPrefab>>,
+    boss_prefab_handle: Handle<Prefab<EnemyPrefab>>,
 ) -> GameplayHandles {
     let background_sprite_handle = load_sprite_sheet(world, "background", progress_counter);
     let overlay_sprite_handle = load_sprite_sheet(world, "transition", progress_counter);
@@ -51,8 +49,9 @@ pub fn get_game_handles(
         enemy_sprites_handle,
         enemy_prefab_handle,
         flying_enemy_prefab_handle,
-        player_sprites_handle,
         player_prefab_handle,
+        boss_prefab_handle,
+        player_sprites_handle,
     }
 }
 

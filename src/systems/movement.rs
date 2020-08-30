@@ -4,40 +4,34 @@ use amethyst::{
     ecs::{Entities, Join, Read, ReadStorage, System, SystemData, Write, WriteStorage},
 };
 
-use crate::{
-    entities::{enemy::Enemy, player::Player},
-    resources::{level::LevelMetadata},
-};
+use crate::{components::movement::Movement, entities::player::Player, resources::level::LevelMetadata};
 
 use std::f32::consts::PI;
 
 #[derive(SystemDesc)]
-pub struct EnemyTrackingSystem;
+pub struct MovementTrackingSystem;
 
-// this system is likely too complicated, but it's not clear if there's a benefit
-// to breaking some of it into separate systems (for instance, one system to track
-// input, another to modify the transform, another to spawn lasers, etc)
-impl<'s> System<'s> for EnemyTrackingSystem {
+impl<'s> System<'s> for MovementTrackingSystem {
     type SystemData = (
         ReadStorage<'s, Transform>,
-        WriteStorage<'s, Enemy>,
+        WriteStorage<'s, Movement>,
         ReadStorage<'s, Player>,
     );
 
-    fn run(&mut self, (transforms, mut enemies, players): Self::SystemData) {
-        for (enemy, enemy_transform) in (&mut enemies, &transforms).join() {
+    fn run(&mut self, (transforms, mut movements, players): Self::SystemData) {
+        for (movement, transform) in (&mut movements, &transforms).join() {
             for (_player, player_transform) in (&players, &transforms).join() {
                 // this updates the x and y velocities on the enemy struct, which
                 // can be used in another system to modify the transform
                 // we can't modify it here because we can't take ownership of mut
                 // transforms in the outer join and still get player transforms in the
                 // inner join
-                enemy.next_move(
+                movement.next_move(
                     player_transform.translation().x,
                     player_transform.translation().y,
                     player_transform.translation().z,
-                    enemy_transform.translation().x,
-                    enemy_transform.translation().y,
+                    transform.translation().x,
+                    transform.translation().y,
                 );
             }
         }
@@ -46,35 +40,28 @@ impl<'s> System<'s> for EnemyTrackingSystem {
 
 // now we can update the transform
 #[derive(SystemDesc)]
-pub struct EnemyMoveSystem;
+pub struct TransformUpdateSystem;
 
-// this system is likely too complicated, but it's not clear if there's a benefit
-// to breaking some of it into separate systems (for instance, one system to track
-// input, another to modify the transform, another to spawn lasers, etc)
 #[allow(clippy::type_complexity)]
-impl<'s> System<'s> for EnemyMoveSystem {
+impl<'s> System<'s> for TransformUpdateSystem {
     type SystemData = (
         WriteStorage<'s, Transform>,
-        WriteStorage<'s, Enemy>,
+        WriteStorage<'s, Movement>,
         Read<'s, Time>,
         Write<'s, LevelMetadata>,
         Entities<'s>,
     );
 
-    fn run(
-        &mut self,
-        (mut transforms, mut enemies, time, mut level_metadata, entities): Self::SystemData,
-    ) {
-        for (enemy, enemy_entity, enemy_transform) in (&mut enemies, &entities, &mut transforms).join() {
-
-            enemy_transform.prepend_translation_x(enemy.velocity_x * time.delta_seconds());
-            enemy_transform.prepend_translation_y(enemy.velocity_y * time.delta_seconds());
+    fn run(&mut self, (mut transforms, mut movements, time, mut level_metadata, entities): Self::SystemData) {
+        for (movement, enemy_entity, enemy_transform) in (&mut movements, &entities, &mut transforms).join() {
+            enemy_transform.prepend_translation_x(movement.velocity_x * time.delta_seconds());
+            enemy_transform.prepend_translation_y(movement.velocity_y * time.delta_seconds());
             // TODO: decide if we need to clamp movement for enemies. and if so, perhaps look into why
             // this code causes the game to speed through levels and exit quickly
-            //let new_x = playable_area.clamp_x(enemy.velocity_x * time.delta_seconds());
+            //let new_x = playable_area.clamp_x(movement.velocity_x * time.delta_seconds());
             //enemy_transform.prepend_translation_x(new_x);
 
-            //let new_y = playable_area.clamp_y(enemy.velocity_y * time.delta_seconds());
+            //let new_y = playable_area.clamp_y(movement.velocity_y * time.delta_seconds());
             //enemy_transform.prepend_translation_y(new_y);
 
             // these values should be based on game dimensions. the check is needed
@@ -86,15 +73,15 @@ impl<'s> System<'s> for EnemyMoveSystem {
             // fundamental misunderstanding from the code commenting narrator. for now there's
             // a quick hack to make sure the flying enemies at least point downward, and this can
             // be revisited later
-            if let Some(_player_vec) = enemy.locked_direction {
-                if !enemy.already_rotated {
+            if let Some(_player_vec) = movement.locked_direction {
+                if !movement.already_rotated {
                     enemy_transform.prepend_rotation_z_axis(PI);
-                    enemy.already_rotated = true;
+                    movement.already_rotated = true;
                     //let enemy_vec = enemy_transform.translation();
                     //let radians = player_vec.dot(&enemy_vec).acos();
                     //info!("prepending rotation for {} radians", radians);
                     //enemy_transform.prepend_rotation_z_axis(radians); // + FRAC_PI_2);
-                    //enemy.already_rotated = true;
+                    //movement.already_rotated = true;
                 }
             }
 

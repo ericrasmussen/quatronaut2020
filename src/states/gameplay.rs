@@ -24,12 +24,12 @@ use crate::entities::{
 };
 
 use crate::{
-    components::collider::Collider,
+    components::{collider::Collider, movement::Movement, launcher::Launcher},
     resources::{
-        playablearea::PlayableArea,
         handles,
         handles::GameplayHandles,
         level::{EntityType, LevelMetadata, Levels},
+        playablearea::PlayableArea,
     },
     states::{paused::PausedState, transition::TransitionState},
     systems,
@@ -67,8 +67,9 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         dispatcher_builder.add(systems::LaserSystem, "laser_system", &[]);
         dispatcher_builder.add(systems::CollisionSystem, "collision_system", &[]);
         dispatcher_builder.add(systems::AttackedSystem, "attacked_system", &[]);
-        dispatcher_builder.add(systems::EnemyTrackingSystem, "enemy_tracking_system", &[]);
-        dispatcher_builder.add(systems::EnemyMoveSystem, "enemy_move_system", &[]);
+        dispatcher_builder.add(systems::MovementTrackingSystem, "movement_tracking_system", &[]);
+        dispatcher_builder.add(systems::TransformUpdateSystem, "transform_update_system", &[]);
+        dispatcher_builder.add(systems::ProjectilesSystem, "projectiles_system", &[]);
         // TODO: replace this with some kind of level transition state
         dispatcher_builder.add(systems::CleanupSystem, "cleanup_system", &[]);
 
@@ -102,6 +103,10 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             loader.load("prefabs/player.ron", RonFormat, &mut self.progress_counter)
         });
 
+        let boss_prefab_handle = world.exec(|loader: PrefabLoader<'_, EnemyPrefab>| {
+            loader.load("prefabs/boss.ron", RonFormat, &mut self.progress_counter)
+        });
+
         // load the remaining sprite sheets and collect all the handles used by `level_init`
         let gameplay_handles = handles::get_game_handles(
             world,
@@ -109,6 +114,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             enemy_prefab_handle,
             flying_enemy_prefab_handle,
             player_prefab_handle,
+            boss_prefab_handle,
         );
         self.handles = Some(gameplay_handles);
 
@@ -125,6 +131,8 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         world.register::<Laser>();
         world.register::<Enemy>();
         world.register::<Collider>();
+        world.register::<Movement>();
+        world.register::<Launcher>();
         world.register::<LevelMetadata>();
         world.register::<PlayableArea>();
 
@@ -250,7 +258,12 @@ fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: Gamepla
         sprite_number: 0,
     };
 
-    let blob_render = SpriteRender {
+    let boss_render = SpriteRender {
+        sprite_sheet: handles.enemy_sprites_handle.clone(),
+        sprite_number: 0,
+    };
+
+    let square_render = SpriteRender {
         sprite_sheet: handles.enemy_sprites_handle.clone(),
         sprite_number: 1,
     };
@@ -266,11 +279,19 @@ fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: Gamepla
         let transform = Transform::new(position, rotation, scale);
 
         match entity_type {
-            EntityType::BlobEnemy => {
+            EntityType::Boss => {
+                world
+                    .create_entity()
+                    .with(handles.boss_prefab_handle.clone())
+                    .with(boss_render.clone())
+                    .with(transform)
+                    .build();
+            },
+            EntityType::SquareEnemy => {
                 world
                     .create_entity()
                     .with(handles.enemy_prefab_handle.clone())
-                    .with(blob_render.clone())
+                    .with(square_render.clone())
                     .with(transform)
                     .build();
             },

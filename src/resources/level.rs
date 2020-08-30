@@ -76,7 +76,8 @@ pub struct LevelConfig {
 #[derive(Debug, Clone)]
 pub enum EntityType {
     FlyingEnemy,
-    BlobEnemy,
+    SquareEnemy,
+    Boss,
     Player,
 }
 
@@ -104,10 +105,15 @@ fn get_level_entities(rows: &mut Vec<String>) -> LevelMetadata {
                     enemy_count += 1;
                     Some(EntityType::FlyingEnemy)
                 },
+                'S' => {
+                    enemy_count += 1;
+                    Some(EntityType::SquareEnemy)
+                },
                 'B' => {
                     enemy_count += 1;
-                    Some(EntityType::BlobEnemy)
+                    Some(EntityType::Boss)
                 },
+
                 'P' => Some(EntityType::Player),
                 _ => None,
             };
