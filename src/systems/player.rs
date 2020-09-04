@@ -11,6 +11,7 @@ use crate::entities::{
 };
 
 use crate::resources::playablearea::PlayableArea;
+use crate::resources::direction::Direction;
 
 use amethyst_rendy::sprite::SpriteRender;
 
@@ -62,6 +63,13 @@ impl<'s> System<'s> for PlayerSystem {
             // firing lasers without a player entity
             let laser_x = input.axis_value("x_laser");
             let laser_y = input.axis_value("y_laser");
+
+            // rotate the player to face the direction they're firing in
+            let maybe_direction = Direction::from_coordinates(laser_x, laser_y);
+            if let Some(dir) = maybe_direction {
+                character.direction = dir;
+            }
+            transform.set_rotation_2d(character.direction.direction_to_radians());
 
             // this computes Some(laser_with_direction) or None, based on input
             // (e.g. right and up arrows will create Some(Laser::new(RightUp)))

@@ -8,8 +8,6 @@ use amethyst::{
     renderer::{sprite::SpriteSheetHandle, SpriteRender},
 };
 
-use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, PI};
-
 use crate::components::cleanup::CleanupTag;
 use crate::resources::direction::Direction;
 
@@ -80,19 +78,7 @@ pub fn spawn_laser(
 
     let mut transform = player_transform.clone();
 
-    // the rotation API uses radians. these values were calculated in python
-    // with `rad = lambda x: (x * math.pi) / 180` and then passing in degrees
-    // (e.g. `rad(90)`)
-    match laser.direction {
-        Direction::Up => transform.set_rotation_2d(0.0),
-        Direction::RightUp => transform.set_rotation_2d(-FRAC_PI_4),
-        Direction::LeftUp => transform.set_rotation_2d(FRAC_PI_4),
-        Direction::Left => transform.set_rotation_2d(FRAC_PI_2),
-        Direction::Down => transform.set_rotation_2d(PI),
-        Direction::LeftDown => transform.set_rotation_2d(2.356_194_5),
-        Direction::Right => transform.set_rotation_2d(-FRAC_PI_2),
-        Direction::RightDown => transform.set_rotation_2d(-2.356_194_5),
-    };
+    transform.set_rotation_2d(laser.direction.direction_to_radians());
 
     let laser_entity: Entity = entities.create();
     let cleanup_tag = CleanupTag {};

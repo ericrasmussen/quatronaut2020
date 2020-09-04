@@ -1,4 +1,8 @@
-#[derive(Debug)]
+use serde::{Deserialize, Serialize};
+use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, PI};
+
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+#[serde(deny_unknown_fields)]
 pub enum Direction {
     Left,
     Up,
@@ -10,7 +14,15 @@ pub enum Direction {
     RightDown,
 }
 
-use self::Direction::*;
+use Direction::*;
+
+// the sprites in this game default to facing up.
+// if that changes, so should this
+impl Default for Direction {
+    fn default() -> Direction {
+        Up
+    }
+}
 
 impl Direction {
     // the system part of the ECS will receive pos/neg horizontal and pos/neg vertical
@@ -50,6 +62,33 @@ impl Direction {
             (Left, Some(Up)) => LeftUp,
             (Left, Some(Down)) => LeftDown,
             (x, _) => x,
+        }
+    }
+
+    pub fn from_coordinates(x: Option<f32>, y: Option<f32>) -> Option<Direction> {
+        // inputs come from the amethyst input manager
+        let maybe_x = Direction::horizontal(x.unwrap_or(0.0));
+        let maybe_y = Direction::vertical(y.unwrap_or(0.0));
+
+        // if there's input on the horizontal axis, try to combine it with any vertical
+        // input, otherwise use any vertical input
+        maybe_x.map(|x_dir| x_dir.combine(&maybe_y)).or(maybe_y)
+    }
+
+    // the rotation API uses radians. these values were calculated in python
+    // with `rad = lambda x: (x * math.pi) / 180` and then passing in degrees
+    // (e.g. `rad(90)`). note that it should be used with `set_rotation` on
+    // transforms because it is an absolute value pointing in one direction
+    pub fn direction_to_radians(self) -> f32 {
+        match self {
+            Up => 0.0,
+            RightUp => -FRAC_PI_4,
+            LeftUp => FRAC_PI_4,
+            Left => FRAC_PI_2,
+            Down => PI,
+            LeftDown => 2.356_194_5,
+            Right => -FRAC_PI_2,
+            RightDown => -2.356_194_5,
         }
     }
 }

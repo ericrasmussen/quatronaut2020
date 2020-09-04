@@ -13,6 +13,7 @@ Prefab (
                       // if we want the first fire to be instant,
                       // we set the timer to >= than the delay setting
                       seconds_since_firing: 0.17,
+                      direction: Up,
                 ),
                 // END player: Player
 
