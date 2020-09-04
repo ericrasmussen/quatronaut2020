@@ -4,9 +4,12 @@ use amethyst::{
     ecs::{Entities, Join, Read, ReadStorage, System, SystemData, Write, WriteStorage},
 };
 
+
 use crate::{components::movement::Movement, entities::player::Player, resources::level::LevelMetadata};
 
 use std::f32::consts::PI;
+
+use log::info;
 
 #[derive(SystemDesc)]
 pub struct MovementTrackingSystem;
@@ -69,19 +72,21 @@ impl<'s> System<'s> for TransformUpdateSystem {
             let x = enemy_transform.translation().x;
             let y = enemy_transform.translation().y;
 
-            // BIG TODO: the intended rotation here isn't working, probably due to some
-            // fundamental misunderstanding from the code commenting narrator. for now there's
-            // a quick hack to make sure the flying enemies at least point downward, and this can
-            // be revisited later
-            if let Some(_player_vec) = movement.locked_direction {
+            // maybe TODO: smooth rotation? or for projectiles at least,
+            // rotated before being spawned
+            if let Some(player_vec) = movement.locked_direction {
                 if !movement.already_rotated {
-                    enemy_transform.prepend_rotation_z_axis(PI);
+
+                    let dir = player_vec - enemy_transform.translation();
+                    let angle = dir.y.atan2(dir.x);
+                    let angle_facing = angle - (90.0 * PI / 180.0);
+                    info!("player: {:?}", player_vec);
+                    info!("enemy: {:?}", enemy_transform.translation());
+                    info!("dir: {:?}", dir);
+                    info!("calculated angle: {:?}", angle);
+                    info!("final angle: {:?}", angle_facing);
+                    enemy_transform.set_rotation_2d(angle_facing);
                     movement.already_rotated = true;
-                    //let enemy_vec = enemy_transform.translation();
-                    //let radians = player_vec.dot(&enemy_vec).acos();
-                    //info!("prepending rotation for {} radians", radians);
-                    //enemy_transform.prepend_rotation_z_axis(radians); // + FRAC_PI_2);
-                    //movement.already_rotated = true;
                 }
             }
 
