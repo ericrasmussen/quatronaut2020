@@ -11,64 +11,9 @@ use amethyst::{
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, PI};
 
 use crate::components::cleanup::CleanupTag;
+use crate::resources::direction::Direction;
 
 //use log::info;
-
-#[derive(Debug)]
-pub enum Direction {
-    Left,
-    Up,
-    LeftUp,
-    LeftDown,
-    Right,
-    Down,
-    RightUp,
-    RightDown,
-}
-
-use self::Direction::*;
-
-impl Direction {
-    // the system part of the ECS will receive pos/neg horizontal and pos/neg vertical
-    // input from the player. on a keyboard the values are typically:
-    // negative: -1.0
-    // neutral:   0.0
-    // positive:  1.0
-    // an analog stick may provide varying degrees of pos/neg, but it should not affect
-    // this game.
-    fn horizontal(x: f32) -> Option<Direction> {
-        if x < 0.0 {
-            Some(Left)
-        } else if x > 0.0 {
-            Some(Right)
-        } else {
-            None
-        }
-    }
-
-    fn vertical(y: f32) -> Option<Direction> {
-        if y < 0.0 {
-            Some(Down)
-        } else if y > 0.0 {
-            Some(Up)
-        } else {
-            None
-        }
-    }
-
-    // this approach is a little messy. we're assuming it's only ever used
-    // to combine horizontal with vertical. if it's not used that way then it's
-    // meaningless, because we can't have RightRight, or RightLeft, and so on.
-    fn combine(self, other: &Option<Direction>) -> Direction {
-        match (self, other) {
-            (Right, Some(Up)) => RightUp,
-            (Right, Some(Down)) => RightDown,
-            (Left, Some(Up)) => LeftUp,
-            (Left, Some(Down)) => LeftDown,
-            (x, _) => x,
-        }
-    }
-}
 
 /// This is the laser component type, used by `spawn_laser` to create new
 /// laser entities.
@@ -139,14 +84,14 @@ pub fn spawn_laser(
     // with `rad = lambda x: (x * math.pi) / 180` and then passing in degrees
     // (e.g. `rad(90)`)
     match laser.direction {
-        Up => transform.set_rotation_2d(0.0),
-        RightUp => transform.set_rotation_2d(-FRAC_PI_4),
-        Left => transform.set_rotation_2d(FRAC_PI_2),
-        LeftUp => transform.set_rotation_2d(FRAC_PI_4),
-        Down => transform.set_rotation_2d(PI),
-        LeftDown => transform.set_rotation_2d(2.356_194_5),
-        Right => transform.set_rotation_2d(-FRAC_PI_2),
-        RightDown => transform.set_rotation_2d(-2.356_194_5),
+        Direction::Up => transform.set_rotation_2d(0.0),
+        Direction::RightUp => transform.set_rotation_2d(-FRAC_PI_4),
+        Direction::LeftUp => transform.set_rotation_2d(FRAC_PI_4),
+        Direction::Left => transform.set_rotation_2d(FRAC_PI_2),
+        Direction::Down => transform.set_rotation_2d(PI),
+        Direction::LeftDown => transform.set_rotation_2d(2.356_194_5),
+        Direction::Right => transform.set_rotation_2d(-FRAC_PI_2),
+        Direction::RightDown => transform.set_rotation_2d(-2.356_194_5),
     };
 
     let laser_entity: Entity = entities.create();

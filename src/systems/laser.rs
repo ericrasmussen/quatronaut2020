@@ -4,7 +4,9 @@ use amethyst::{
     ecs::{Entities, Join, Read, System, SystemData, WriteStorage},
 };
 
-use crate::entities::laser::{Direction::*, Laser};
+use crate::entities::laser::Laser;
+use crate::resources::direction::Direction;
+
 use log::info;
 
 // this system is concerned only with lasers that have already been spawned.
@@ -35,31 +37,31 @@ impl<'s> System<'s> for LaserSystem {
             // it'd be easier to have the laser track `.next_change` or something
             // similar
             match &laser.direction {
-                Left => {
+                Direction::Left => {
                     transform.set_translation_x(neg_x);
                 },
-                Right => {
+                Direction::Right => {
                     transform.set_translation_x(pos_x);
                 },
-                Up => {
+                Direction::Up => {
                     transform.set_translation_y(pos_y);
                 },
-                Down => {
+                Direction::Down => {
                     transform.set_translation_y(neg_y);
                 },
-                RightUp => {
+                Direction::RightUp => {
                     transform.set_translation_x(pos_x);
                     transform.set_translation_y(pos_y);
                 },
-                LeftUp => {
+                Direction::LeftUp => {
                     transform.set_translation_x(neg_x);
                     transform.set_translation_y(pos_y);
                 },
-                LeftDown => {
+                Direction::LeftDown => {
                     transform.set_translation_x(neg_x);
                     transform.set_translation_y(neg_y);
                 },
-                RightDown => {
+                Direction::RightDown => {
                     transform.set_translation_x(pos_x);
                     transform.set_translation_y(neg_y);
                 },
