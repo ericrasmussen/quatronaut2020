@@ -4,13 +4,12 @@ use ncollide2d::{bounding_volume, shape::Cuboid};
 use amethyst::{
     core::Transform,
     derive::SystemDesc,
-    ecs::{Entities, Join, ReadStorage, System, SystemData, Write, WriteStorage},
+    ecs::{Entities, Join, ReadStorage, System, SystemData, WriteStorage},
 };
 
 use crate::{
     components::collider::Collider,
     entities::{enemy::Enemy, laser::Laser},
-    state::EnemyCount,
 };
 
 use log::info;
@@ -21,16 +20,16 @@ use log::info;
 pub struct CollisionSystem;
 
 impl<'s> System<'s> for CollisionSystem {
+    #[allow(clippy::type_complexity)]
     type SystemData = (
         ReadStorage<'s, Transform>,
         WriteStorage<'s, Laser>,
         WriteStorage<'s, Enemy>,
         Entities<'s>,
         ReadStorage<'s, Collider>,
-        Write<'s, EnemyCount>,
     );
 
-    fn run(&mut self, (transforms, lasers, mut enemies, entities, colliders, mut enemy_count): Self::SystemData) {
+    fn run(&mut self, (transforms, lasers, mut enemies, entities, colliders): Self::SystemData) {
         for (laser_entity, _laser_a, transform_a) in (&entities, &lasers, &transforms).join() {
             /*
              * Initialize the shapes.
@@ -71,12 +70,8 @@ impl<'s> System<'s> for CollisionSystem {
 
                     // if the enemy has taken enough damage, delete them
                     // TODO: may be a latent bug in associating this with laser hits...
-                    if enemy.is_dead() {
-                        if let Ok(_) = entities.delete(enemy_entity) {
-                            enemy_count.decrement_by(1);
-                            info!("enemy deleted due to laser hit");
-                            info!("new enemy count is: {}", enemy_count.count);
-                        }
+                    if enemy.is_dead() && entities.delete(enemy_entity).is_ok() {
+                        info!("enemy deleted due to insufficient laser dodging abilities");
                     }
                 }
             }

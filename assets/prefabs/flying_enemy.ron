@@ -1,16 +1,14 @@
 #![enable(implicit_some)]
 
+// flying enemy
+// eventually should reference which sprite to use, somehow...
 Prefab (
     entities: [
         PrefabEntity(
             data: EnemyPrefab(
                 // BEGIN enemy: Enemy
                 enemy: Enemy(
-                    speed: 100,
-                    velocity_x: 0,
-                    velocity_y: 0,
-                    health: 60,
-                    movement: Gravitate,
+                    health: 1,
                 ),
                 // END enemy: Enemy
 
@@ -20,11 +18,24 @@ Prefab (
                     // TODO: scale hardcoded to 5.0 in state.rs because
                     // it needs to be created separately from the enemy
                     // entity and components defined here
-                    half_width: 70.0,
-                    half_height: 70.0,
+                    half_width: 32.0,
+                    half_height: 32.0,
                 ),
                 // END collider: Collider
+
+                // BEGIN movement: Movement
+                movement: Movement(
+                    speed: 800,
+                    velocity_x: 0,
+                    velocity_y: 0,
+                    freeze_direction: false,
+                    locked_direction: None,
+                    already_rotated: false,
+                    movement_type: HorizontalRush,
+                ),
+                // END movement: Movement
             ),
         ),
     ]
 )
+

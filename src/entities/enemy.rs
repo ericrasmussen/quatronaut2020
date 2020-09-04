@@ -7,7 +7,7 @@ use amethyst::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::components::collider::Collider;
+use crate::components::{collider::Collider, launcher::Launcher, movement::Movement};
 
 //use log::info;
 
@@ -17,6 +17,8 @@ use crate::components::collider::Collider;
 pub struct EnemyPrefab {
     pub enemy: Enemy,
     pub collider: Collider,
+    pub movement: Movement,
+    pub launcher: Option<Launcher>,
 }
 
 impl<'a> PrefabData<'a> for EnemyPrefab {
@@ -24,6 +26,8 @@ impl<'a> PrefabData<'a> for EnemyPrefab {
     type SystemData = (
         <Enemy as PrefabData<'a>>::SystemData,
         <Collider as PrefabData<'a>>::SystemData,
+        <Movement as PrefabData<'a>>::SystemData,
+        <Launcher as PrefabData<'a>>::SystemData,
     );
 
     fn add_to_entity(
@@ -37,19 +41,11 @@ impl<'a> PrefabData<'a> for EnemyPrefab {
             .add_to_entity(entity, &mut system_data.0, entities, children)?;
         self.collider
             .add_to_entity(entity, &mut system_data.1, entities, children)?;
+        self.movement
+            .add_to_entity(entity, &mut system_data.2, entities, children)?;
+        self.launcher
+            .add_to_entity(entity, &mut system_data.3, entities, children)?;
         Ok(())
-    }
-}
-
-#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-pub enum Movement {
-    Gravitate,
-    HorizontalRush,
-}
-
-impl Default for Movement {
-    fn default() -> Self {
-        Movement::Gravitate
     }
 }
 
@@ -59,54 +55,16 @@ impl Default for Movement {
 #[prefab(Component)]
 #[serde(deny_unknown_fields)]
 pub struct Enemy {
-    pub speed: f32,
-    pub velocity_x: f32,
-    pub velocity_y: f32,
     pub health: f32,
-    pub movement: Movement,
 }
 
 impl Enemy {
-    // this is mainly so callers cannot modify the speed directly. we could
-    // also have the player track momentum to compute a speed, but it seems
-    // unnecessary
-    pub fn get_speed(&self) -> f32 {
-        self.speed
-    }
-
     pub fn is_dead(&self) -> bool {
         self.health <= 0.0
     }
 
     pub fn take_damage(&mut self, damage: f32) {
         self.health -= damage;
-    }
-
-    pub fn next_move(&mut self, target_x: f32, target_y: f32, current_x: f32, current_y: f32) {
-        match self.movement {
-            Movement::Gravitate => self.move_towards(target_x, target_y, current_x, current_y),
-            Movement::HorizontalRush => self.rush_towards(target_x, target_y, current_x, current_y),
-        }
-    }
-
-    // probably doesn't belong here but since only enemies need this for now,
-    // here's a function to compute how to move towards another transform
-    // based on speed
-    pub fn move_towards(&mut self, target_x: f32, target_y: f32, current_x: f32, current_y: f32) {
-        let dx = target_x - current_x;
-        let dy = target_y - current_y;
-        let angle = dy.atan2(dx);
-
-        self.velocity_x = self.get_speed() * angle.cos();
-        self.velocity_y = self.get_speed() * angle.sin();
-    }
-
-    // need to see how this develops... we could have a standard API for movement decisions
-    // and then swap out the strategies as needed
-    pub fn rush_towards(&mut self, _target_x: f32, target_y: f32, _current_x: f32, current_y: f32) {
-        if (current_y - target_y).abs() <= 150.0 {
-            self.velocity_x = self.get_speed() * 6.0;
-        }
     }
 }
 

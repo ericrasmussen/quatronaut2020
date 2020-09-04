@@ -1,5 +1,4 @@
-// TODO: add a background image
 (
-  title: "Benitron 3000",
-  dimensions: Some((1024, 768)),
+  title: "Quatronaut 2020",
+  dimensions: Some((1920, 1080)),
 )

@@ -1,7 +1,23 @@
 use serde::{Deserialize, Serialize};
 
-// TODO: use slices here for the intermediary type
-// e.g. LevelConfig<'a>(&'a [&'a [&'a str]])
+/// This represents everything we need to know about one level in order
+/// to build it, track victory conditions, track any special required
+/// clean up, and determine what happens if the player finishes the level
+#[derive(Clone, Debug)]
+pub struct LevelMetadata {
+    layout: Vec<EntityRecord>,
+}
+
+impl LevelMetadata {
+    pub fn new(layout: Vec<EntityRecord>) -> LevelMetadata {
+        LevelMetadata { layout }
+    }
+
+    pub fn get_layout(&self) -> &[EntityRecord] {
+        self.layout.as_slice()
+    }
+}
+
 #[derive(Debug, Deserialize, Serialize)]
 pub struct LevelConfig {
     pub rows: Vec<Vec<String>>,
@@ -10,7 +26,8 @@ pub struct LevelConfig {
 #[derive(Debug, Clone)]
 pub enum EntityType {
     FlyingEnemy,
-    BlobEnemy,
+    SquareEnemy,
+    Boss,
     Player,
 }
 
@@ -18,21 +35,24 @@ pub enum EntityType {
 pub type EntityRecord = (EntityType, f32, f32);
 
 // type alias for levels
-pub type Levels = Vec<Vec<EntityRecord>>;
+pub type Levels = Vec<LevelMetadata>;
 
 // loop through our grid to get a vector containing only entities
-// and transform coordinates
-pub fn get_level_entities(rows: &mut Vec<String>) -> Vec<EntityRecord> {
-    let mut records = Vec::new();
-
-    // make sure we reverse because y=0 is the bottom of the screen
+// and transform coordinates and other level
+fn get_level_entities(rows: &mut Vec<String>) -> LevelMetadata {
+    // make sure we reverse because y=0 is the bottom of the screen,
+    // but the level config is ordered top to bottom
     rows.reverse();
+
+    let mut records = Vec::new();
 
     for (y_index, r) in rows.iter().enumerate() {
         for (x_index, s) in r.chars().enumerate() {
             let entity = match s {
                 'F' => Some(EntityType::FlyingEnemy),
-                'B' => Some(EntityType::BlobEnemy),
+                'S' => Some(EntityType::SquareEnemy),
+                'B' => Some(EntityType::Boss),
+
                 'P' => Some(EntityType::Player),
                 _ => None,
             };
@@ -46,21 +66,19 @@ pub fn get_level_entities(rows: &mut Vec<String>) -> Vec<EntityRecord> {
         }
     }
 
-    // return the vector of records
-    records
+    LevelMetadata::new(records)
 }
 
 fn get_coordinates(x_grid_pos: usize, y_grid_pos: usize) -> (f32, f32) {
-    // this obviously shouldn't be hardcoded and will need to be changed when there
-    // are assets to work with.
     // this essentially computes a percentage of width and height based on the length
     // of each string (horizontal position) and index of each row (vertical position)
     // and then multiplies it by width and height of our screen dimensions to pick
     // coordinates usable for transform components
-    let width = 1024.0 * 2.0;
-    let height = 768.0 * 2.0;
-    let str_len = 11.0;
-    let num_rows = 7.0;
+    // these come from ScreenDimensions and should use that resource if possible
+    let width = 2880.0;
+    let height = 1710.0;
+    let str_len = 50.0;
+    let num_rows = 25.0;
 
     let x = (x_grid_pos as f32 / str_len) * width;
     let y = (y_grid_pos as f32 / num_rows) * height;
@@ -68,9 +86,6 @@ fn get_coordinates(x_grid_pos: usize, y_grid_pos: usize) -> (f32, f32) {
     (x, y)
 }
 
-// this is beginning to feel like a bundle... maybe we include a level bundle to get
-// all the config files. if it's not a bundle then we can
-// derive serialize/deserialize for serde and load it that way from a config
 pub fn get_all_levels(mut level_config: LevelConfig) -> Levels {
     level_config.rows.reverse();
 

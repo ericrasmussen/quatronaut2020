@@ -1,13 +1,17 @@
 pub use self::{
-    attacked::AttackedSystem,
+    attacked::{AttackedSystem, ProjectileHitSystem},
     collision::CollisionSystem,
-    enemy::{EnemyMoveSystem, EnemyTrackingSystem},
+    fade::FadeSystem,
     laser::LaserSystem,
+    movement::{MovementTrackingSystem, TransformUpdateSystem},
     player::PlayerSystem,
+    projectiles::ProjectilesSystem,
 };
 
 mod attacked;
 mod collision;
-mod enemy;
+mod fade;
 mod laser;
+mod movement;
 mod player;
+mod projectiles;

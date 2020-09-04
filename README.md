@@ -1,12 +1,12 @@
-## Benitron 3000
+## Quatronaut 2020
 
 A work-in-progress robotron style game made using https://amethyst.rs.
 
 ### Quick Build and Run
 
 ```bash
-git clone https://github.com/ericrasmussen/benitron3000.git
-cd benitron3000
+git clone https://github.com/ericrasmussen/quatronaut2020.git
+cd quatronaut2020
 cargo run --features "metal"    # if on macOS
 cargo run --features "vulkan"   # if on Linux or win32
 ```

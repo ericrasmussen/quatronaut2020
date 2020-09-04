@@ -16,7 +16,7 @@ clippy:
 
 .PHONY: doc
 doc:
-	cargo +nightly doc --features "vulkan" --no-deps --package benitron3000
+	cargo +nightly doc --features "vulkan" --no-deps --package quatronaut2020
 
 .PHONY: fmt
 format:

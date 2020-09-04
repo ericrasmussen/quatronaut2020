@@ -1,0 +1,46 @@
+#![enable(implicit_some)]
+
+Prefab (
+    entities: [
+        PrefabEntity(
+            data: EnemyPrefab(
+                // BEGIN enemy: Enemy
+                enemy: Enemy(
+                    health: 200,
+                ),
+                // END enemy: Enemy
+
+                // BEGIN collider: Collider
+                collider: Collider(
+                    // sprite width or height * 0.5 * scale
+                    // TODO: scale hardcoded to 5.0 in state.rs because
+                    // it needs to be created separately from the enemy
+                    // entity and components defined here
+                    half_width: 64.0,
+                    half_height: 64.0,
+                ),
+                // END collider: Collider
+
+                // BEGIN movement: Movement
+                movement: Movement(
+                    speed: 50,
+                    velocity_x: 0,
+                    velocity_y: 0,
+                    freeze_direction: false,
+                    locked_direction: None,
+                    already_rotated: false,
+                    movement_type: Gravitate,
+                ),
+                // END movement: Movement
+
+                // BEGIN launcher: Launcher
+                launcher: Launcher(
+                    fire_delay: 1.5,
+                    projectile_speed: 250,
+                    seconds_since_firing: 0.17,
+                ),
+                // END launcher: Launcher
+            ),
+        ),
+    ]
+)

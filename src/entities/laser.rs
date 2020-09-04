@@ -8,7 +8,9 @@ use amethyst::{
     renderer::{sprite::SpriteSheetHandle, SpriteRender},
 };
 
-use std::f32::consts::{FRAC_PI_2, FRAC_PI_4};
+use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, PI};
+
+use crate::components::cleanup::CleanupTag;
 
 //use log::info;
 
@@ -128,7 +130,7 @@ pub fn spawn_laser(
     // an incorrect sprite number here will lead to a memory leak
     let sprite_render = SpriteRender {
         sprite_sheet: sprite_sheet_handle,
-        sprite_number: 1,
+        sprite_number: 2,
     };
 
     let mut transform = player_transform.clone();
@@ -137,18 +139,20 @@ pub fn spawn_laser(
     // with `rad = lambda x: (x * math.pi) / 180` and then passing in degrees
     // (e.g. `rad(90)`)
     match laser.direction {
-        Left => transform.set_rotation_2d(0.0),
-        LeftUp => transform.set_rotation_2d(-FRAC_PI_4),
-        Up => transform.set_rotation_2d(FRAC_PI_2),
-        RightUp => transform.set_rotation_2d(FRAC_PI_4),
-        Right => transform.set_rotation_2d(0.0),
-        RightDown => transform.set_rotation_2d(2.356_194_5),
-        Down => transform.set_rotation_2d(FRAC_PI_2),
-        LeftDown => transform.set_rotation_2d(-2.356_194_5),
+        Up => transform.set_rotation_2d(0.0),
+        RightUp => transform.set_rotation_2d(-FRAC_PI_4),
+        Left => transform.set_rotation_2d(FRAC_PI_2),
+        LeftUp => transform.set_rotation_2d(FRAC_PI_4),
+        Down => transform.set_rotation_2d(PI),
+        LeftDown => transform.set_rotation_2d(2.356_194_5),
+        Right => transform.set_rotation_2d(-FRAC_PI_2),
+        RightDown => transform.set_rotation_2d(-2.356_194_5),
     };
 
     let laser_entity: Entity = entities.create();
+    let cleanup_tag = CleanupTag {};
     lazy_update.insert(laser_entity, laser);
+    lazy_update.insert(laser_entity, cleanup_tag);
     lazy_update.insert(laser_entity, transform);
     lazy_update.insert(laser_entity, sprite_render);
 }
