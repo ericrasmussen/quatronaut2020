@@ -2,10 +2,9 @@ use amethyst::{
     core::{timing::Time, Transform},
     derive::SystemDesc,
     ecs::{Entities, Join, LazyUpdate, Read, ReadExpect, ReadStorage, System, SystemData, WriteStorage},
-    input::{InputHandler, StringBindings},
 };
 
-use crate::components::launcher::{Launcher, launch_projectile};
+use crate::components::launcher::{launch_projectile, Launcher};
 
 use amethyst_rendy::sprite::SpriteRender;
 
@@ -26,13 +25,16 @@ impl<'s> System<'s> for ProjectilesSystem {
         Read<'s, Time>,
     );
 
-    fn run(
-        &mut self,
-        (mut transforms, mut launchers, entities, sprites, lazy_update, time): Self::SystemData,
-    ) {
+    fn run(&mut self, (mut transforms, mut launchers, entities, sprites, lazy_update, time): Self::SystemData) {
         for (launcher, transform, sprite) in (&mut launchers, &mut transforms, &sprites).join() {
             if launcher.can_fire(time.delta_seconds()) {
-                launch_projectile(*launcher, sprite.clone().sprite_sheet, &transform, &entities, &lazy_update);
+                launch_projectile(
+                    *launcher,
+                    sprite.clone().sprite_sheet,
+                    &transform,
+                    &entities,
+                    &lazy_update,
+                );
             }
         }
     }

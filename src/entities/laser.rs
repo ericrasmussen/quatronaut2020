@@ -10,6 +10,8 @@ use amethyst::{
 
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, PI};
 
+use crate::components::cleanup::CleanupTag;
+
 //use log::info;
 
 #[derive(Debug)]
@@ -148,7 +150,9 @@ pub fn spawn_laser(
     };
 
     let laser_entity: Entity = entities.create();
+    let cleanup_tag = CleanupTag {};
     lazy_update.insert(laser_entity, laser);
+    lazy_update.insert(laser_entity, cleanup_tag);
     lazy_update.insert(laser_entity, transform);
     lazy_update.insert(laser_entity, sprite_render);
 }

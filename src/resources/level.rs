@@ -1,5 +1,3 @@
-use amethyst::ecs::{storage::DenseVecStorage, Component};
-
 use serde::{Deserialize, Serialize};
 
 /// This represents everything we need to know about one level in order
@@ -7,65 +5,17 @@ use serde::{Deserialize, Serialize};
 /// clean up, and determine what happens if the player finishes the level
 #[derive(Clone, Debug)]
 pub struct LevelMetadata {
-    // number of enemies in the level
-    enemy_count: i32,
-
     layout: Vec<EntityRecord>,
-
-    // TODO: post-refactor this might not make sense
-    cleanup_complete: bool,
 }
 
 impl LevelMetadata {
-    pub fn new(enemy_count: i32, layout: Vec<EntityRecord>) -> LevelMetadata {
-        LevelMetadata {
-            enemy_count,
-            layout,
-            cleanup_complete: false,
-        }
-    }
-
-    // this seems unnecessary, but world resources are easier to modify than
-    // to replace completely. this is the simplest solution for now
-    pub fn replace_self_with(&mut self, new_metadata: LevelMetadata) {
-        self.enemy_count = new_metadata.enemy_count;
-        self.layout = new_metadata.layout;
-        self.cleanup_complete = new_metadata.cleanup_complete;
-    }
-
-    pub fn enemy_destroyed(&mut self) {
-        self.enemy_count -= 1;
-    }
-
-    pub fn all_enemies_defeated(&self) -> bool {
-        self.enemy_count <= 0
-    }
-
-    pub fn ready_for_level_transition(&self) -> bool {
-        self.all_enemies_defeated() && self.cleanup_complete
-    }
-
-    pub fn mark_cleanup_complete(&mut self) {
-        self.cleanup_complete = true;
+    pub fn new(layout: Vec<EntityRecord>) -> LevelMetadata {
+        LevelMetadata { layout }
     }
 
     pub fn get_layout(&self) -> &[EntityRecord] {
         self.layout.as_slice()
     }
-}
-
-impl Default for LevelMetadata {
-    fn default() -> Self {
-        LevelMetadata {
-            enemy_count: 0,
-            layout: Vec::new(),
-            cleanup_complete: true,
-        }
-    }
-}
-
-impl Component for LevelMetadata {
-    type Storage = DenseVecStorage<Self>;
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -96,23 +46,12 @@ fn get_level_entities(rows: &mut Vec<String>) -> LevelMetadata {
 
     let mut records = Vec::new();
 
-    let mut enemy_count = 0;
-
     for (y_index, r) in rows.iter().enumerate() {
         for (x_index, s) in r.chars().enumerate() {
             let entity = match s {
-                'F' => {
-                    enemy_count += 1;
-                    Some(EntityType::FlyingEnemy)
-                },
-                'S' => {
-                    enemy_count += 1;
-                    Some(EntityType::SquareEnemy)
-                },
-                'B' => {
-                    enemy_count += 1;
-                    Some(EntityType::Boss)
-                },
+                'F' => Some(EntityType::FlyingEnemy),
+                'S' => Some(EntityType::SquareEnemy),
+                'B' => Some(EntityType::Boss),
 
                 'P' => Some(EntityType::Player),
                 _ => None,
@@ -127,7 +66,7 @@ fn get_level_entities(rows: &mut Vec<String>) -> LevelMetadata {
         }
     }
 
-    LevelMetadata::new(enemy_count, records)
+    LevelMetadata::new(records)
 }
 
 fn get_coordinates(x_grid_pos: usize, y_grid_pos: usize) -> (f32, f32) {

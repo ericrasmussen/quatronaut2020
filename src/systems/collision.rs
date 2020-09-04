@@ -4,16 +4,15 @@ use ncollide2d::{bounding_volume, shape::Cuboid};
 use amethyst::{
     core::Transform,
     derive::SystemDesc,
-    ecs::{Entities, Join, ReadStorage, System, SystemData, Write, WriteStorage},
+    ecs::{Entities, Join, ReadStorage, System, SystemData, WriteStorage},
 };
 
 use crate::{
     components::collider::Collider,
     entities::{enemy::Enemy, laser::Laser},
-    resources::level::LevelMetadata,
 };
 
-//use log::info;
+use log::info;
 
 // big TODO: as this system gets more complicated, at some point it'll probably
 // be worth using ncollide's broad phase collision
@@ -28,10 +27,9 @@ impl<'s> System<'s> for CollisionSystem {
         WriteStorage<'s, Enemy>,
         Entities<'s>,
         ReadStorage<'s, Collider>,
-        Write<'s, LevelMetadata>,
     );
 
-    fn run(&mut self, (transforms, lasers, mut enemies, entities, colliders, mut level_metadata): Self::SystemData) {
+    fn run(&mut self, (transforms, lasers, mut enemies, entities, colliders): Self::SystemData) {
         for (laser_entity, _laser_a, transform_a) in (&entities, &lasers, &transforms).join() {
             /*
              * Initialize the shapes.
@@ -73,9 +71,7 @@ impl<'s> System<'s> for CollisionSystem {
                     // if the enemy has taken enough damage, delete them
                     // TODO: may be a latent bug in associating this with laser hits...
                     if enemy.is_dead() && entities.delete(enemy_entity).is_ok() {
-                        level_metadata.enemy_destroyed();
-                        //info!("enemy deleted due to laser hit");
-                        //info!("new enemy count is: {}", level_metadata.count);
+                        info!("enemy deleted due to insufficient laser dodging abilities");
                     }
                 }
             }

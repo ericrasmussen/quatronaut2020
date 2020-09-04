@@ -8,7 +8,8 @@ use amethyst::{
     assets::{Handle, PrefabLoader, ProgressCounter, RonFormat},
     core::math::{Translation3, UnitQuaternion, Vector3},
     core::{transform::Transform, ArcThreadPool},
-    ecs::prelude::{Dispatcher, DispatcherBuilder},
+    ecs::prelude::{Dispatcher, DispatcherBuilder, Join},
+    ecs::world::EntitiesRes,
     input::{is_close_requested, is_key_down, VirtualKeyCode},
     prelude::*,
     renderer::{Camera, SpriteRender, SpriteSheet},
@@ -24,7 +25,7 @@ use crate::entities::{
 };
 
 use crate::{
-    components::{collider::Collider, movement::Movement, launcher::Launcher},
+    components::{cleanup::CleanupTag, collider::Collider, launcher::Launcher, movement::Movement},
     resources::{
         handles,
         handles::GameplayHandles,
@@ -44,6 +45,10 @@ use log::info;
 #[derive(new)]
 pub struct GameplayState<'a, 'b> {
     pub levels: Levels,
+
+    // initializes this value with false
+    #[new(default)]
+    pub level_is_loaded: bool,
 
     #[new(default)]
     pub handles: Option<GameplayHandles>,
@@ -67,11 +72,10 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         dispatcher_builder.add(systems::LaserSystem, "laser_system", &[]);
         dispatcher_builder.add(systems::CollisionSystem, "collision_system", &[]);
         dispatcher_builder.add(systems::AttackedSystem, "attacked_system", &[]);
+        dispatcher_builder.add(systems::ProjectileHitSystem, "projectile_hit_system", &[]);
         dispatcher_builder.add(systems::MovementTrackingSystem, "movement_tracking_system", &[]);
         dispatcher_builder.add(systems::TransformUpdateSystem, "transform_update_system", &[]);
         dispatcher_builder.add(systems::ProjectilesSystem, "projectiles_system", &[]);
-        // TODO: replace this with some kind of level transition state
-        dispatcher_builder.add(systems::CleanupSystem, "cleanup_system", &[]);
 
         // builds and sets up the dispatcher
         let mut dispatcher = dispatcher_builder
@@ -127,13 +131,13 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
         // register our entities and resources before inserting them or
         // having them created as part of `init_level` in `update`
+        world.register::<CleanupTag>();
         world.register::<Player>();
         world.register::<Laser>();
         world.register::<Enemy>();
         world.register::<Collider>();
         world.register::<Movement>();
         world.register::<Launcher>();
-        world.register::<LevelMetadata>();
         world.register::<PlayableArea>();
 
         // setup the playable area. depending on how many backgrounds we have these
@@ -148,12 +152,13 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
         world.insert(playable_area);
 
-        // tracks level metadata for the current level, which will be needed
-        // by other states and systems. potential gotcha: the default will
-        // setup an empty level marked as completed. this is so `update` can
-        // manage all the level logic
-        let current_level = LevelMetadata::default();
-        world.insert(current_level);
+        let next_level = self.levels.pop();
+
+        let handles = self.handles.clone().expect("failure accessing GameplayHandles struct");
+
+        if let Some(next_level_metadata) = next_level {
+            init_level(world, next_level_metadata, handles);
+        }
     }
 
     fn update(&mut self, data: &mut StateData<'_, GameData<'_, '_>>) -> SimpleTrans {
@@ -165,23 +170,29 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             }
         }
 
-        // check the level metadata and see if we're ready to load a new level
-        let level_metadata = (*data.world.fetch::<LevelMetadata>()).clone();
+        // this removes the need to track a count of enemies and have multiple
+        // systems read and write to that resource
+        let total = {
+            let entities = data.world.read_resource::<EntitiesRes>();
+            let enemies = data.world.read_storage::<Enemy>();
+            (&entities, &enemies).join().count()
+        };
 
-        if level_metadata.ready_for_level_transition() {
-            let next_level = self.levels.pop();
+        // still hacky. checks that we have at least 1 enemy to decide
+        // that the level is loaded. this is because the levels inserted
+        // into the world may not be loaded the first time this update is called
+        if total > 0 {
+            self.level_is_loaded = true;
+        }
 
-            let handles = self.handles.clone().expect("failure accessing GameplayHandles struct");
-
-            if let Some(next_level_metadata) = next_level {
-                init_level(data.world, next_level_metadata.clone(), handles);
-
-                let mut write_level_metadata = data.world.write_resource::<LevelMetadata>();
-
-                write_level_metadata.replace_self_with(next_level_metadata);
-            }
-
-            Trans::None
+        // this branch decides whether or not to switch state. if a level is
+        // loaded and all enemies are defeated, it's time to transition, otherwise
+        // keep going
+        if total == 0 && self.level_is_loaded {
+            Trans::Switch(Box::new(TransitionState::new(
+                self.handles.clone().unwrap().overlay_sprite_handle,
+                self.levels.clone(),
+            )))
         }
         // otherwise, nothing to see here folks!
         else {
@@ -203,14 +214,28 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
             // when should this actually run?
             if is_key_down(&event, VirtualKeyCode::Space) {
-                return Trans::Push(Box::new(TransitionState::new(
+                return Trans::Switch(Box::new(TransitionState::new(
                     self.handles.clone().unwrap().overlay_sprite_handle,
+                    self.levels.clone(),
                 )));
             }
         }
 
         // no state changes required
         Trans::None
+    }
+
+    fn on_stop(&mut self, data: StateData<GameData>) {
+        // state items that should be cleaned up (players, entities, lasers,
+        // projectiles) should all be marked with `CleanupTag` and removed
+        // here when this state ends
+        let entities = data.world.read_resource::<EntitiesRes>();
+        let cleanup_tags = data.world.read_storage::<CleanupTag>();
+
+        for (entity, _tag) in (&entities, &cleanup_tags).join() {
+            let err = format!("unable to delete entity: {:?}", entity);
+            entities.delete(entity).expect(&err);
+        }
     }
 }
 
@@ -275,6 +300,7 @@ fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: Gamepla
 
     for rec in level_metadata.get_layout() {
         let (entity_type, x, y) = rec;
+        let cleanup_tag = CleanupTag {};
         let position = Translation3::new(*x, *y, 0.0);
         let transform = Transform::new(position, rotation, scale);
 
@@ -285,6 +311,7 @@ fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: Gamepla
                     .with(handles.boss_prefab_handle.clone())
                     .with(boss_render.clone())
                     .with(transform)
+                    .with(cleanup_tag)
                     .build();
             },
             EntityType::SquareEnemy => {
@@ -293,6 +320,7 @@ fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: Gamepla
                     .with(handles.enemy_prefab_handle.clone())
                     .with(square_render.clone())
                     .with(transform)
+                    .with(cleanup_tag)
                     .build();
             },
             EntityType::FlyingEnemy => {
@@ -301,6 +329,7 @@ fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: Gamepla
                     .with(handles.flying_enemy_prefab_handle.clone())
                     .with(flying_render.clone())
                     .with(transform)
+                    .with(cleanup_tag)
                     .build();
             },
             EntityType::Player => {
@@ -309,6 +338,7 @@ fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: Gamepla
                     .with(handles.player_prefab_handle.clone())
                     .with(player_render.clone())
                     .with(transform)
+                    .with(cleanup_tag)
                     .build();
             },
         }

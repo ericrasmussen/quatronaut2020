@@ -7,7 +7,7 @@ use amethyst::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::components::{collider::Collider, movement::Movement, launcher::Launcher};
+use crate::components::{collider::Collider, launcher::Launcher, movement::Movement};
 
 //use log::info;
 

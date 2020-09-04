@@ -6,7 +6,8 @@ use amethyst::{
     assets::Handle,
     core::math::{Translation3, UnitQuaternion, Vector3},
     core::{transform::Transform, ArcThreadPool},
-    ecs::prelude::{Dispatcher, DispatcherBuilder},
+    ecs::prelude::{Dispatcher, DispatcherBuilder, Join},
+    ecs::world::EntitiesRes,
     input::{is_close_requested, is_key_down, VirtualKeyCode},
     prelude::*,
     renderer::{palette::Srgba, resources::Tint, SpriteRender, SpriteSheet, Transparent},
@@ -16,8 +17,11 @@ use amethyst::{
 use derive_new::new;
 
 use crate::{
-    resources::fade::{Fade, Fader},
-    states::paused::PausedState,
+    resources::{
+        fade::{Fade, FadeStatus, Fader},
+        level::Levels,
+    },
+    states::{gameplay::GameplayState, paused::PausedState},
     systems::FadeSystem,
 };
 
@@ -32,6 +36,7 @@ pub struct TransitionState<'a, 'b> {
     #[new(default)]
     pub dispatcher: Option<Dispatcher<'a, 'b>>,
     pub overlay_sprite_handle: Handle<SpriteSheet>,
+    pub levels: Levels,
 }
 
 impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
@@ -51,8 +56,12 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
 
         self.dispatcher = Some(dispatcher);
 
-        // if there is no fader resource yet, assume we'll need to darken
-        // the screen first
+        // this is all a little over complicated, but the status is a shared
+        // resource to track if fading has completed
+        world.register::<FadeStatus>();
+        world.insert(FadeStatus::default());
+
+        // insert a new fader to start darkening the screen
         world.register::<Fader>();
         let default_fader = Fader::new(0.001, Fade::Darken);
         world.entry::<Fader>().or_insert_with(|| default_fader);
@@ -67,17 +76,28 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
             dispatcher.dispatch(&data.world);
         }
 
-        // here's where we'll need to check the fade resource. if it's fully darkened or
-        // fully faded, we can call .switch()
-        // do we need a stopped state? or we could just delete instead of switch...
-        // because we need to know when to pop the current state here too
+        let mut fade_status = data.world.write_resource::<FadeStatus>();
 
-        // but do we really want a transparent drawing over everything all the time?
-        // that will have to be added on start and associated with a transform and fader
-        // which the system will use
+        if fade_status.is_completed() {
+            fade_status.clear();
 
-        // and this will be an if/else to pop state if needed
-        Trans::None
+            Trans::Switch(Box::new(GameplayState::new(self.levels.clone())))
+        } else {
+            Trans::None
+        }
+    }
+
+    fn on_stop(&mut self, data: StateData<GameData>) {
+        // state items that should be cleaned up (players, entities, lasers,
+        // projectiles) should all be marked with `CleanupTag` and removed
+        // here when this state ends
+        let entities = data.world.read_resource::<EntitiesRes>();
+        let faders = data.world.read_storage::<Fader>();
+
+        for (entity, _tag) in (&entities, &faders).join() {
+            let err = format!("unable to delete entity: {:?}", entity);
+            entities.delete(entity).expect(&err);
+        }
     }
 
     // handles pausing (toggling the `p` key) and closing (window close or pressing escape)
@@ -106,7 +126,7 @@ fn init_overlay(world: &mut World, dimensions: &ScreenDimensions, overlay_sprite
     let scale = Vector3::new(100.0, 100.0, 1.0);
     let position = Translation3::new(dimensions.width() * 0.5, dimensions.height() * 0.5, 0.0);
     let transform = Transform::new(position, rotation, scale);
-    let fader = Fader::new(0.25, Fade::Darken);
+    let fader = Fader::new(6.0, Fade::Darken);
     let tint = Tint(Srgba::new(0.0, 0.0, 0.0, 0.0));
     let overlay_render = SpriteRender {
         sprite_sheet: overlay_sprite_handle,

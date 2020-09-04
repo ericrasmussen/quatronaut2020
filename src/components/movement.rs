@@ -12,6 +12,7 @@ use serde::{Deserialize, Serialize};
 pub enum MovementType {
     Gravitate,
     HorizontalRush,
+    ProjectileRush,
     //PlayerControl,
 }
 
@@ -57,6 +58,7 @@ impl Movement {
         match self.movement_type {
             MovementType::Gravitate => self.move_towards(target_x, target_y, current_x, current_y),
             MovementType::HorizontalRush => self.rush_towards(target_x, target_y, target_z, current_x, current_y),
+            MovementType::ProjectileRush => self.projectile_rush(target_x, target_y, target_z, current_x, current_y),
         }
     }
 
@@ -74,13 +76,24 @@ impl Movement {
 
     // the rush strategy should be for picking one direction and then rushing
     pub fn rush_towards(&mut self, target_x: f32, target_y: f32, target_z: f32, current_x: f32, current_y: f32) {
-        if !self.freeze_direction && (current_x - target_x).abs() <= 150.0 {
+        let player_in_range = (current_x - target_x).abs() <= 150.0 || (current_y - target_y).abs() <= 150.0;
+
+        if !self.freeze_direction && player_in_range {
             // kind of hacky, trying to see what works
             // the idea is that when the player is within a certain range, the enemy will
             // set off once in that direction only and not change
             self.move_towards(target_x, target_y, current_x, current_y);
             self.locked_direction = Some(Vector3::new(target_x, target_y, target_z));
             self.freeze_direction = true;
+        }
+    }
+
+    // this is basically the rush strategy except it doesn't wait for the player to get close
+    pub fn projectile_rush(&mut self, target_x: f32, target_y: f32, target_z: f32, current_x: f32, current_y: f32) {
+        if !self.freeze_direction {
+            self.locked_direction = Some(Vector3::new(target_x, target_y, target_z));
+            self.freeze_direction = true;
+            self.move_towards(target_x, target_y, current_x, current_y);
         }
     }
 }

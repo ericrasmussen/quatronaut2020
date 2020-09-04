@@ -1,6 +1,5 @@
 pub use self::{
-    attacked::AttackedSystem,
-    cleanup::CleanupSystem,
+    attacked::{AttackedSystem, ProjectileHitSystem},
     collision::CollisionSystem,
     fade::FadeSystem,
     laser::LaserSystem,
@@ -10,7 +9,6 @@ pub use self::{
 };
 
 mod attacked;
-mod cleanup;
 mod collision;
 mod fade;
 mod laser;

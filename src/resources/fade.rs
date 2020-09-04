@@ -8,6 +8,7 @@ use amethyst::ecs::{storage::DenseVecStorage, Component};
 pub enum Fade {
     Darken,
     Lighten,
+    Done,
 }
 
 #[derive(Clone, Debug)]
@@ -26,6 +27,9 @@ impl Fader {
         let alpha = match fade_direction {
             Fade::Darken => 0.0,
             Fade::Lighten => 1.0,
+            // no one should create a new instance that's already
+            // done fading, but if so, we don't want to modify the alpha
+            Fade::Done => 0.0,
         };
         Fader {
             fade_speed,
@@ -34,16 +38,22 @@ impl Fader {
         }
     }
 
+    pub fn fade_completed(&self) -> bool {
+        self.fade_direction == Fade::Done
+    }
+
     pub fn next_alpha_change(&mut self, time_delta: f32) -> f32 {
         let change_amt = self.fade_speed * time_delta;
         match self.fade_direction {
             Fade::Darken => self.alpha += change_amt,
             Fade::Lighten => self.alpha -= change_amt,
+            Fade::Done => {},
         }
 
-        // TESTING!!! hope you aren't reading this on github
-        if self.is_darkened() || self.is_lightened() {
-            self.switch();
+        if self.is_darkened() {
+            self.fade_direction = Fade::Lighten;
+        } else if self.is_lightened() {
+            self.fade_direction = Fade::Done;
         }
 
         self.alpha
@@ -56,17 +66,34 @@ impl Fader {
     pub fn is_lightened(&self) -> bool {
         self.fade_direction == Fade::Lighten && self.alpha <= 0.0
     }
+}
 
-    pub fn switch(&mut self) {
-        match self.fade_direction {
-            Fade::Darken => {
-                self.fade_direction = Fade::Lighten;
-                self.alpha = 1.0;
-            },
-            Fade::Lighten => {
-                self.fade_direction = Fade::Darken;
-                self.alpha = 0.0;
-            },
+pub struct FadeStatus {
+    completed: bool,
+}
+
+impl Component for FadeStatus {
+    type Storage = DenseVecStorage<Self>;
+}
+
+impl Default for FadeStatus {
+    fn default() -> FadeStatus {
+        FadeStatus { completed: false }
+    }
+}
+
+impl FadeStatus {
+    pub fn update(&mut self, fader: Fader) {
+        if fader.fade_completed() {
+            self.completed = true;
         }
+    }
+
+    pub fn is_completed(&self) -> bool {
+        self.completed
+    }
+
+    pub fn clear(&mut self) {
+        self.completed = false;
     }
 }

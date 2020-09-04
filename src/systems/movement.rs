@@ -1,11 +1,10 @@
 use amethyst::{
     core::{timing::Time, Transform},
     derive::SystemDesc,
-    ecs::{Entities, Join, Read, ReadStorage, System, SystemData, Write, WriteStorage},
+    ecs::{Entities, Join, Read, ReadStorage, System, SystemData, WriteStorage},
 };
 
-
-use crate::{components::movement::Movement, entities::player::Player, resources::level::LevelMetadata};
+use crate::{components::movement::Movement, entities::player::Player};
 
 use std::f32::consts::PI;
 
@@ -51,11 +50,10 @@ impl<'s> System<'s> for TransformUpdateSystem {
         WriteStorage<'s, Transform>,
         WriteStorage<'s, Movement>,
         Read<'s, Time>,
-        Write<'s, LevelMetadata>,
         Entities<'s>,
     );
 
-    fn run(&mut self, (mut transforms, mut movements, time, mut level_metadata, entities): Self::SystemData) {
+    fn run(&mut self, (mut transforms, mut movements, time, entities): Self::SystemData) {
         for (movement, enemy_entity, enemy_transform) in (&mut movements, &entities, &mut transforms).join() {
             enemy_transform.prepend_translation_x(movement.velocity_x * time.delta_seconds());
             enemy_transform.prepend_translation_y(movement.velocity_y * time.delta_seconds());
@@ -76,7 +74,6 @@ impl<'s> System<'s> for TransformUpdateSystem {
             // rotated before being spawned
             if let Some(player_vec) = movement.locked_direction {
                 if !movement.already_rotated {
-
                     let dir = player_vec - enemy_transform.translation();
                     let angle = dir.y.atan2(dir.x);
                     let angle_facing = angle - (90.0 * PI / 180.0);
@@ -94,9 +91,7 @@ impl<'s> System<'s> for TransformUpdateSystem {
             let out_of_bounds = x < -500.0 || x > 2500.0 || y < -500.0 || y > 2500.0;
 
             if out_of_bounds && entities.delete(enemy_entity).is_ok() {
-                level_metadata.enemy_destroyed();
-                //info!("enemy out of bounds");
-                //info!("new enemy count is: {}", enemy_count.count);
+                info!("enemy out of bounds");
             }
         }
     }
