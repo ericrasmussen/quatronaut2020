@@ -7,8 +7,7 @@ A work-in-progress robotron style game made using https://amethyst.rs.
 ```bash
 git clone https://github.com/ericrasmussen/quatronaut2020.git
 cd quatronaut2020
-cargo run --features "metal"    # if on macOS
-cargo run --features "vulkan"   # if on Linux or win32
+cargo xtask run
 ```
 
 ### Gameplay notes

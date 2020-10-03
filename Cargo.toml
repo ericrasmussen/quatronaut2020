@@ -20,3 +20,8 @@ derive-new = "0.5.8"
 empty = ["amethyst/empty"]
 metal = ["amethyst/metal"]
 vulkan = ["amethyst/vulkan"]
+
+[workspace]
+members = [
+  "xtask",
+]
