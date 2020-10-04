@@ -1,4 +1,4 @@
-//! Cargo xtask definitions for the wasm-language-server project.
+//! Cargo xtask definitions.
 
 #![deny(clippy::all)]
 #![deny(missing_docs)]
