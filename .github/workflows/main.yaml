@@ -41,7 +41,7 @@ jobs:
       with:
         command: install
         args: --root ${{ runner.tool_cache }}/cargo-audit --force cargo-audit
-    - run: echo "::add-path::${{ runner.tool_cache }}/cargo-audit/bin"
+    - run: echo "${{ runner.tool_cache }}/cargo-audit/bin" >> $GITHUB_PATH
     - run: cargo audit
 
   # verify that project passes clippy lints
