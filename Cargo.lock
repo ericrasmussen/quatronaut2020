@@ -1920,6 +1920,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "nalgebra"
+version = "0.22.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "500430fe18b836c0099c22e716139eae37210ecf8e1ae3931b73078e9a2de7a9"
+dependencies = [
+ "approx 0.3.2",
+ "generic-array",
+ "matrixmultiply",
+ "num-complex",
+ "num-rational",
+ "num-traits 0.2.11",
+ "rand 0.7.3",
+ "rand_distr",
+ "simba",
+ "typenum",
+]
+
+[[package]]
 name = "ncollide2d"
 version = "0.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2422,7 +2440,7 @@ dependencies = [
  "amethyst_rendy",
  "derive-new",
  "log",
- "nalgebra 0.20.0",
+ "nalgebra 0.22.1",
  "ncollide2d",
  "serde",
 ]
@@ -3292,6 +3310,18 @@ name = "shrev"
 version = "1.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b5752e017e03af9d735b4b069f53b7a7fd90fefafa04d8bd0c25581b0bff437f"
+
+[[package]]
+name = "simba"
+version = "0.2.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cdec3fb717e5504ecbef1cf4223c334a215f95323092afeae57125ec40e4995b"
+dependencies = [
+ "approx 0.3.2",
+ "num-complex",
+ "num-traits 0.2.11",
+ "paste",
+]
 
 [[package]]
 name = "siphasher"
