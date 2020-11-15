@@ -13,8 +13,8 @@ log = { version = "0.4.8", features = ["serde"] }
 nalgebra = "0.20"
 ncollide2d = "0.22"
 serde = { version = "1.0.104", features = ["derive"] }
-# used only for a default implementation of GameplayState. probably not really needed
 derive-new = "0.5.8"
+rand = "0.7.3"
 
 [features]
 empty = ["amethyst/empty"]

@@ -4,8 +4,7 @@ use amethyst::{
     ecs::{Entities, Join, Read, System, SystemData, WriteStorage},
 };
 
-use crate::entities::laser::Laser;
-use crate::resources::direction::Direction;
+use crate::{entities::laser::Laser, resources::direction::Direction};
 
 use log::info;
 

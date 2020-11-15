@@ -25,7 +25,13 @@ use crate::entities::{
 };
 
 use crate::{
-    components::{cleanup::CleanupTag, collider::Collider, launcher::Launcher, movement::Movement},
+    components::{
+        collider::Collider,
+        launcher::Launcher,
+        movement::Movement,
+        perspective::Perspective,
+        tags::{BackgroundTag, CameraTag, CleanupTag},
+    },
     resources::{
         handles,
         handles::GameplayHandles,
@@ -36,7 +42,20 @@ use crate::{
     systems,
 };
 
+use rand::{thread_rng, Rng};
+
 use log::info;
+
+// could use separate states here, but they feel a little heavy. all the
+// modes here share the same gameplay logic
+#[derive(Clone, Debug, PartialEq)]
+pub enum GameplayMode {
+    LevelMode,
+    TransitionMode,
+    EndlessMode,
+}
+
+use GameplayMode::*;
 
 /// Collects our state-specific dispatcher, progress counter for asset
 /// loading, struct with gameplay handles, and levels. Note that the
@@ -46,9 +65,11 @@ use log::info;
 pub struct GameplayState<'a, 'b> {
     pub levels: Levels,
 
-    // initializes this value with false
+    // default initializes this value with false
     #[new(default)]
     pub level_is_loaded: bool,
+
+    pub gameplay_mode: GameplayMode,
 
     #[new(default)]
     pub handles: Option<GameplayHandles>,
@@ -91,6 +112,19 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         let dimensions = (*world.read_resource::<ScreenDimensions>()).clone();
         info!("computed dimensions are: {:?}", &dimensions);
 
+        // register our entities and resources before inserting them or
+        // having them created as part of `init_level` in `update`
+        world.register::<BackgroundTag>();
+        world.register::<CameraTag>();
+        world.register::<CleanupTag>();
+        world.register::<Player>();
+        world.register::<Laser>();
+        world.register::<Enemy>();
+        world.register::<Collider>();
+        world.register::<Movement>();
+        world.register::<Launcher>();
+        world.register::<PlayableArea>();
+
         // Place the camera
         init_camera(world, &dimensions);
 
@@ -125,30 +159,28 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         // render the background
         init_background(
             world,
+            &self.gameplay_mode,
             &dimensions,
             self.handles.clone().unwrap().background_sprite_handle,
         );
 
-        // register our entities and resources before inserting them or
-        // having them created as part of `init_level` in `update`
-        world.register::<CleanupTag>();
-        world.register::<Player>();
-        world.register::<Laser>();
-        world.register::<Enemy>();
-        world.register::<Collider>();
-        world.register::<Movement>();
-        world.register::<Launcher>();
-        world.register::<PlayableArea>();
-
         // setup the playable area. depending on how many backgrounds we have these
         // percentages might go into the levels.ron config. these percentages are
         // used to represent rectangular boundaries in a given background
-        let playable_area = PlayableArea::new(
-            dimensions.width() * 0.33,
-            dimensions.width() * 0.67,
-            dimensions.height() * 0.22,
-            dimensions.height() * 0.78,
-        );
+        let playable_area = match self.gameplay_mode {
+            // endless mode isn't constrained to part of the screen
+            // although we should still convert to world coordinates here so it's not different
+            // based on pixel density
+            EndlessMode => PlayableArea::new(50.0, dimensions.width(), 50.0, dimensions.height()),
+            // for anything else (should only be LevelMode), we constrain the
+            // playing area to the black section of the screen
+            _ => PlayableArea::new(
+                dimensions.width() * 0.33,
+                dimensions.width() * 0.67,
+                dimensions.height() * 0.22,
+                dimensions.height() * 0.78,
+            ),
+        };
 
         world.insert(playable_area);
 
@@ -156,9 +188,19 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
         let handles = self.handles.clone().expect("failure accessing GameplayHandles struct");
 
-        if let Some(next_level_metadata) = next_level {
-            init_level(world, next_level_metadata, handles);
-        }
+        info!("gameplay mode is now: {:?}", &self.gameplay_mode);
+        match &self.gameplay_mode {
+            LevelMode => match next_level {
+                Some(next_level_metadata) => init_level(world, next_level_metadata, handles),
+                None => self.gameplay_mode = TransitionMode,
+            },
+            EndlessMode => {
+                spawn_player_in_center(world, &dimensions, handles.clone());
+                // TODO: spawn on timer via update()
+                spawn_enemies(world, handles);
+            },
+            _ => {},
+        };
     }
 
     fn update(&mut self, data: &mut StateData<'_, GameData<'_, '_>>) -> SimpleTrans {
@@ -185,13 +227,25 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             self.level_is_loaded = true;
         }
 
+        let handles = self.handles.clone().expect("failure accessing GameplayHandles struct");
+        // if self.gameplay_mode == EndlessMode {
+        //     spawn_enemies(data.world, handles);
+        // }
+
         // this branch decides whether or not to switch state. if a level is
         // loaded and all enemies are defeated, it's time to transition, otherwise
         // keep going
-        if total == 0 && self.level_is_loaded {
+        if self.gameplay_mode == TransitionMode {
             Trans::Switch(Box::new(TransitionState::new(
-                self.handles.clone().unwrap().overlay_sprite_handle,
+                handles.overlay_sprite_handle,
                 self.levels.clone(),
+                Some(Perspective::new(0.6, 0.3)),
+            )))
+        } else if total == 0 && self.level_is_loaded {
+            Trans::Switch(Box::new(TransitionState::new(
+                handles.overlay_sprite_handle,
+                self.levels.clone(),
+                None,
             )))
         }
         // otherwise, nothing to see here folks!
@@ -217,6 +271,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
                 return Trans::Switch(Box::new(TransitionState::new(
                     self.handles.clone().unwrap().overlay_sprite_handle,
                     self.levels.clone(),
+                    Some(Perspective::new(0.6, 0.3)),
                 )));
             }
         }
@@ -252,28 +307,65 @@ fn init_camera(world: &mut World, dimensions: &ScreenDimensions) {
         .create_entity()
         .with(Camera::standard_2d(1920.0, 1080.0))
         .with(transform)
+        .with(CameraTag::default())
         .build();
 }
 
 // render the background, giving it a low z value so it renders under
 // everything else
-fn init_background(world: &mut World, dimensions: &ScreenDimensions, bg_sprite_sheet_handle: Handle<SpriteSheet>) {
+fn init_background(
+    world: &mut World,
+    gameplay_mode: &GameplayMode,
+    dimensions: &ScreenDimensions,
+    bg_sprite_sheet_handle: Handle<SpriteSheet>,
+) {
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
 
     let scale = Vector3::new(1.0, 1.0, 1.0);
     let position = Translation3::new(dimensions.width() * 0.5, dimensions.height() * 0.5, -25.0);
     let transform = Transform::new(position, rotation, scale);
 
+    let sprite_number = if gameplay_mode == &EndlessMode { 1 } else { 0 };
     let bg_render = SpriteRender {
         sprite_sheet: bg_sprite_sheet_handle,
-        sprite_number: 0,
+        sprite_number,
     };
 
-    world.create_entity().with(bg_render).with(transform).build();
+    let bg_tag = BackgroundTag::default();
+
+    world
+        .create_entity()
+        .with(bg_render)
+        .with(bg_tag)
+        .with(transform)
+        .build();
 }
 
 // takes the current level metadata and gameplay handles, then adds
 // all the associated entities and components to the world
+fn spawn_player_in_center(world: &mut World, dimensions: &ScreenDimensions, handles: GameplayHandles) {
+    let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
+    let scale = Vector3::new(0.25, 0.25, 0.25);
+
+    let player_render = SpriteRender {
+        sprite_sheet: handles.player_sprites_handle,
+        sprite_number: 0,
+    };
+
+    let position = Translation3::new(dimensions.width() * 0.5, dimensions.height() * 0.5, 0.0);
+
+    let transform = Transform::new(position, rotation, scale);
+    let cleanup_tag = CleanupTag {};
+
+    world
+        .create_entity()
+        .with(handles.player_prefab_handle)
+        .with(player_render)
+        .with(transform)
+        .with(cleanup_tag)
+        .build();
+}
+
 fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: GameplayHandles) {
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
     let scale = Vector3::new(0.25, 0.25, 0.25);
@@ -341,6 +433,87 @@ fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: Gamepla
                     .with(cleanup_tag)
                     .build();
             },
+        }
+    }
+}
+// takes the current level metadata and gameplay handles, then adds
+// all the associated entities and components to the world
+fn spawn_enemies(world: &mut World, handles: GameplayHandles) {
+    let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
+    let scale = Vector3::new(0.25, 0.25, 0.25);
+
+    let boss_render = SpriteRender {
+        sprite_sheet: handles.enemy_sprites_handle.clone(),
+        sprite_number: 0,
+    };
+
+    let square_render = SpriteRender {
+        sprite_sheet: handles.enemy_sprites_handle.clone(),
+        sprite_number: 1,
+    };
+
+    let flying_render = SpriteRender {
+        sprite_sheet: handles.enemy_sprites_handle,
+        sprite_number: 2,
+    };
+
+    // some kind of range of 10-100?
+    for n in 1 .. 22 {
+        let mut rng = thread_rng();
+
+        // for spawning we want x to be 0 or max and y to be anything
+        // or, y to be 0 or max and x to be anything
+        //should not be hardcoded: 2880.0 x 1710.0
+        let y_aligned = n % 2 == 0;
+
+        let (x, y) = if y_aligned {
+            let choose_min_x: bool = rng.gen();
+            let x_value = if choose_min_x { 75.0 } else { 2500.0 };
+            let y_value = rng.gen_range(75.0, 1400.0);
+            (x_value, y_value)
+        } else {
+            let choose_min_y: bool = rng.gen();
+            let x_value = rng.gen_range(75.0, 2500.0);
+            let y_value = if choose_min_y { 75.0 } else { 1400.0 };
+            (x_value, y_value)
+        };
+
+        info!("computed x, y ({:?}, {:?})", x, y);
+        let cleanup_tag = CleanupTag {};
+        let position = Translation3::new(x, y, 0.0);
+        let transform = Transform::new(position, rotation, scale);
+
+        let entity_type: EntityType = rng.gen();
+
+        match entity_type {
+            EntityType::Boss => {
+                world
+                    .create_entity()
+                    .with(handles.boss_prefab_handle.clone())
+                    .with(boss_render.clone())
+                    .with(transform)
+                    .with(cleanup_tag)
+                    .build();
+            },
+            EntityType::SquareEnemy => {
+                world
+                    .create_entity()
+                    .with(handles.enemy_prefab_handle.clone())
+                    .with(square_render.clone())
+                    .with(transform)
+                    .with(cleanup_tag)
+                    .build();
+            },
+            EntityType::FlyingEnemy => {
+                world
+                    .create_entity()
+                    .with(handles.flying_enemy_prefab_handle.clone())
+                    .with(flying_render.clone())
+                    .with(transform)
+                    .with(cleanup_tag)
+                    .build();
+            },
+            _ => {},
         }
     }
 }

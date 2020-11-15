@@ -4,7 +4,7 @@ use amethyst::{
     assets::PrefabData,
     core::Transform,
     derive::PrefabData,
-    ecs::prelude::{Component, DenseVecStorage, Entities, Entity, LazyUpdate, ReadExpect, WriteStorage},
+    ecs::prelude::{Component, DenseVecStorage, Entities, Entity, LazyUpdate, NullStorage, ReadExpect, WriteStorage},
     renderer::{sprite::SpriteSheetHandle, SpriteRender},
     Error,
 };
@@ -12,9 +12,9 @@ use amethyst::{
 use serde::{Deserialize, Serialize};
 
 use crate::components::{
-    cleanup::CleanupTag,
     collider::Collider,
     movement::{Movement, MovementType},
+    tags::CleanupTag,
 };
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PrefabData)]
@@ -48,11 +48,11 @@ impl Component for Launcher {
 
 // empty struct for now because this is used as a way to track projectiles
 // in systems, and so far there's no real data we need to associate with it
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Projectile;
 
 impl Component for Projectile {
-    type Storage = DenseVecStorage<Self>;
+    type Storage = NullStorage<Self>;
 }
 
 // this needs to be run by a system that has a launcher, sprites, transforms,

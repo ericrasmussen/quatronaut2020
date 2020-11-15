@@ -27,6 +27,7 @@ impl Default for PlayableArea {
     }
 }
 
+// possible TODO: panic if we're giving nonsense values like min >= max
 impl PlayableArea {
     pub fn new(min_x: f32, max_x: f32, min_y: f32, max_y: f32) -> PlayableArea {
         PlayableArea {

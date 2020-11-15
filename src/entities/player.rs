@@ -7,8 +7,7 @@ use amethyst::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::components::collider::Collider;
-use crate::resources::direction::Direction;
+use crate::{components::collider::Collider, resources::direction::Direction};
 
 // this entity is a grouping of components, which allows the prefab loads to aggregate
 // components from a config file (`prefabs/enemy.ron` in our case)

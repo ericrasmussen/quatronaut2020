@@ -1,3 +1,4 @@
+use rand::distributions::{Distribution, Standard};
 use serde::{Deserialize, Serialize};
 
 /// This represents everything we need to know about one level in order
@@ -29,6 +30,19 @@ pub enum EntityType {
     SquareEnemy,
     Boss,
     Player,
+}
+
+/// Allows callers to randomly generate entity types for spawning
+impl Distribution<EntityType> for Standard {
+    fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> EntityType {
+        // randomly chooses 1, 2, or 3
+        let n: u32 = rng.gen_range(1, 4);
+        match n {
+            1 => EntityType::FlyingEnemy,
+            2 => EntityType::SquareEnemy,
+            _ => EntityType::Boss,
+        }
+    }
 }
 
 // entity to create, x coordinate, y coordinate

@@ -77,18 +77,18 @@ impl<'s> System<'s> for TransformUpdateSystem {
                     let dir = player_vec - enemy_transform.translation();
                     let angle = dir.y.atan2(dir.x);
                     let angle_facing = angle - (90.0 * PI / 180.0);
-                    info!("player: {:?}", player_vec);
-                    info!("enemy: {:?}", enemy_transform.translation());
-                    info!("dir: {:?}", dir);
-                    info!("calculated angle: {:?}", angle);
-                    info!("final angle: {:?}", angle_facing);
+                    // info!("player: {:?}", player_vec);
+                    // info!("enemy: {:?}", enemy_transform.translation());
+                    // info!("dir: {:?}", dir);
+                    // info!("calculated angle: {:?}", angle);
+                    // info!("final angle: {:?}", angle_facing);
                     enemy_transform.set_rotation_2d(angle_facing);
                     movement.already_rotated = true;
                 }
             }
 
             // TODO: this should be based on some kind of "playable area" dimensions resource
-            let out_of_bounds = x < -500.0 || x > 2500.0 || y < -500.0 || y > 2500.0;
+            let out_of_bounds = x < -5.0 || x > 2900.0 || y < -5.0 || y > 2000.0;
 
             if out_of_bounds && entities.delete(enemy_entity).is_ok() {
                 info!("enemy out of bounds");

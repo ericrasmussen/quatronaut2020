@@ -17,15 +17,20 @@ use amethyst::{
 use derive_new::new;
 
 use crate::{
-    resources::{
+    components::{
         fade::{Fade, FadeStatus, Fader},
-        level::Levels,
+        perspective::Perspective,
+        tags::BackgroundTag,
     },
-    states::{gameplay::GameplayState, paused::PausedState},
-    systems::FadeSystem,
+    resources::level::Levels,
+    states::{
+        gameplay::{GameplayMode, GameplayState},
+        paused::PausedState,
+    },
+    systems::{CameraShakeSystem, FadeSystem},
 };
 
-//use log::info;
+use log::info;
 
 /// This state will be pushed on top of `GameplayState` to give more
 /// control over level transitions, and, based on the meta level
@@ -37,6 +42,7 @@ pub struct TransitionState<'a, 'b> {
     pub dispatcher: Option<Dispatcher<'a, 'b>>,
     pub overlay_sprite_handle: Handle<SpriteSheet>,
     pub levels: Levels,
+    pub perspective_shift: Option<Perspective>,
 }
 
 impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
@@ -47,6 +53,7 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
         let mut dispatcher_builder = DispatcherBuilder::new();
 
         dispatcher_builder.add(FadeSystem, "fade_system", &[]);
+        dispatcher_builder.add(CameraShakeSystem, "camera_shake_system", &[]);
 
         // builds and sets up the dispatcher
         let mut dispatcher = dispatcher_builder
@@ -55,6 +62,12 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
         dispatcher.setup(world);
 
         self.dispatcher = Some(dispatcher);
+
+        world.register::<Perspective>();
+        if let Some(perspective) = &self.perspective_shift {
+            info!("adding some perspective");
+            world.insert(*perspective);
+        }
 
         // this is all a little over complicated, but the status is a shared
         // resource to track if fading has completed
@@ -68,12 +81,38 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
 
         // initialize the overlay image
         let dimensions = (*world.read_resource::<ScreenDimensions>()).clone();
-        init_overlay(world, &dimensions, self.overlay_sprite_handle.clone());
+        init_overlay(
+            world,
+            &dimensions,
+            self.overlay_sprite_handle.clone(),
+            self.perspective_shift,
+        );
     }
 
+    // TODO: maybe check for the Perspective and then go back to gameplay (damaged art
+    // mode)
+    // should the actual background change here though?
     fn update(&mut self, data: &mut StateData<'_, GameData<'_, '_>>) -> SimpleTrans {
         if let Some(dispatcher) = self.dispatcher.as_mut() {
             dispatcher.dispatch(&data.world);
+        }
+
+        if let Some(_p) = &self.perspective_shift {
+            let perspective = data.world.read_resource::<Perspective>();
+            if perspective.is_reversing() {
+                let mut sprites = data.world.write_storage::<SpriteRender>();
+                let backgrounds = data.world.read_storage::<BackgroundTag>();
+                for (sprite, _bg) in (&mut sprites, &backgrounds).join() {
+                    sprite.sprite_number = 1;
+                }
+            }
+            // special case to return early if we're done with our scaling and shaking
+            if perspective.is_completed() {
+                return Trans::Switch(Box::new(GameplayState::new(
+                    self.levels.clone(),
+                    GameplayMode::EndlessMode,
+                )));
+            }
         }
 
         let mut fade_status = data.world.write_resource::<FadeStatus>();
@@ -81,12 +120,16 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
         if fade_status.is_completed() {
             fade_status.clear();
 
-            Trans::Switch(Box::new(GameplayState::new(self.levels.clone())))
+            Trans::Switch(Box::new(GameplayState::new(
+                self.levels.clone(),
+                GameplayMode::LevelMode,
+            )))
         } else {
             Trans::None
         }
     }
 
+    // TODO: remove the Perspective resource here too
     fn on_stop(&mut self, data: StateData<GameData>) {
         // state items that should be cleaned up (players, entities, lasers,
         // projectiles) should all be marked with `CleanupTag` and removed
@@ -120,7 +163,12 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
 
 // render the background, giving it a low z value so it renders under
 // everything else
-fn init_overlay(world: &mut World, dimensions: &ScreenDimensions, overlay_sprite_handle: Handle<SpriteSheet>) {
+fn init_overlay(
+    world: &mut World,
+    dimensions: &ScreenDimensions,
+    overlay_sprite_handle: Handle<SpriteSheet>,
+    perspective_shift: Option<Perspective>,
+) {
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
 
     let scale = Vector3::new(100.0, 100.0, 1.0);
@@ -133,12 +181,26 @@ fn init_overlay(world: &mut World, dimensions: &ScreenDimensions, overlay_sprite
         sprite_number: 0,
     };
 
-    world
-        .create_entity()
-        .with(overlay_render)
-        .with(transform)
-        .with(Transparent)
-        .with(tint)
-        .with(fader)
-        .build();
+    match perspective_shift {
+        None => {
+            world
+                .create_entity()
+                .with(overlay_render)
+                .with(transform)
+                .with(Transparent)
+                .with(tint)
+                .with(fader)
+                .build();
+        },
+        Some(perspective) => {
+            world
+                .create_entity()
+                .with(overlay_render)
+                .with(transform)
+                .with(Transparent)
+                .with(tint)
+                .with(perspective)
+                .build();
+        },
+    }
 }

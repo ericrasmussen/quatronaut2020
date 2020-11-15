@@ -8,8 +8,7 @@ use amethyst::{
     renderer::{sprite::SpriteSheetHandle, SpriteRender},
 };
 
-use crate::components::cleanup::CleanupTag;
-use crate::resources::direction::Direction;
+use crate::{components::tags::CleanupTag, resources::direction::Direction};
 
 //use log::info;
 

@@ -47,7 +47,8 @@ fn main() -> amethyst::Result<()> {
                 .with_plugin(RenderFlat2D::default()),
         )?;
 
-    let mut game = Application::new(assets, states::GameplayState::new(all_levels), game_data)?;
+    let starting_mode = states::GameplayMode::LevelMode;
+    let mut game = Application::new(assets, states::GameplayState::new(all_levels, starting_mode), game_data)?;
     game.run();
 
     Ok(())

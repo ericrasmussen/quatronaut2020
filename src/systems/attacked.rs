@@ -93,7 +93,8 @@ impl<'s> System<'s> for ProjectileHitSystem {
                 }
 
                 let trans = projectile_transform.translation();
-                if trans.x < 0.0 || trans.x > 2500.0 || trans.y < 0.0 || trans.y > 2500.0 {
+                // 2880.0 x 1710.0
+                if trans.x < -5.0 || trans.x > 2900.0 || trans.y < -5.0 || trans.y > 2000.0 {
                     entities.delete(projectile_entity).unwrap();
                 }
             }
