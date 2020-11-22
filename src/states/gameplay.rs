@@ -8,11 +8,12 @@ use amethyst::{
     assets::{Handle, PrefabLoader, ProgressCounter, RonFormat},
     core::math::{Translation3, UnitQuaternion, Vector3},
     core::{transform::Transform, ArcThreadPool},
-    ecs::prelude::{Dispatcher, DispatcherBuilder, Join},
+    ecs::prelude::{Entity, Dispatcher, DispatcherBuilder, Join},
     ecs::world::EntitiesRes,
     input::{is_close_requested, is_key_down, VirtualKeyCode},
     prelude::*,
     renderer::{Camera, SpriteRender, SpriteSheet},
+    ui::{UiCreator, UiFinder, UiText},
     window::ScreenDimensions,
 };
 
@@ -37,6 +38,7 @@ use crate::{
         handles::GameplayHandles,
         level::{EntityType, LevelMetadata, Levels},
         playablearea::PlayableArea,
+        playerstats::PlayerStats,
     },
     states::{paused::PausedState, transition::TransitionState},
     systems,
@@ -79,6 +81,9 @@ pub struct GameplayState<'a, 'b> {
 
     #[new(default)]
     pub dispatcher: Option<Dispatcher<'a, 'b>>,
+
+    #[new(default)]
+    pub high_score_text: Option<Entity>,
 }
 
 impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
@@ -124,6 +129,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         world.register::<Movement>();
         world.register::<Launcher>();
         world.register::<PlayableArea>();
+        world.register::<PlayerStats>();
 
         // Place the camera
         init_camera(world, &dimensions);
@@ -184,11 +190,19 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
         world.insert(playable_area);
 
+        let default_stats = PlayerStats::default();
+        world.entry::<PlayerStats>().or_insert_with(|| default_stats);
+
         let next_level = self.levels.pop();
 
         let handles = self.handles.clone().expect("failure accessing GameplayHandles struct");
 
+        // UI setup
+        world.exec(|mut creator: UiCreator<'_>| creator.create("ui/ui.ron", ()));
+
+
         info!("gameplay mode is now: {:?}", &self.gameplay_mode);
+
         match &self.gameplay_mode {
             LevelMode => match next_level {
                 Some(next_level_metadata) => init_level(world, next_level_metadata, handles),
@@ -209,6 +223,26 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             // when the counter is complete, rather than checking every time here
             if self.progress_counter.is_complete() {
                 dispatcher.dispatch(&data.world);
+            }
+        }
+
+        // ui text handling
+
+        if self.high_score_text.is_none() {
+                data.world.exec(|finder: UiFinder| {
+                    if let Some(entity) = finder.find("high_score") {
+                        self.high_score_text = Some(entity);
+                    }
+                });
+        }
+        // this must be used in a separate scope
+        // but this should really be in a system anyway, I think
+        let mut ui_text = data.world.write_storage::<UiText>();
+        let score = data.world.read_resource::<PlayerStats>();
+
+        {
+            if let Some(high_score_text) = self.high_score_text.and_then(|entity| ui_text.get_mut(entity)) {
+                high_score_text.text = format!("{}", score.get_score());
             }
         }
 

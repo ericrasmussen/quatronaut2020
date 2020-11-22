@@ -4,12 +4,13 @@ use ncollide2d::{bounding_volume, shape::Cuboid};
 use amethyst::{
     core::Transform,
     derive::SystemDesc,
-    ecs::{Entities, Join, ReadStorage, System, SystemData, WriteStorage},
+    ecs::{Entities, Join, ReadStorage, System, SystemData, Write, WriteStorage},
 };
 
 use crate::{
     components::collider::Collider,
     entities::{enemy::Enemy, laser::Laser},
+    resources::playerstats::PlayerStats,
 };
 
 use log::info;
@@ -27,13 +28,11 @@ impl<'s> System<'s> for CollisionSystem {
         WriteStorage<'s, Enemy>,
         Entities<'s>,
         ReadStorage<'s, Collider>,
+        Write<'s, PlayerStats>,
     );
 
-    fn run(&mut self, (transforms, lasers, mut enemies, entities, colliders): Self::SystemData) {
+    fn run(&mut self, (transforms, lasers, mut enemies, entities, colliders, mut stats): Self::SystemData) {
         for (laser_entity, _laser_a, transform_a) in (&entities, &lasers, &transforms).join() {
-            /*
-             * Initialize the shapes.
-             */
             // this is for a laser much larger than ours. agh.
             // the x, y should be the half length along the x and y axes, respectively
             // for a ball type you'd use a radius instead. this creates a representation of
@@ -67,11 +66,11 @@ impl<'s> System<'s> for CollisionSystem {
                     enemy.take_damage(20.0);
                     // we should probably destroy the laser too
                     entities.delete(laser_entity).unwrap();
-
                     // if the enemy has taken enough damage, delete them
                     // TODO: may be a latent bug in associating this with laser hits...
                     if enemy.is_dead() && entities.delete(enemy_entity).is_ok() {
                         info!("enemy deleted due to insufficient laser dodging abilities");
+                        stats.add_to_score(10);
                     }
                 }
             }
