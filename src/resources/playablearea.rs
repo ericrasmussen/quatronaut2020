@@ -42,8 +42,7 @@ impl PlayableArea {
                 min_y: height * 0.22,
                 max_y: height * 0.78,
             }
-        }
-        else {
+        } else {
             // there needs to be some buffer here so everything is visible inside the camera.
             // otherwise some things can be rendered in the center of the border and be partially
             // offscreen

@@ -192,7 +192,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         world.insert(playable_area);
 
         // we want to preserve palyer stats across levels, so only insert if it isn't there yet
-        world.entry::<PlayerStats>().or_insert_with(|| PlayerStats::default());
+        world.entry::<PlayerStats>().or_insert_with(PlayerStats::default);
 
         let next_level = self.levels.pop();
 

@@ -13,7 +13,7 @@ use crate::entities::{
 };
 
 use crate::resources::{
-    audio::{Sounds, SoundType},
+    audio::{SoundType, Sounds},
     direction::Direction,
     playablearea::PlayableArea,
 };
@@ -107,7 +107,7 @@ impl<'s> System<'s> for PlayerSystem {
                     // if we created a laser, play a laser sound
                     // TODO: make sure there's not lag with the sound effect and the laser being inserted
                     // lazily into the `world`
-                    &sounds.play_sound(SoundType::PlayerBlaster, &storage, audio_output.as_deref());
+                    sounds.play_sound(SoundType::PlayerBlaster, &storage, audio_output.as_deref());
                 }
             }
         }

@@ -10,7 +10,7 @@ use crate::{
     components::{collider::Collider, launcher::Projectile},
     entities::{enemy::Enemy, player::Player},
     resources::{
-        audio::{Sounds, SoundType},
+        audio::{SoundType, Sounds},
         playerstats::PlayerStats,
     },
 };
@@ -23,6 +23,7 @@ use log::info;
 pub struct AttackedSystem;
 
 impl<'s> System<'s> for AttackedSystem {
+    #[allow(clippy::type_complexity)]
     type SystemData = (
         ReadStorage<'s, Transform>,
         WriteStorage<'s, Player>,
@@ -37,7 +38,10 @@ impl<'s> System<'s> for AttackedSystem {
 
     // we don't need `player` here, though if we add health it'd be useful. keeping for now
     // until deciding
-    fn run(&mut self, (transforms, players, enemies, colliders, entities, stats, storage, sounds, audio_output): Self::SystemData) {
+    fn run(
+        &mut self,
+        (transforms, players, enemies, colliders, entities, stats, storage, sounds, audio_output): Self::SystemData,
+    ) {
         for (player_entity, _player, player_transform, player_collider) in
             (&entities, &players, &transforms, &colliders).join()
         {
@@ -54,7 +58,7 @@ impl<'s> System<'s> for AttackedSystem {
                 );
 
                 if collides {
-                    &sounds.play_sound(SoundType::PlayerDeath, &storage, audio_output.as_deref());
+                    sounds.play_sound(SoundType::PlayerDeath, &storage, audio_output.as_deref());
                     entities.delete(player_entity).unwrap();
                     info!("player was hit! final score: {:?}", *stats);
                 }
@@ -67,6 +71,7 @@ impl<'s> System<'s> for AttackedSystem {
 pub struct ProjectileHitSystem;
 
 impl<'s> System<'s> for ProjectileHitSystem {
+    #[allow(clippy::type_complexity)]
     type SystemData = (
         ReadStorage<'s, Transform>,
         WriteStorage<'s, Player>,

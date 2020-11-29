@@ -37,7 +37,6 @@ pub struct Sounds {
 }
 
 impl Sounds {
-
     pub fn random_int(&self, max: usize) -> usize {
         let mut rng = thread_rng();
         rng.gen_range(0, max)
@@ -84,28 +83,30 @@ pub fn initialize_audio(world: &mut World, config: &SoundConfig) {
     let sound_effects = {
         let loader = world.read_resource::<Loader>();
 
-        let sound = Sounds {
+        Sounds {
             volume: config.volume,
-            player_blaster: config.player_blaster
+            player_blaster: config
+                .player_blaster
                 .iter()
-                .map(|ogg|load_audio_track(&loader, &world, ogg))
+                .map(|ogg| load_audio_track(&loader, &world, ogg))
                 .collect(),
-            enemy_blaster: config.enemy_blaster
+            enemy_blaster: config
+                .enemy_blaster
                 .iter()
-                .map(|ogg|load_audio_track(&loader, &world, ogg))
+                .map(|ogg| load_audio_track(&loader, &world, ogg))
                 .collect(),
-            player_death: config.player_death
+            player_death: config
+                .player_death
                 .iter()
-                .map(|ogg|load_audio_track(&loader, &world, ogg))
+                .map(|ogg| load_audio_track(&loader, &world, ogg))
                 .collect(),
-            enemy_death: config.player_death
+            enemy_death: config
+                .player_death
                 .iter()
-                .map(|ogg|load_audio_track(&loader, &world, ogg))
+                .map(|ogg| load_audio_track(&loader, &world, ogg))
                 .collect(),
             triangle_lock: load_audio_track(&loader, &world, &config.triangle_lock),
-        };
-
-        sound
+        }
     };
 
     // Add sound effects to the world. We have to do this in another scope because

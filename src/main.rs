@@ -57,7 +57,11 @@ fn main() -> amethyst::Result<()> {
         )?;
 
     let starting_mode = states::GameplayMode::LevelMode;
-    let mut game = Application::new(assets, states::GameplayState::new(all_levels, sounds, starting_mode), game_data)?;
+    let mut game = Application::new(
+        assets,
+        states::GameplayState::new(all_levels, sounds, starting_mode),
+        game_data,
+    )?;
     game.run();
 
     Ok(())

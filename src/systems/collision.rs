@@ -13,7 +13,7 @@ use crate::{
     components::collider::Collider,
     entities::{enemy::Enemy, laser::Laser},
     resources::{
-        audio::{Sounds, SoundType},
+        audio::{SoundType, Sounds},
         playerstats::PlayerStats,
     },
 };
@@ -41,7 +41,17 @@ impl<'s> System<'s> for CollisionSystem {
 
     fn run(
         &mut self,
-        (transforms, lasers, mut enemies, entities, colliders, mut stats, storage, sounds, audio_output): Self::SystemData,
+        (
+            transforms,
+            lasers,
+            mut enemies,
+            entities,
+            colliders,
+            mut stats,
+            storage,
+            sounds,
+            audio_output
+        ): Self::SystemData,
     ) {
         for (laser_entity, _laser_a, transform_a) in (&entities, &lasers, &transforms).join() {
             // this is for a laser much larger than ours. agh.
@@ -82,7 +92,7 @@ impl<'s> System<'s> for CollisionSystem {
                     if enemy.is_dead() && entities.delete(enemy_entity).is_ok() {
                         info!("enemy deleted due to insufficient laser dodging abilities");
                         stats.add_to_score(10);
-                        &sounds.play_sound(SoundType::EnemyDeath, &storage, audio_output.as_deref());
+                        sounds.play_sound(SoundType::EnemyDeath, &storage, audio_output.as_deref());
                     }
                 }
             }
