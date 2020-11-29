@@ -1,3 +1,4 @@
+pub mod audio;
 pub mod direction;
 pub mod handles;
 pub mod level;

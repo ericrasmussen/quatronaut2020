@@ -1,10 +1,12 @@
 use amethyst::{
+    assets::AssetStorage,
+    audio::{output::Output, Source},
     core::{timing::Time, Transform},
     derive::SystemDesc,
-    ecs::{Entities, Join, Read, ReadStorage, System, SystemData, WriteStorage},
+    ecs::{Entities, Join, Read, ReadExpect, ReadStorage, System, SystemData, WriteStorage},
 };
 
-use crate::{components::movement::Movement, entities::player::Player};
+use crate::{components::movement::Movement, entities::player::Player, resources::audio::{Sounds, SoundType}};
 
 use std::f32::consts::PI;
 
@@ -51,9 +53,12 @@ impl<'s> System<'s> for TransformUpdateSystem {
         WriteStorage<'s, Movement>,
         Read<'s, Time>,
         Entities<'s>,
+        Read<'s, AssetStorage<Source>>,
+        ReadExpect<'s, Sounds>,
+        Option<Read<'s, Output>>,
     );
 
-    fn run(&mut self, (mut transforms, mut movements, time, entities): Self::SystemData) {
+    fn run(&mut self, (mut transforms, mut movements, time, entities, storage, sounds, audio_output): Self::SystemData) {
         for (movement, enemy_entity, enemy_transform) in (&mut movements, &entities, &mut transforms).join() {
             enemy_transform.prepend_translation_x(movement.velocity_x * time.delta_seconds());
             enemy_transform.prepend_translation_y(movement.velocity_y * time.delta_seconds());
@@ -83,6 +88,7 @@ impl<'s> System<'s> for TransformUpdateSystem {
                     // info!("calculated angle: {:?}", angle);
                     // info!("final angle: {:?}", angle_facing);
                     enemy_transform.set_rotation_2d(angle_facing);
+                    &sounds.play_sound(SoundType::TriangleLock, &storage, audio_output.as_deref());
                     movement.already_rotated = true;
                 }
             }

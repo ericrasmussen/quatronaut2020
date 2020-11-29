@@ -8,7 +8,7 @@ use amethyst::{
     assets::{Handle, PrefabLoader, ProgressCounter, RonFormat},
     core::math::{Translation3, UnitQuaternion, Vector3},
     core::{transform::Transform, ArcThreadPool},
-    ecs::prelude::{Entity, Dispatcher, DispatcherBuilder, Join},
+    ecs::prelude::{Dispatcher, DispatcherBuilder, Entity, Join},
     ecs::world::EntitiesRes,
     input::{is_close_requested, is_key_down, VirtualKeyCode},
     prelude::*,
@@ -34,6 +34,7 @@ use crate::{
         tags::{BackgroundTag, CameraTag, CleanupTag},
     },
     resources::{
+        audio,
         handles,
         handles::GameplayHandles,
         level::{EntityType, LevelMetadata, Levels},
@@ -66,6 +67,8 @@ use GameplayMode::*;
 #[derive(new)]
 pub struct GameplayState<'a, 'b> {
     pub levels: Levels,
+
+    pub sound_config: audio::SoundConfig,
 
     // default initializes this value with false
     #[new(default)]
@@ -170,6 +173,9 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             self.handles.clone().unwrap().background_sprite_handle,
         );
 
+        // audio should not need to be initialized multiple
+        audio::initialize_audio(world, &self.sound_config);
+
         // setup the playable area. depending on how many backgrounds we have these
         // percentages might go into the levels.ron config. these percentages are
         // used to represent rectangular boundaries in a given background
@@ -177,21 +183,16 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             // endless mode isn't constrained to part of the screen
             // although we should still convert to world coordinates here so it's not different
             // based on pixel density
-            EndlessMode => PlayableArea::new(50.0, dimensions.width(), 50.0, dimensions.height()),
+            EndlessMode => PlayableArea::new(dimensions.width(), dimensions.height(), false),
             // for anything else (should only be LevelMode), we constrain the
             // playing area to the black section of the screen
-            _ => PlayableArea::new(
-                dimensions.width() * 0.33,
-                dimensions.width() * 0.67,
-                dimensions.height() * 0.22,
-                dimensions.height() * 0.78,
-            ),
+            _ => PlayableArea::new(dimensions.width(), dimensions.height(), true),
         };
 
         world.insert(playable_area);
 
-        let default_stats = PlayerStats::default();
-        world.entry::<PlayerStats>().or_insert_with(|| default_stats);
+        // we want to preserve palyer stats across levels, so only insert if it isn't there yet
+        world.entry::<PlayerStats>().or_insert_with(|| PlayerStats::default());
 
         let next_level = self.levels.pop();
 
@@ -199,7 +200,6 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
         // UI setup
         world.exec(|mut creator: UiCreator<'_>| creator.create("ui/ui.ron", ()));
-
 
         info!("gameplay mode is now: {:?}", &self.gameplay_mode);
 
@@ -229,11 +229,11 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         // ui text handling
 
         if self.high_score_text.is_none() {
-                data.world.exec(|finder: UiFinder| {
-                    if let Some(entity) = finder.find("high_score") {
-                        self.high_score_text = Some(entity);
-                    }
-                });
+            data.world.exec(|finder: UiFinder| {
+                if let Some(entity) = finder.find("high_score") {
+                    self.high_score_text = Some(entity);
+                }
+            });
         }
         // this must be used in a separate scope
         // but this should really be in a system anyway, I think
@@ -273,12 +273,14 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             Trans::Switch(Box::new(TransitionState::new(
                 handles.overlay_sprite_handle,
                 self.levels.clone(),
-                Some(Perspective::new(0.6, 0.3)),
+                self.sound_config.clone(),
+                Some(Perspective::new(0.9, 0.3)),
             )))
         } else if total == 0 && self.level_is_loaded {
             Trans::Switch(Box::new(TransitionState::new(
                 handles.overlay_sprite_handle,
                 self.levels.clone(),
+                self.sound_config.clone(),
                 None,
             )))
         }
@@ -305,6 +307,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
                 return Trans::Switch(Box::new(TransitionState::new(
                     self.handles.clone().unwrap().overlay_sprite_handle,
                     self.levels.clone(),
+                    self.sound_config.clone(),
                     Some(Perspective::new(0.6, 0.3)),
                 )));
             }
@@ -333,10 +336,11 @@ fn init_camera(world: &mut World, dimensions: &ScreenDimensions) {
     // the entire screen
     let mut transform = Transform::default();
     transform.set_translation_xyz(dimensions.width() * 0.5, dimensions.height() * 0.5, 1.);
-
     // many amethyst examples show using dimensions here, but it turns out we want the
     // intended dimensions (say, based on sprite sizes) and not the computed dimensions
     // (which are affected by hidpi and other factors, and may not be what we intended)
+    // even though transforms can use the computed dimensions, the camera needs the requested
+    // dimensions (from display_config.ron)
     world
         .create_entity()
         .with(Camera::standard_2d(1920.0, 1080.0))
@@ -401,6 +405,12 @@ fn spawn_player_in_center(world: &mut World, dimensions: &ScreenDimensions, hand
 }
 
 fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: GameplayHandles) {
+    // let (play_width, play_height) = {
+    //     let playable_area = (*world.read_resource::<PlayableArea>()).clone();
+    //     (playable_area.max_x, playable_area.max_y)
+    // };
+    let playable_area = (*world.read_resource::<PlayableArea>()).clone();
+
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
     let scale = Vector3::new(0.25, 0.25, 0.25);
 
@@ -424,10 +434,19 @@ fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: Gamepla
         sprite_number: 2,
     };
 
+    // TODO: maybe it's better not to have the x or y coordinates here.
+    // using the relative position as a percentage would let us multiply
+    // it by the computed playable area dimensions instead
     for rec in level_metadata.get_layout() {
-        let (entity_type, x, y) = rec;
+        let (entity_type, x_percentage, y_percentage) = rec;
         let cleanup_tag = CleanupTag {};
-        let position = Translation3::new(*x, *y, 0.0);
+        // these use logical width/height, which comes from the screen
+        // dimensions resource. it is computed by that resource and does
+        // not match the intended resolution in display_config.ron
+        // on hidpi monitors
+        let (x_pos, y_pos) = playable_area.relative_coordinates(x_percentage, y_percentage);
+        //info!("x, y are {}, {}", &x_pos, &y_pos);
+        let position = Translation3::new(x_pos, y_pos, 0.0);
         let transform = Transform::new(position, rotation, scale);
 
         match entity_type {
@@ -473,6 +492,7 @@ fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: Gamepla
 // takes the current level metadata and gameplay handles, then adds
 // all the associated entities and components to the world
 fn spawn_enemies(world: &mut World, handles: GameplayHandles) {
+    let playable_area = (*world.read_resource::<PlayableArea>()).clone();
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
     let scale = Vector3::new(0.25, 0.25, 0.25);
 
@@ -491,28 +511,31 @@ fn spawn_enemies(world: &mut World, handles: GameplayHandles) {
         sprite_number: 2,
     };
 
-    // some kind of range of 10-100?
-    for n in 1 .. 22 {
+    let (x_min, y_min) = playable_area.relative_coordinates(&0.12, &0.12);
+    let (x_max, y_max) = playable_area.relative_coordinates(&0.88, &0.88);
+
+    for n in 1 .. 12 {
         let mut rng = thread_rng();
 
         // for spawning we want x to be 0 or max and y to be anything
-        // or, y to be 0 or max and x to be anything
-        //should not be hardcoded: 2880.0 x 1710.0
+        // or, y to be 0 or max and x to be anything. this ends up
+        // placing enemies around the edges, but if we were to spawn
+        // continuously we'd still have to avoid spawning on a player
         let y_aligned = n % 2 == 0;
 
         let (x, y) = if y_aligned {
             let choose_min_x: bool = rng.gen();
-            let x_value = if choose_min_x { 75.0 } else { 2500.0 };
-            let y_value = rng.gen_range(75.0, 1400.0);
+            let x_value = if choose_min_x { x_min } else { x_max };
+            let y_value = rng.gen_range(y_min, y_max);
             (x_value, y_value)
         } else {
             let choose_min_y: bool = rng.gen();
-            let x_value = rng.gen_range(75.0, 2500.0);
-            let y_value = if choose_min_y { 75.0 } else { 1400.0 };
+            let x_value = rng.gen_range(x_min, x_max);
+            let y_value = if choose_min_y { y_min } else { y_max };
             (x_value, y_value)
         };
 
-        info!("computed x, y ({:?}, {:?})", x, y);
+        //info!("computed x, y ({:?}, {:?})", x, y);
         let cleanup_tag = CleanupTag {};
         let position = Translation3::new(x, y, 0.0);
         let transform = Transform::new(position, rotation, scale);

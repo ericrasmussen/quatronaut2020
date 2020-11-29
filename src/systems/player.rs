@@ -1,4 +1,6 @@
 use amethyst::{
+    assets::AssetStorage,
+    audio::{output::Output, Source},
     core::{timing::Time, Transform},
     derive::SystemDesc,
     ecs::{Entities, Join, LazyUpdate, Read, ReadExpect, ReadStorage, System, SystemData, WriteStorage},
@@ -10,7 +12,11 @@ use crate::entities::{
     player::Player,
 };
 
-use crate::resources::{direction::Direction, playablearea::PlayableArea};
+use crate::resources::{
+    audio::{Sounds, SoundType},
+    direction::Direction,
+    playablearea::PlayableArea,
+};
 
 use amethyst_rendy::sprite::SpriteRender;
 
@@ -33,11 +39,26 @@ impl<'s> System<'s> for PlayerSystem {
         ReadExpect<'s, LazyUpdate>,
         Read<'s, Time>,
         Read<'s, PlayableArea>,
+        Read<'s, AssetStorage<Source>>,
+        ReadExpect<'s, Sounds>,
+        Option<Read<'s, Output>>,
     );
 
     fn run(
         &mut self,
-        (mut transforms, mut characters, input, entities, sprites, lazy_update, time, playable_area): Self::SystemData,
+        (
+            mut transforms,
+            mut characters,
+            input,
+            entities,
+            sprites,
+            lazy_update,
+            time,
+            playable_area,
+            storage,
+            sounds,
+            audio_output,
+        ): Self::SystemData,
     ) {
         for (character, transform, sprite) in (&mut characters, &mut transforms, &sprites).join() {
             // the input names here are defined in config/bindings.ron.
@@ -83,6 +104,10 @@ impl<'s> System<'s> for PlayerSystem {
             if let Some(laser) = maybe_laser {
                 if character.can_fire(time.delta_seconds()) {
                     spawn_laser(sprite.clone().sprite_sheet, laser, &transform, &entities, &lazy_update);
+                    // if we created a laser, play a laser sound
+                    // TODO: make sure there's not lag with the sound effect and the laser being inserted
+                    // lazily into the `world`
+                    &sounds.play_sound(SoundType::PlayerBlaster, &storage, audio_output.as_deref());
                 }
             }
         }

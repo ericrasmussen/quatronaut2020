@@ -2,14 +2,15 @@
 Container(
             transform: (
                 id: "high_score_container",
-                x: 1000.,
-                y: 600.,
+                x: 600.,
+                y: 700.,
                 width: 250.,
                 height: 175.,
                 anchor: Middle,
             ),
-//            background: SolidColor(0.09, 0.02, 0.25, 1.0),
-            //background: SolidColor(255., 255., 255., 1.0),
+            // might use something transparent here. commented out
+            // for now so there is no background color at all
+            // background: SolidColor(255., 255., 255., 1.0),
             children: [
                 Label(
                     transform: (
@@ -22,9 +23,10 @@ Container(
                     ),
                     text: (
                         text: "",
-                        font: File("fonts/inconsolata.ttf", ("TTF", ())),
+                        // the amethyst docs read otf files as ttf. otf supports more features
+                        // so the .otf file below needs to be compatible with ttf
+                        font: File("fonts/font_over.otf", ("TTF", ())),
                         font_size: 90.,
-                        //color: (0.2, 0.2, 1.0, 1.0),
                         color: (1., 1., 1., 1.),
                         align: Middle,
                     ),

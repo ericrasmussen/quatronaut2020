@@ -9,11 +9,12 @@ pub enum ClampDimension {
     ClampY,
 }
 
+#[derive(Clone, Debug)]
 pub struct PlayableArea {
-    min_x: f32,
-    max_x: f32,
-    min_y: f32,
-    max_y: f32,
+    pub min_x: f32,
+    pub max_x: f32,
+    pub min_y: f32,
+    pub max_y: f32,
 }
 
 impl Default for PlayableArea {
@@ -27,15 +28,43 @@ impl Default for PlayableArea {
     }
 }
 
-// possible TODO: panic if we're giving nonsense values like min >= max
 impl PlayableArea {
-    pub fn new(min_x: f32, max_x: f32, min_y: f32, max_y: f32) -> PlayableArea {
-        PlayableArea {
-            min_x,
-            max_x,
-            min_y,
-            max_y,
+    // given the computed width, height, and constraint, create a new playarea
+    // if the background dimensions then the hardcoded values here will need
+    // to be adjusted
+    pub fn new(width: f32, height: f32, constrain: bool) -> PlayableArea {
+        // these percentages were calculated manually based on the position of
+        // the black rectangle in the smaller, unbroken background image
+        if constrain {
+            PlayableArea {
+                min_x: width * 0.33,
+                max_x: width * 0.67,
+                min_y: height * 0.22,
+                max_y: height * 0.78,
+            }
         }
+        else {
+            // there needs to be some buffer here so everything is visible inside the camera.
+            // otherwise some things can be rendered in the center of the border and be partially
+            // offscreen
+            PlayableArea {
+                min_x: width * 0.17,
+                max_x: width * 0.83,
+                min_y: height * 0.20,
+                max_y: height * 0.80,
+            }
+        }
+    }
+
+    // computes coordinates in the playable area based on a relative percentage
+    // (e.g. a level config that specifies an enemy should be 25% of the way along
+    // the x dimension, and 30% of the way along the y dimension)
+    pub fn relative_coordinates(&self, x_percentage: &f32, y_percentage: &f32) -> (f32, f32) {
+        let x_diff = self.max_x - self.min_x;
+        let y_diff = self.max_y - self.min_y;
+        let x_pos = x_percentage * x_diff + self.min_x;
+        let y_pos = y_percentage * y_diff + self.min_y;
+        (x_pos, y_pos)
     }
 
     pub fn clamp_x(&self, n: f32) -> f32 {

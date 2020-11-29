@@ -9,9 +9,7 @@ pub struct PlayerStats {
 
 impl Default for PlayerStats {
     fn default() -> Self {
-        PlayerStats {
-            score: 0,
-        }
+        PlayerStats { score: 0 }
     }
 }
 

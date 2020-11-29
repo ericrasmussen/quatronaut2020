@@ -2,15 +2,20 @@ use nalgebra::{Isometry2, Vector2};
 use ncollide2d::{bounding_volume, shape::Cuboid};
 
 use amethyst::{
+    assets::AssetStorage,
+    audio::{output::Output, Source},
     core::Transform,
     derive::SystemDesc,
-    ecs::{Entities, Join, ReadStorage, System, SystemData, Write, WriteStorage},
+    ecs::{Entities, Join, Read, ReadExpect, ReadStorage, System, SystemData, Write, WriteStorage},
 };
 
 use crate::{
     components::collider::Collider,
     entities::{enemy::Enemy, laser::Laser},
-    resources::playerstats::PlayerStats,
+    resources::{
+        audio::{Sounds, SoundType},
+        playerstats::PlayerStats,
+    },
 };
 
 use log::info;
@@ -29,9 +34,15 @@ impl<'s> System<'s> for CollisionSystem {
         Entities<'s>,
         ReadStorage<'s, Collider>,
         Write<'s, PlayerStats>,
+        Read<'s, AssetStorage<Source>>,
+        ReadExpect<'s, Sounds>,
+        Option<Read<'s, Output>>,
     );
 
-    fn run(&mut self, (transforms, lasers, mut enemies, entities, colliders, mut stats): Self::SystemData) {
+    fn run(
+        &mut self,
+        (transforms, lasers, mut enemies, entities, colliders, mut stats, storage, sounds, audio_output): Self::SystemData,
+    ) {
         for (laser_entity, _laser_a, transform_a) in (&entities, &lasers, &transforms).join() {
             // this is for a laser much larger than ours. agh.
             // the x, y should be the half length along the x and y axes, respectively
@@ -71,6 +82,7 @@ impl<'s> System<'s> for CollisionSystem {
                     if enemy.is_dead() && entities.delete(enemy_entity).is_ok() {
                         info!("enemy deleted due to insufficient laser dodging abilities");
                         stats.add_to_score(10);
+                        &sounds.play_sound(SoundType::EnemyDeath, &storage, audio_output.as_deref());
                     }
                 }
             }

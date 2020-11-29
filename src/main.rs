@@ -2,6 +2,7 @@
 // from the main.rs file in https://github.com/amethyst/amethyst-starter-2d
 use amethyst::{
     assets::PrefabLoaderSystemDesc,
+    audio::AudioBundle,
     core::transform::TransformBundle,
     input::{InputBundle, StringBindings},
     prelude::*,
@@ -35,23 +36,28 @@ fn main() -> amethyst::Result<()> {
     let levels = resources::level::LevelConfig::load(&level_config).unwrap();
     let all_levels = resources::level::get_all_levels(levels);
 
+    // load all the sounds
+    let sound_config = app_root.join("config").join("audio.ron");
+    let sounds = resources::audio::SoundConfig::load(&sound_config).unwrap();
+
     let input_bundle = InputBundle::<StringBindings>::new().with_bindings_from_file(binding_path)?;
 
     let game_data = GameDataBuilder::default()
         .with_bundle(TransformBundle::new())?
         .with_bundle(input_bundle)?
         .with_bundle(UiBundle::<StringBindings>::new())?
+        .with_bundle(AudioBundle::default())?
         .with_system_desc(PrefabLoaderSystemDesc::<EnemyPrefab>::default(), "", &[])
         .with_system_desc(PrefabLoaderSystemDesc::<PlayerPrefab>::default(), "", &[])
         .with_bundle(
             RenderingBundle::<DefaultBackend>::new()
                 .with_plugin(RenderToWindow::from_config_path(display_config)?.with_clear([0.0, 0.0, 0.0, 1.0]))
                 .with_plugin(RenderFlat2D::default())
-                .with_plugin(RenderUi::default())
+                .with_plugin(RenderUi::default()),
         )?;
 
     let starting_mode = states::GameplayMode::LevelMode;
-    let mut game = Application::new(assets, states::GameplayState::new(all_levels, starting_mode), game_data)?;
+    let mut game = Application::new(assets, states::GameplayState::new(all_levels, sounds, starting_mode), game_data)?;
     game.run();
 
     Ok(())

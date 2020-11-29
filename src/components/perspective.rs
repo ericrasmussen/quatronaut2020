@@ -61,7 +61,7 @@ impl Perspective {
         } else {
             // this is a range in radians that will shake up the camera
             let mut rng = thread_rng();
-            let next_rotation = rng.gen_range(-2.5, 2.5);
+            let next_rotation = rng.gen_range(-0.5, 0.5);
             Some(next_rotation * time)
         }
     }

@@ -83,19 +83,18 @@ fn get_level_entities(rows: &mut Vec<String>) -> LevelMetadata {
     LevelMetadata::new(records)
 }
 
+// gets a percentage of width/height where an enemy should be rendered in the play area
 fn get_coordinates(x_grid_pos: usize, y_grid_pos: usize) -> (f32, f32) {
     // this essentially computes a percentage of width and height based on the length
     // of each string (horizontal position) and index of each row (vertical position)
     // and then multiplies it by width and height of our screen dimensions to pick
     // coordinates usable for transform components
     // these come from ScreenDimensions and should use that resource if possible
-    let width = 2880.0;
-    let height = 1710.0;
     let str_len = 50.0;
     let num_rows = 25.0;
 
-    let x = (x_grid_pos as f32 / str_len) * width;
-    let y = (y_grid_pos as f32 / num_rows) * height;
+    let x = x_grid_pos as f32 / str_len;
+    let y = y_grid_pos as f32 / num_rows;
 
     (x, y)
 }

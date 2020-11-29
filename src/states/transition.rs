@@ -22,7 +22,7 @@ use crate::{
         perspective::Perspective,
         tags::BackgroundTag,
     },
-    resources::level::Levels,
+    resources::{audio::SoundConfig, level::Levels},
     states::{
         gameplay::{GameplayMode, GameplayState},
         paused::PausedState,
@@ -42,6 +42,7 @@ pub struct TransitionState<'a, 'b> {
     pub dispatcher: Option<Dispatcher<'a, 'b>>,
     pub overlay_sprite_handle: Handle<SpriteSheet>,
     pub levels: Levels,
+    pub sound_config: SoundConfig,
     pub perspective_shift: Option<Perspective>,
 }
 
@@ -110,6 +111,7 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
             if perspective.is_completed() {
                 return Trans::Switch(Box::new(GameplayState::new(
                     self.levels.clone(),
+                    self.sound_config.clone(),
                     GameplayMode::EndlessMode,
                 )));
             }
@@ -122,6 +124,7 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
 
             Trans::Switch(Box::new(GameplayState::new(
                 self.levels.clone(),
+                self.sound_config.clone(),
                 GameplayMode::LevelMode,
             )))
         } else {
