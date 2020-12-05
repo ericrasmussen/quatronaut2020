@@ -8,12 +8,13 @@ use amethyst::{
 
 use serde::{Deserialize, Serialize};
 
+use crate::resources::audio::SoundType;
+
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub enum MovementType {
     Gravitate,
     HorizontalRush,
     ProjectileRush,
-    //PlayerControl,
 }
 
 impl Default for MovementType {
@@ -32,6 +33,7 @@ pub struct Movement {
     pub freeze_direction: bool,
     pub locked_direction: Option<Vector3<f32>>,
     pub already_rotated: bool,
+    pub launch_sound: Option<SoundType>,
     pub movement_type: MovementType,
 }
 

@@ -4,7 +4,10 @@ use amethyst::{
     ecs::{Entities, Join, Read, System, SystemData, WriteStorage},
 };
 
-use crate::{entities::laser::Laser, resources::direction::Direction};
+use crate::{
+    entities::laser::Laser,
+    resources::{direction::Direction, playablearea::PlayableArea}
+};
 
 use log::info;
 
@@ -21,9 +24,10 @@ impl<'s> System<'s> for LaserSystem {
         WriteStorage<'s, Laser>,
         Entities<'s>,
         Read<'s, Time>,
+        Read<'s, PlayableArea>,
     );
 
-    fn run(&mut self, (mut transforms, lasers, entities, time): Self::SystemData) {
+    fn run(&mut self, (mut transforms, lasers, entities, time, playable_area): Self::SystemData) {
         for (entity, laser, transform) in (&entities, &lasers, &mut transforms).join() {
             // constant laser speed.. still shouldn't be hardcoded though.
             let &trans = transform.translation();
@@ -66,9 +70,7 @@ impl<'s> System<'s> for LaserSystem {
                 },
             }
 
-            // this will change when we add rudimentary collision detection. for now
-            // it's just a bounds check that'll delete lasers once they go off screen.
-            if trans.x < 0.0 || trans.x > 2500.0 || trans.y < 0.0 || trans.y > 2500.0 {
+            if playable_area.out_of_bounds(trans.x, trans.y) {
                 let deleted = entities.delete(entity);
 
                 if let Err(msg) = deleted {

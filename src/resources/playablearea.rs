@@ -66,6 +66,11 @@ impl PlayableArea {
         (x_pos, y_pos)
     }
 
+    // can be used to see if some given x, y has traveled outside the playing area.
+    pub fn out_of_bounds(&self, x: f32, y:f32) -> bool {
+        x < self.min_x || x > self.max_x || y < self.min_y || y > self.max_y
+    }
+
     pub fn clamp_x(&self, n: f32) -> f32 {
         self.clamp(n, ClampDimension::ClampX)
     }

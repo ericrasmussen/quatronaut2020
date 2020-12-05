@@ -31,6 +31,7 @@ Prefab (
                     freeze_direction: false,
                     locked_direction: None,
                     already_rotated: false,
+                    launch_sound: TriangleLock,
                     movement_type: HorizontalRush,
                 ),
                 // END movement: Movement

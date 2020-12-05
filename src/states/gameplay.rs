@@ -77,6 +77,9 @@ pub struct GameplayState<'a, 'b> {
     pub gameplay_mode: GameplayMode,
 
     #[new(default)]
+    pub ui_root: Option<Entity>,
+
+    #[new(default)]
     pub handles: Option<GameplayHandles>,
 
     #[new(default)]
@@ -198,8 +201,10 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
         let handles = self.handles.clone().expect("failure accessing GameplayHandles struct");
 
+        // maybe use one of two configs here? and clean up each time
         // UI setup
-        world.exec(|mut creator: UiCreator<'_>| creator.create("ui/ui.ron", ()));
+        let ui_handle = world.exec(|mut creator: UiCreator<'_>| creator.create("ui/ui.ron", &mut self.progress_counter));
+        self.ui_root = Some(ui_handle);
 
         info!("gameplay mode is now: {:?}", &self.gameplay_mode);
 
@@ -321,13 +326,24 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         // state items that should be cleaned up (players, entities, lasers,
         // projectiles) should all be marked with `CleanupTag` and removed
         // here when this state ends
-        let entities = data.world.read_resource::<EntitiesRes>();
-        let cleanup_tags = data.world.read_storage::<CleanupTag>();
+        // note the separate scope because we're borrowing `data.world`
+        // as immutable
+        {
+            let entities = data.world.read_resource::<EntitiesRes>();
+            let cleanup_tags = data.world.read_storage::<CleanupTag>();
 
-        for (entity, _tag) in (&entities, &cleanup_tags).join() {
-            let err = format!("unable to delete entity: {:?}", entity);
-            entities.delete(entity).expect(&err);
+            for (entity, _tag) in (&entities, &cleanup_tags).join() {
+                let err = format!("unable to delete entity: {:?}", entity);
+                entities.delete(entity).expect(&err);
+            }
         }
+        // ui cleanup
+        if let Some(root_entity) = self.ui_root {
+            data.world
+                .delete_entity(root_entity)
+                .expect("Failed to remove UI elements");
+        }
+        self.ui_root = None;
     }
 }
 

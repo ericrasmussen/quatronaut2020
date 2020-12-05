@@ -16,6 +16,7 @@ pub struct Perspective {
     scale_min: f32,
     completed: bool,
     reversing: bool,
+    already_played_sound: bool,
 }
 
 impl Component for Perspective {
@@ -29,6 +30,7 @@ impl Default for Perspective {
             scale_min: 0.0,
             completed: false,
             reversing: false,
+            already_played_sound: false,
         }
     }
 }
@@ -40,7 +42,16 @@ impl Perspective {
             scale_min,
             completed: false,
             reversing: false,
+            already_played_sound: false,
         }
+    }
+
+    pub fn sound_already_played(self) -> bool {
+        self.already_played_sound
+    }
+
+    pub fn played_sound(&mut self) {
+        self.already_played_sound = true;
     }
 
     pub fn is_reversing(self) -> bool {

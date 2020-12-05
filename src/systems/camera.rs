@@ -1,10 +1,13 @@
 use amethyst::{
+    assets::AssetStorage,
+    audio::{output::Output, Source},
     core::{timing::Time, Transform},
     derive::SystemDesc,
-    ecs::{Join, Read, ReadStorage, System, SystemData, Write, WriteStorage},
+    ecs::{Join, Read, ReadExpect, ReadStorage, System, SystemData, Write, WriteStorage},
 };
 
 use crate::components::{perspective::Perspective, tags::CameraTag};
+use crate::resources::audio::{Sounds, SoundType};
 
 // use log::info;
 
@@ -20,11 +23,14 @@ impl<'s> System<'s> for CameraShakeSystem {
         ReadStorage<'s, CameraTag>,
         Write<'s, Perspective>,
         Read<'s, Time>,
+        Read<'s, AssetStorage<Source>>,
+        ReadExpect<'s, Sounds>,
+        Option<Read<'s, Output>>,
     );
 
     // hm, why is this running... something being inserted by default
     // maybe the default should be completed?
-    fn run(&mut self, (mut transforms, cameras, mut perspective, time): Self::SystemData) {
+    fn run(&mut self, (mut transforms, cameras, mut perspective, time, storage, sounds, audio_output): Self::SystemData) {
         for (transform, _camera) in (&mut transforms, &cameras).join() {
             // this uses prepend to keep shaking if we're not done shaking yet,
             // otherwise resets the z axis to 0 (unrotated)
@@ -39,6 +45,13 @@ impl<'s> System<'s> for CameraShakeSystem {
             if let Some(next_scale) = perspective.next_scale(current_scale, time.delta_seconds()) {
                 transform.set_scale(next_scale);
             }
+
+            // play a sound, if not played already
+            if !perspective.sound_already_played() {
+                sounds.play_sound(SoundType::ShortTransition, &storage, audio_output.as_deref());
+                perspective.played_sound();
+            }
+
         }
     }
 }

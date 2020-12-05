@@ -14,17 +14,18 @@ pub struct SoundConfig {
     player_death: Vec<String>,
     enemy_blaster: Vec<String>,
     enemy_death: Vec<String>,
-    triangle_lock: String,
-    transition: String,
+    triangle_lock: Vec<String>,
+    short_transition: String,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 pub enum SoundType {
     PlayerBlaster,
     PlayerDeath,
-    //EnemyBlaster,
+    EnemyBlaster,
     EnemyDeath,
     TriangleLock,
+    ShortTransition,
 }
 
 pub struct Sounds {
@@ -33,7 +34,8 @@ pub struct Sounds {
     pub enemy_blaster: Vec<SourceHandle>,
     pub enemy_death: Vec<SourceHandle>,
     pub player_death: Vec<SourceHandle>,
-    pub triangle_lock: SourceHandle,
+    pub triangle_lock: Vec<SourceHandle>,
+    pub short_transition: SourceHandle,
 }
 
 impl Sounds {
@@ -53,15 +55,19 @@ impl Sounds {
                     let index = self.random_int(self.player_death.len() - 1);
                     &self.player_death[index]
                 },
-                // SoundType::EnemyBlaster => {
-                //     let index = self.random_int(self.enemy_blaster.len() - 1);
-                //     &self.enemy_blaster[index]
-                // },
+                SoundType::EnemyBlaster => {
+                     let index = self.random_int(self.enemy_blaster.len() - 1);
+                     &self.enemy_blaster[index]
+                },
                 SoundType::EnemyDeath => {
                     let index = self.random_int(self.enemy_death.len() - 1);
                     &self.enemy_death[index]
                 },
-                SoundType::TriangleLock => &self.triangle_lock,
+                SoundType::TriangleLock => {
+                    let index = self.random_int(self.triangle_lock.len() - 1);
+                    &self.triangle_lock[index]
+                },
+                SoundType::ShortTransition => &self.short_transition,
             };
 
             if let Some(sound) = storage.get(&sound_ref) {
@@ -105,7 +111,12 @@ pub fn initialize_audio(world: &mut World, config: &SoundConfig) {
                 .iter()
                 .map(|ogg| load_audio_track(&loader, &world, ogg))
                 .collect(),
-            triangle_lock: load_audio_track(&loader, &world, &config.triangle_lock),
+            triangle_lock: config
+                .triangle_lock
+                .iter()
+                .map(|ogg| load_audio_track(&loader, &world, ogg))
+                .collect(),
+            short_transition: load_audio_track(&loader, &world, &config.short_transition),
         }
     };
 
