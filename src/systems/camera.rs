@@ -6,8 +6,10 @@ use amethyst::{
     ecs::{Join, Read, ReadExpect, ReadStorage, System, SystemData, Write, WriteStorage},
 };
 
-use crate::components::{perspective::Perspective, tags::CameraTag};
-use crate::resources::audio::Sounds;
+use crate::{
+    components::{perspective::Perspective, tags::CameraTag},
+    resources::audio::Sounds,
+};
 
 // use log::info;
 
@@ -18,6 +20,7 @@ use crate::resources::audio::Sounds;
 pub struct CameraShakeSystem;
 
 impl<'s> System<'s> for CameraShakeSystem {
+    #[allow(clippy::type_complexity)]
     type SystemData = (
         WriteStorage<'s, Transform>,
         ReadStorage<'s, CameraTag>,
@@ -30,7 +33,10 @@ impl<'s> System<'s> for CameraShakeSystem {
 
     // hm, why is this running... something being inserted by default
     // maybe the default should be completed?
-    fn run(&mut self, (mut transforms, cameras, mut perspective, time, storage, sounds, audio_output): Self::SystemData) {
+    fn run(
+        &mut self,
+        (mut transforms, cameras, mut perspective, time, storage, sounds, audio_output): Self::SystemData,
+    ) {
         for (transform, _camera) in (&mut transforms, &cameras).join() {
             // this uses prepend to keep shaking if we're not done shaking yet,
             // otherwise resets the z axis to 0 (unrotated)
@@ -51,7 +57,6 @@ impl<'s> System<'s> for CameraShakeSystem {
                 sounds.play_sound(perspective.get_sound_type(), &storage, audio_output.as_deref());
                 perspective.played_sound();
             }
-
         }
     }
 }

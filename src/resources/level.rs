@@ -64,7 +64,6 @@ pub enum LevelStatus {
 }
 
 impl Levels {
-
     // this needs to return at least three variants:
     // 1) the next small level
     // 2) an indicator we should transition to the large bg
@@ -80,8 +79,7 @@ impl Levels {
                     LevelStatus::TransitionTime
                 },
             }
-        }
-        else {
+        } else {
             match self.large_levels.pop() {
                 Some(metadata) => LevelStatus::LargeLevel(metadata),
                 None => LevelStatus::AllDone,

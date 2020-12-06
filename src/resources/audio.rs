@@ -60,8 +60,8 @@ impl Sounds {
                     &self.player_death[index]
                 },
                 SoundType::EnemyBlaster => {
-                     let index = self.random_int(self.enemy_blaster.len() - 1);
-                     &self.enemy_blaster[index]
+                    let index = self.random_int(self.enemy_blaster.len() - 1);
+                    &self.enemy_blaster[index]
                 },
                 SoundType::EnemyDeath => {
                     let index = self.random_int(self.enemy_death.len() - 1);

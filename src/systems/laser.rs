@@ -6,7 +6,7 @@ use amethyst::{
 
 use crate::{
     entities::laser::Laser,
-    resources::{direction::Direction, playablearea::PlayableArea}
+    resources::{direction::Direction, playablearea::PlayableArea},
 };
 
 use log::info;

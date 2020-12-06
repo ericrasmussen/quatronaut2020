@@ -47,7 +47,7 @@ impl Perspective {
             completed: false,
             reversing: false,
             already_played_sound: false,
-            sound: sound,
+            sound,
         }
     }
 

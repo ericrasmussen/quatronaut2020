@@ -37,7 +37,7 @@ use crate::{
         audio,
         handles,
         handles::GameplayHandles,
-        level::{EntityType, LevelMetadata, Levels, LevelStatus},
+        level::{EntityType, LevelMetadata, LevelStatus, Levels},
         playablearea::PlayableArea,
         playerstats::PlayerStats,
     },
@@ -308,7 +308,6 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             if is_key_down(&event, VirtualKeyCode::P) {
                 return Trans::Push(Box::new(PausedState));
             }
-
         }
 
         // no state changes required
