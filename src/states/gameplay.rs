@@ -37,7 +37,7 @@ use crate::{
         audio,
         handles,
         handles::GameplayHandles,
-        level::{EntityType, LevelMetadata, Levels},
+        level::{EntityType, LevelMetadata, Levels, LevelStatus},
         playablearea::PlayableArea,
         playerstats::PlayerStats,
     },
@@ -179,39 +179,41 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         // audio should not need to be initialized multiple
         audio::initialize_audio(world, &self.sound_config);
 
-        // setup the playable area. depending on how many backgrounds we have these
-        // percentages might go into the levels.ron config. these percentages are
-        // used to represent rectangular boundaries in a given background
-        let playable_area = match self.gameplay_mode {
-            // endless mode isn't constrained to part of the screen
-            // although we should still convert to world coordinates here so it's not different
-            // based on pixel density
-            EndlessMode => PlayableArea::new(dimensions.width(), dimensions.height(), false),
-            // for anything else (should only be LevelMode), we constrain the
-            // playing area to the black section of the screen
-            _ => PlayableArea::new(dimensions.width(), dimensions.height(), true),
-        };
-
-        world.insert(playable_area);
-
         // we want to preserve palyer stats across levels, so only insert if it isn't there yet
         world.entry::<PlayerStats>().or_insert_with(PlayerStats::default);
 
-        let next_level = self.levels.pop();
+        //
+        let next_level_status = self.levels.pop();
+
+        // setup the playable area. this is still messy but if we begin in small level mode,
+        // we setup the constrained level mode
+        let playable_area = match next_level_status {
+            LevelStatus::SmallLevel(_) => PlayableArea::new(dimensions.width(), dimensions.height(), true),
+            _ => PlayableArea::new(dimensions.width(), dimensions.height(), false),
+        };
+
+        world.insert(playable_area);
 
         let handles = self.handles.clone().expect("failure accessing GameplayHandles struct");
 
         // maybe use one of two configs here? and clean up each time
         // UI setup
-        let ui_handle = world.exec(|mut creator: UiCreator<'_>| creator.create("ui/ui.ron", &mut self.progress_counter));
+        let ui_config = match next_level_status {
+            LevelStatus::SmallLevel(_) => "ui/ui.ron",
+            _ => "ui/ui_big.ron",
+        };
+
+        let ui_handle = world.exec(|mut creator: UiCreator<'_>| creator.create(ui_config, &mut self.progress_counter));
         self.ui_root = Some(ui_handle);
 
         info!("gameplay mode is now: {:?}", &self.gameplay_mode);
 
         match &self.gameplay_mode {
-            LevelMode => match next_level {
-                Some(next_level_metadata) => init_level(world, next_level_metadata, handles),
-                None => self.gameplay_mode = TransitionMode,
+            LevelMode => match next_level_status {
+                LevelStatus::SmallLevel(next_level_metadata) => init_level(world, next_level_metadata, handles),
+                LevelStatus::LargeLevel(next_level_metadata) => init_level(world, next_level_metadata, handles),
+                LevelStatus::TransitionTime => self.gameplay_mode = TransitionMode,
+                LevelStatus::AllDone => self.gameplay_mode = EndlessMode,
             },
             EndlessMode => {
                 spawn_player_in_center(world, &dimensions, handles.clone());
@@ -279,7 +281,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
                 handles.overlay_sprite_handle,
                 self.levels.clone(),
                 self.sound_config.clone(),
-                Some(Perspective::new(0.9, 0.3)),
+                Some(Perspective::new(0.9, 0.3, audio::SoundType::LongTransition)),
             )))
         } else if total == 0 && self.level_is_loaded {
             Trans::Switch(Box::new(TransitionState::new(
@@ -307,15 +309,6 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
                 return Trans::Push(Box::new(PausedState));
             }
 
-            // when should this actually run?
-            if is_key_down(&event, VirtualKeyCode::Space) {
-                return Trans::Switch(Box::new(TransitionState::new(
-                    self.handles.clone().unwrap().overlay_sprite_handle,
-                    self.levels.clone(),
-                    self.sound_config.clone(),
-                    Some(Perspective::new(0.6, 0.3)),
-                )));
-            }
         }
 
         // no state changes required

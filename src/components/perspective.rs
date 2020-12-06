@@ -10,6 +10,8 @@ use rand::{thread_rng, Rng};
 
 use log::info;
 
+use crate::resources::audio::SoundType;
+
 #[derive(Clone, Copy, Debug)]
 pub struct Perspective {
     scale_factor: f32,
@@ -17,6 +19,7 @@ pub struct Perspective {
     completed: bool,
     reversing: bool,
     already_played_sound: bool,
+    sound: SoundType,
 }
 
 impl Component for Perspective {
@@ -31,19 +34,25 @@ impl Default for Perspective {
             completed: false,
             reversing: false,
             already_played_sound: false,
+            sound: SoundType::ShortTransition,
         }
     }
 }
 
 impl Perspective {
-    pub fn new(scale_factor: f32, scale_min: f32) -> Perspective {
+    pub fn new(scale_factor: f32, scale_min: f32, sound: SoundType) -> Perspective {
         Perspective {
             scale_factor,
             scale_min,
             completed: false,
             reversing: false,
             already_played_sound: false,
+            sound: sound,
         }
+    }
+
+    pub fn get_sound_type(self) -> SoundType {
+        self.sound
     }
 
     pub fn sound_already_played(self) -> bool {

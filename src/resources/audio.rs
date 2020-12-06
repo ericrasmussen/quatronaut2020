@@ -3,7 +3,7 @@ use amethyst::{
     audio::{output::Output, OggFormat, Source, SourceHandle},
     ecs::{World, WorldExt},
 };
-//use log::info;
+use log::info;
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 
@@ -16,6 +16,7 @@ pub struct SoundConfig {
     enemy_death: Vec<String>,
     triangle_lock: Vec<String>,
     short_transition: String,
+    long_transition: String,
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
@@ -26,6 +27,7 @@ pub enum SoundType {
     EnemyDeath,
     TriangleLock,
     ShortTransition,
+    LongTransition,
 }
 
 pub struct Sounds {
@@ -36,6 +38,7 @@ pub struct Sounds {
     pub player_death: Vec<SourceHandle>,
     pub triangle_lock: Vec<SourceHandle>,
     pub short_transition: SourceHandle,
+    pub long_transition: SourceHandle,
 }
 
 impl Sounds {
@@ -46,6 +49,7 @@ impl Sounds {
 
     pub fn play_sound(&self, sound_type: SoundType, storage: &AssetStorage<Source>, output: Option<&Output>) {
         if let Some(ref output) = output.as_ref() {
+            info!("playing sound: {:?}", sound_type);
             let sound_ref = match sound_type {
                 SoundType::PlayerBlaster => {
                     let index = self.random_int(self.player_blaster.len() - 1);
@@ -68,6 +72,7 @@ impl Sounds {
                     &self.triangle_lock[index]
                 },
                 SoundType::ShortTransition => &self.short_transition,
+                SoundType::LongTransition => &self.long_transition,
             };
 
             if let Some(sound) = storage.get(&sound_ref) {
@@ -117,6 +122,7 @@ pub fn initialize_audio(world: &mut World, config: &SoundConfig) {
                 .map(|ogg| load_audio_track(&loader, &world, ogg))
                 .collect(),
             short_transition: load_audio_track(&loader, &world, &config.short_transition),
+            long_transition: load_audio_track(&loader, &world, &config.long_transition),
         }
     };
 

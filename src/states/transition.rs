@@ -112,7 +112,7 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
                 return Trans::Switch(Box::new(GameplayState::new(
                     self.levels.clone(),
                     self.sound_config.clone(),
-                    GameplayMode::EndlessMode,
+                    GameplayMode::LevelMode,
                 )));
             }
         }

@@ -7,7 +7,7 @@ use amethyst::{
 };
 
 use crate::components::{perspective::Perspective, tags::CameraTag};
-use crate::resources::audio::{Sounds, SoundType};
+use crate::resources::audio::Sounds;
 
 // use log::info;
 
@@ -48,7 +48,7 @@ impl<'s> System<'s> for CameraShakeSystem {
 
             // play a sound, if not played already
             if !perspective.sound_already_played() {
-                sounds.play_sound(SoundType::ShortTransition, &storage, audio_output.as_deref());
+                sounds.play_sound(perspective.get_sound_type(), &storage, audio_output.as_deref());
                 perspective.played_sound();
             }
 
