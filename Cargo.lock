@@ -2116,9 +2116,9 @@ dependencies = [
 
 [[package]]
 name = "nalgebra"
-version = "0.23.0"
+version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02f2c3d9ba22f24e44de8652a9745d5985ce158a5081b04e7e75a5091ba7ac43"
+checksum = "c9bd52e9c9922d5702d5c2a105ceacc3c1206e781d3d130f4d2b7ad5f43c144b"
 dependencies = [
  "approx 0.4.0",
  "generic-array 0.14.4",
@@ -2142,7 +2142,7 @@ dependencies = [
  "bitflags",
  "downcast-rs",
  "either",
- "nalgebra 0.23.0",
+ "nalgebra 0.23.2",
  "num-traits 0.2.12",
  "petgraph",
  "simba",
@@ -2668,7 +2668,7 @@ dependencies = [
  "amethyst_rendy",
  "derive-new",
  "log",
- "nalgebra 0.23.0",
+ "nalgebra 0.23.2",
  "ncollide2d",
  "serde",
 ]
