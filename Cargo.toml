@@ -11,7 +11,7 @@ amethyst_rendy = { version = "0.15.0", features = ["no-slow-safety-checks"] }
 derive-new = "0.5.8"
 log = { version = "0.4.8", features = ["serde"] }
 nalgebra = "0.23"
-ncollide2d = "0.26"
+ncollide2d = "0.27"
 serde = { version = "1.0.104", features = ["derive"] }
 
 [features]

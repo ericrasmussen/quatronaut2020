@@ -2133,16 +2133,34 @@ dependencies = [
 ]
 
 [[package]]
-name = "ncollide2d"
-version = "0.26.0"
+name = "nalgebra"
+version = "0.24.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a98d98a7fb88ea235f28cd0880570c06f1e57362258e5acf040262a4116f396f"
+checksum = "77fea728d5bead12fae18a36258f43f397c20850925cd84af2caf9b8fc7f5d49"
+dependencies = [
+ "approx 0.4.0",
+ "generic-array 0.14.4",
+ "matrixmultiply",
+ "num-complex 0.3.0",
+ "num-rational 0.3.0",
+ "num-traits 0.2.12",
+ "rand 0.7.3",
+ "rand_distr 0.3.0",
+ "simba",
+ "typenum",
+]
+
+[[package]]
+name = "ncollide2d"
+version = "0.27.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "04f5305250297a57b3e15324cd6b355f27a913b2cbdd357299c95386f2ad333e"
 dependencies = [
  "approx 0.4.0",
  "bitflags",
  "downcast-rs",
  "either",
- "nalgebra 0.23.0",
+ "nalgebra 0.24.0",
  "num-traits 0.2.12",
  "petgraph",
  "simba",
