@@ -9,7 +9,7 @@ amethyst = "0.15.0"
 amethyst_rendy = { version = "0.15.0", features = ["no-slow-safety-checks"] }
 # used only for a default implementation of GameplayState. probably not really needed
 derive-new = "0.5.8"
-log = { version = "0.4.8", features = ["serde"] }
+log = { version = "0.4.13", features = ["serde"] }
 nalgebra = "0.23"
 ncollide2d = "0.26"
 serde = { version = "1.0.104", features = ["derive"] }
