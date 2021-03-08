@@ -12,7 +12,7 @@ derive-new = "0.5.8"
 log = { version = "0.4.8", features = ["serde"] }
 nalgebra = "0.23"
 ncollide2d = "0.26"
-serde = { version = "1.0.104", features = ["derive"] }
+serde = { version = "1.0.124", features = ["derive"] }
 
 [features]
 empty = ["amethyst/empty"]
