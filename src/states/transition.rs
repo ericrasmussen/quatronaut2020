@@ -22,11 +22,8 @@ use crate::{
         perspective::Perspective,
         tags::BackgroundTag,
     },
-    resources::{audio::SoundConfig, level::Levels},
-    states::{
-        gameplay::{GameplayMode, GameplayState},
-        paused::PausedState,
-    },
+    resources::gameconfig::{GameConfig, GameplayMode},
+    states::{gameplay::GameplayState, paused::PausedState},
     systems::{CameraShakeSystem, FadeSystem},
 };
 
@@ -41,8 +38,7 @@ pub struct TransitionState<'a, 'b> {
     #[new(default)]
     pub dispatcher: Option<Dispatcher<'a, 'b>>,
     pub overlay_sprite_handle: Handle<SpriteSheet>,
-    pub levels: Levels,
-    pub sound_config: SoundConfig,
+    pub game_config: GameConfig,
     pub perspective_shift: Option<Perspective>,
 }
 
@@ -109,11 +105,9 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
             }
             // special case to return early if we're done with our scaling and shaking
             if perspective.is_completed() {
-                return Trans::Switch(Box::new(GameplayState::new(
-                    self.levels.clone(),
-                    self.sound_config.clone(),
-                    GameplayMode::LevelMode,
-                )));
+                let mut game_config = self.game_config.clone();
+                game_config.gameplay_mode = GameplayMode::LevelMode;
+                return Trans::Switch(Box::new(GameplayState::new(game_config)));
             }
         }
 
@@ -122,11 +116,10 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
         if fade_status.is_completed() {
             fade_status.clear();
 
-            Trans::Switch(Box::new(GameplayState::new(
-                self.levels.clone(),
-                self.sound_config.clone(),
-                GameplayMode::LevelMode,
-            )))
+            let mut game_config = self.game_config.clone();
+            game_config.gameplay_mode = GameplayMode::LevelMode;
+
+            Trans::Switch(Box::new(GameplayState::new(game_config)))
         } else {
             Trans::None
         }

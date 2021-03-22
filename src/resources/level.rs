@@ -19,7 +19,7 @@ impl LevelMetadata {
     }
 }
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct LevelConfig {
     pub small_levels: Vec<Vec<String>>,
     pub large_levels: Vec<Vec<String>>,

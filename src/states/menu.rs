@@ -7,13 +7,11 @@ use amethyst::{
 };
 
 use crate::{
-    resources::{audio::SoundConfig, level::Levels},
-    states::gameplay::{GameplayMode, GameplayState},
+    resources::{gameconfig::GameConfig, level::get_all_levels},
+    states::gameplay::GameplayState,
 };
 
 use derive_new::new;
-
-//use crate::{credits::CreditsScreen, game::Game, welcome::WelcomeScreen};
 
 const BUTTON_START: &str = "start";
 const BUTTON_CONTINUE: &str = "continue";
@@ -21,9 +19,7 @@ const BUTTON_QUIT: &str = "quit";
 
 #[derive(Debug, new)]
 pub struct MainMenu {
-    pub levels: Levels,
-    pub sound_config: SoundConfig,
-    pub gameplay_mode: GameplayMode,
+    pub game_config: GameConfig,
     // indicates whether or not there's a continue-able/active game
     pub active_game: bool,
     #[new(default)]
@@ -86,18 +82,18 @@ impl SimpleState for MainMenu {
                     return Trans::Quit;
                 }
                 if Some(target) == self.button_start {
-                    log::info!("[Trans::Switch] Switching to Game!");
-                    // this here should be a clean copy of the levels
-                    return Trans::Switch(Box::new(GameplayState::new(
-                        self.levels.clone(),
-                        self.sound_config.clone(),
-                        GameplayMode::LevelMode,
-                    )));
+                    log::info!("[Trans::Switch] Switching to New Game!");
+                    // this here should be a clean copy of the levels for a new game
+                    let mut new_game_config = self.game_config.clone();
+                    let all_levels = get_all_levels(self.game_config.level_config.clone());
+                    new_game_config.current_levels = all_levels;
+                    // Switch doesn't work here for whatever reason, but Replace ensures we
+                    // get a brand new `GameplayState`
+                    return Trans::Replace(Box::new(GameplayState::new(new_game_config)));
                 }
                 if Some(target) == self.button_continue || Some(target) == self.button_continue {
-                    log::info!("This Buttons functionality is not yet implemented!");
+                    log::info!("Going back to the prior state (should be an ongoing game)");
                     return Trans::Pop;
-                    // this here should should use the levels from the current game
                 }
 
                 Trans::None

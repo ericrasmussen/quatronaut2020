@@ -37,27 +37,17 @@ use crate::{
     },
     resources::{
         audio,
+        gameconfig::{GameConfig, GameplayMode},
         handles,
         handles::GameplayHandles,
-        level::{EntityType, LevelMetadata, LevelStatus, Levels},
+        level::{EntityType, LevelMetadata, LevelStatus},
         music,
         playablearea::PlayableArea,
         playerstats::PlayerStats,
     },
-    states::{mainmenu::MainMenu, paused::PausedState, transition::TransitionState},
+    states::{menu::MainMenu, paused::PausedState, transition::TransitionState},
     systems,
 };
-
-/// This tracks whether we're in a level, transitioning between levels,
-/// or if we've finished all of them.
-#[derive(Clone, Debug, PartialEq)]
-pub enum GameplayMode {
-    LevelMode,
-    TransitionMode,
-    CompletedMode,
-}
-
-use GameplayMode::*;
 
 /// Collects our state-specific dispatcher, progress counter for asset
 /// loading, struct with gameplay handles, and levels. Note that the
@@ -65,15 +55,13 @@ use GameplayMode::*;
 /// config file without gameplay state knowledge)
 #[derive(new)]
 pub struct GameplayState<'a, 'b> {
-    pub levels: Levels,
-
-    pub sound_config: audio::SoundConfig,
+    // this is mostly for use in creating a new menu, but
+    // there might be better options (like Trans::Pop)
+    pub game_config: GameConfig,
 
     // default initializes this value with false
     #[new(default)]
     pub level_is_loaded: bool,
-
-    pub gameplay_mode: GameplayMode,
 
     #[new(default)]
     pub ui_root: Option<Entity>,
@@ -175,7 +163,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         );
 
         // audio should not need to be initialized multiple times
-        audio::initialize_audio(world, &self.sound_config);
+        audio::initialize_audio(world, &self.game_config.sound_config);
 
         // setup our music player
         music::initialize_music(world);
@@ -184,7 +172,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         world.entry::<PlayerStats>().or_insert_with(PlayerStats::default);
 
         //
-        let next_level_status = self.levels.pop();
+        let next_level_status = self.game_config.current_levels.pop();
 
         // setup the playable area. this is still messy but if we begin in small level mode,
         // we setup the constrained level mode
@@ -207,16 +195,14 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         let ui_handle = world.exec(|mut creator: UiCreator<'_>| creator.create(ui_config, &mut self.progress_counter));
         self.ui_root = Some(ui_handle);
 
-        //info!("gameplay mode is now: {:?}", &self.gameplay_mode);
-
-        match &self.gameplay_mode {
-            LevelMode => match next_level_status {
+        match &self.game_config.gameplay_mode {
+            GameplayMode::LevelMode => match next_level_status {
                 LevelStatus::SmallLevel(next_level_metadata) => init_level(world, next_level_metadata, handles),
                 LevelStatus::LargeLevel(next_level_metadata) => init_level(world, next_level_metadata, handles),
-                LevelStatus::TransitionTime => self.gameplay_mode = TransitionMode,
-                LevelStatus::AllDone => self.gameplay_mode = CompletedMode,
+                LevelStatus::TransitionTime => self.game_config.gameplay_mode = GameplayMode::TransitionMode,
+                LevelStatus::AllDone => self.game_config.gameplay_mode = GameplayMode::CompletedMode,
             },
-            CompletedMode => {
+            GameplayMode::CompletedMode => {
                 // You win screen should go here
                 info!("You did it!");
             },
@@ -272,18 +258,16 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         // this branch decides whether or not to switch state. if a level is
         // loaded and all enemies are defeated, it's time to transition, otherwise
         // keep going
-        if self.gameplay_mode == TransitionMode {
+        if self.game_config.gameplay_mode == GameplayMode::TransitionMode {
             Trans::Switch(Box::new(TransitionState::new(
                 handles.overlay_sprite_handle,
-                self.levels.clone(),
-                self.sound_config.clone(),
+                self.game_config.clone(),
                 Some(Perspective::new(1.4, 0.3, audio::SoundType::LongTransition)),
             )))
         } else if total == 0 && self.level_is_loaded {
             Trans::Switch(Box::new(TransitionState::new(
                 handles.overlay_sprite_handle,
-                self.levels.clone(),
-                self.sound_config.clone(),
+                self.game_config.clone(),
                 None,
             )))
         } else {
@@ -296,12 +280,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         if let StateEvent::Window(event) = &event {
             // Check if the window should be closed
             if is_close_requested(&event) || is_key_down(&event, VirtualKeyCode::Escape) {
-                return Trans::Push(Box::new(MainMenu::new(
-                    self.levels.clone(),
-                    self.sound_config.clone(),
-                    self.gameplay_mode.clone(),
-                    true,
-                )));
+                return Trans::Push(Box::new(MainMenu::new(self.game_config.clone(), true)));
             }
 
             if is_key_down(&event, VirtualKeyCode::P) {

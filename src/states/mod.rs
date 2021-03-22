@@ -1,10 +1,6 @@
-pub use self::{
-    gameplay::{GameplayMode, GameplayState},
-    mainmenu::MainMenu,
-    paused::PausedState,
-};
+pub use self::{gameplay::GameplayState, menu::MainMenu, paused::PausedState};
 
 mod gameplay;
-mod mainmenu;
+mod menu;
 mod paused;
 mod transition;

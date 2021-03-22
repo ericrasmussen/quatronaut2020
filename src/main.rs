@@ -31,17 +31,10 @@ fn main() -> amethyst::Result<()> {
     let display_config = app_root.join("config").join("display_config.ron");
     let binding_path = app_root.join("config").join("bindings.ron");
 
-    // MENU REFACTOR: for everything described below that should be moved, the
-    // `app_root` could be passed into the menu state, or specific configs, or
-    // a new struct containing all the loaded config info
+    let level_config_path = app_root.join("config").join("levels.ron");
+    let level_config = resources::level::LevelConfig::load(&level_config_path).unwrap();
+    let all_levels = resources::level::get_all_levels(level_config.clone());
 
-    // MENU REFACTOR: this can be loaded in main menu on the gameplay start event
-    let level_config = app_root.join("config").join("levels.ron");
-    let levels = resources::level::LevelConfig::load(&level_config).unwrap();
-    let all_levels = resources::level::get_all_levels(levels);
-
-    // MENU REFACTOR: any menu sounds can be loaded in the menu if needed,
-    // but either way the main menu can pass this to gameplay too
     let sound_config = app_root.join("config").join("audio.ron");
     let sounds = resources::audio::SoundConfig::load(&sound_config).unwrap();
 
@@ -62,11 +55,17 @@ fn main() -> amethyst::Result<()> {
         )?
         .with_bundle(resources::music::MusicBundle)?;
 
-    let starting_mode = states::GameplayMode::LevelMode;
+    let starting_mode = resources::gameconfig::GameplayMode::LevelMode;
+    let game_config = resources::gameconfig::GameConfig {
+        level_config,
+        current_levels: all_levels,
+        sound_config: sounds,
+        gameplay_mode: starting_mode,
+    };
     let mut game = Application::new(
         assets,
         // add level config here to a config struct of some kind
-        states::MainMenu::new(all_levels, sounds, starting_mode, false),
+        states::MainMenu::new(game_config, false),
         game_data,
     )?;
     game.run();
