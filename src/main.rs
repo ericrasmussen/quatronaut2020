@@ -2,7 +2,7 @@
 // from the main.rs file in https://github.com/amethyst/amethyst-starter-2d
 use amethyst::{
     assets::PrefabLoaderSystemDesc,
-    audio::AudioBundle,
+    audio::{AudioBundle},
     core::transform::TransformBundle,
     input::{InputBundle, StringBindings},
     prelude::*,
@@ -31,12 +31,17 @@ fn main() -> amethyst::Result<()> {
     let display_config = app_root.join("config").join("display_config.ron");
     let binding_path = app_root.join("config").join("bindings.ron");
 
-    // load all the levels
+    // MENU REFACTOR: for everything described below that should be moved, the
+    // `app_root` could be passed into the menu state, or specific configs, or
+    // a new struct containing all the loaded config info
+
+    // MENU REFACTOR: this can be loaded in main menu on the gameplay start event
     let level_config = app_root.join("config").join("levels.ron");
     let levels = resources::level::LevelConfig::load(&level_config).unwrap();
     let all_levels = resources::level::get_all_levels(levels);
 
-    // load all the sounds
+    // MENU REFACTOR: any menu sounds can be loaded in the menu if needed,
+    // but either way the main menu can pass this to gameplay too
     let sound_config = app_root.join("config").join("audio.ron");
     let sounds = resources::audio::SoundConfig::load(&sound_config).unwrap();
 
@@ -54,12 +59,14 @@ fn main() -> amethyst::Result<()> {
                 .with_plugin(RenderToWindow::from_config_path(display_config)?.with_clear([0.0, 0.0, 0.0, 1.0]))
                 .with_plugin(RenderFlat2D::default())
                 .with_plugin(RenderUi::default()),
-        )?;
+        )?
+        .with_bundle(resources::music::MusicBundle)?;
 
     let starting_mode = states::GameplayMode::LevelMode;
     let mut game = Application::new(
         assets,
-        states::GameplayState::new(all_levels, sounds, starting_mode),
+        // add level config here to a config struct of some kind
+        states::MainMenu::new(all_levels, sounds, starting_mode, false),
         game_data,
     )?;
     game.run();

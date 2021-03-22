@@ -8,7 +8,7 @@ use amethyst::{
 
 use rand::{thread_rng, Rng};
 
-use log::info;
+//use log::info;
 
 use crate::resources::audio::SoundType;
 
@@ -109,7 +109,7 @@ impl Perspective {
         }
         // we're all done zooming in; time to go back
         else if current_scale <= self.scale_min {
-            info!("going back!!!! {:?}", current_scale);
+            //info!("going back!!!! {:?}", current_scale);
             self.reversing = true;
             None
         }

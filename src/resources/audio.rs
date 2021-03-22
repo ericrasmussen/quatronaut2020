@@ -3,7 +3,7 @@ use amethyst::{
     audio::{output::Output, OggFormat, Source, SourceHandle},
     ecs::{World, WorldExt},
 };
-use log::info;
+//use log::info;
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 
@@ -49,7 +49,7 @@ impl Sounds {
 
     pub fn play_sound(&self, sound_type: SoundType, storage: &AssetStorage<Source>, output: Option<&Output>) {
         if let Some(ref output) = output.as_ref() {
-            info!("playing sound: {:?}", sound_type);
+            //info!("playing sound: {:?}", sound_type);
             let sound_ref = match sound_type {
                 SoundType::PlayerBlaster => {
                     let index = self.random_int(self.player_blaster.len() - 1);

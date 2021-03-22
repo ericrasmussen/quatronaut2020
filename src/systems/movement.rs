@@ -14,7 +14,7 @@ use crate::{
 
 use std::f32::consts::PI;
 
-use log::info;
+use log::debug;
 
 #[derive(SystemDesc)]
 pub struct MovementTrackingSystem;
@@ -91,8 +91,9 @@ impl<'s> System<'s> for TransformUpdateSystem {
                 }
             }
 
+            // the .delete here is the step that actually removes the enemy
             if playable_area.out_of_bounds(x, y) && entities.delete(enemy_entity).is_ok() {
-                info!("enemy out of bounds");
+               debug!("enemy out of bounds");
             }
         }
     }

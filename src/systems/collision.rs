@@ -18,7 +18,7 @@ use crate::{
     },
 };
 
-use log::info;
+//use log::info;
 
 // big TODO: as this system gets more complicated, at some point it'll probably
 // be worth using ncollide's broad phase collision
@@ -90,7 +90,7 @@ impl<'s> System<'s> for CollisionSystem {
                     // if the enemy has taken enough damage, delete them
                     // TODO: may be a latent bug in associating this with laser hits...
                     if enemy.is_dead() && entities.delete(enemy_entity).is_ok() {
-                        info!("enemy deleted due to insufficient laser dodging abilities");
+                        //info!("enemy deleted due to insufficient laser dodging abilities");
                         stats.add_to_score(10);
                         sounds.play_sound(SoundType::EnemyDeath, &storage, audio_output.as_deref());
                     }

@@ -38,16 +38,15 @@ use crate::{
         handles,
         handles::GameplayHandles,
         level::{EntityType, LevelMetadata, LevelStatus, Levels},
+        music,
         playablearea::PlayableArea,
         playerstats::PlayerStats,
     },
-    states::{paused::PausedState, transition::TransitionState},
+    states::{mainmenu::MainMenu, paused::PausedState, transition::TransitionState},
     systems,
 };
 
 use rand::{thread_rng, Rng};
-
-use log::info;
 
 // could use separate states here, but they feel a little heavy. all the
 // modes here share the same gameplay logic
@@ -121,7 +120,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         // place our sprites correctly later. We'll clone this since we'll
         // pass the world mutably to the following functions.
         let dimensions = (*world.read_resource::<ScreenDimensions>()).clone();
-        info!("computed dimensions are: {:?}", &dimensions);
+        //info!("computed dimensions are: {:?}", &dimensions);
 
         // register our entities and resources before inserting them or
         // having them created as part of `init_level` in `update`
@@ -176,8 +175,11 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             self.handles.clone().unwrap().background_sprite_handle,
         );
 
-        // audio should not need to be initialized multiple
+        // audio should not need to be initialized multiple times
         audio::initialize_audio(world, &self.sound_config);
+
+        // setup our music player
+        music::initialize_music(world);
 
         // we want to preserve palyer stats across levels, so only insert if it isn't there yet
         world.entry::<PlayerStats>().or_insert_with(PlayerStats::default);
@@ -206,7 +208,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         let ui_handle = world.exec(|mut creator: UiCreator<'_>| creator.create(ui_config, &mut self.progress_counter));
         self.ui_root = Some(ui_handle);
 
-        info!("gameplay mode is now: {:?}", &self.gameplay_mode);
+        //info!("gameplay mode is now: {:?}", &self.gameplay_mode);
 
         match &self.gameplay_mode {
             LevelMode => match next_level_status {
@@ -234,7 +236,6 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         }
 
         // ui text handling
-
         if self.high_score_text.is_none() {
             data.world.exec(|finder: UiFinder| {
                 if let Some(entity) = finder.find("high_score") {
@@ -281,7 +282,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
                 handles.overlay_sprite_handle,
                 self.levels.clone(),
                 self.sound_config.clone(),
-                Some(Perspective::new(0.9, 0.3, audio::SoundType::LongTransition)),
+                Some(Perspective::new(1.4, 0.3, audio::SoundType::LongTransition)),
             )))
         } else if total == 0 && self.level_is_loaded {
             Trans::Switch(Box::new(TransitionState::new(
@@ -290,6 +291,10 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
                 self.sound_config.clone(),
                 None,
             )))
+        } else if self.gameplay_mode == EndlessMode {
+            //info!("I could be updating now!!!!");
+            // endless logic needs to go here
+            Trans::None
         }
         // otherwise, nothing to see here folks!
         else {
@@ -302,7 +307,8 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         if let StateEvent::Window(event) = &event {
             // Check if the window should be closed
             if is_close_requested(&event) || is_key_down(&event, VirtualKeyCode::Escape) {
-                return Trans::Quit;
+                return Trans::Push(Box::new(MainMenu::new(self.levels.clone(), self.sound_config.clone(), self.gameplay_mode.clone(), true)));
+                //return Trans::Quit;
             }
 
             if is_key_down(&event, VirtualKeyCode::P) {

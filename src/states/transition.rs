@@ -30,7 +30,7 @@ use crate::{
     systems::{CameraShakeSystem, FadeSystem},
 };
 
-use log::info;
+//use log::info;
 
 /// This state will be pushed on top of `GameplayState` to give more
 /// control over level transitions, and, based on the meta level
@@ -66,7 +66,7 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
 
         world.register::<Perspective>();
         if let Some(perspective) = &self.perspective_shift {
-            info!("adding some perspective");
+            //info!("adding some perspective");
             world.insert(*perspective);
         }
 
