@@ -6,8 +6,10 @@ use amethyst::{
     winit::VirtualKeyCode,
 };
 
-use crate::states::gameplay::{GameplayMode,GameplayState};
-use crate::resources::{audio::SoundConfig, level::Levels};
+use crate::{
+    resources::{audio::SoundConfig, level::Levels},
+    states::gameplay::{GameplayMode, GameplayState},
+};
 
 use derive_new::new;
 
@@ -39,19 +41,19 @@ impl SimpleState for MainMenu {
         // create UI from prefab and save the reference.
         let world = data.world;
 
-        let menu_path = if self.active_game { "ui/menu.ron" } else { "ui/menu_no_continue.ron" };
-        self.ui_root =
-            Some(world.exec(|mut creator: UiCreator<'_>| creator.create(menu_path, ())));
+        let menu_path = if self.active_game {
+            "ui/menu.ron"
+        } else {
+            "ui/menu_no_continue.ron"
+        };
+        self.ui_root = Some(world.exec(|mut creator: UiCreator<'_>| creator.create(menu_path, ())));
     }
 
     fn update(&mut self, state_data: &mut StateData<'_, GameData>) -> SimpleTrans {
         // only search for buttons if they have not been found yet
         let StateData { world, .. } = state_data;
 
-        if self.button_start.is_none()
-            || self.button_continue.is_none()
-            || self.button_quit.is_none()
-        {
+        if self.button_start.is_none() || self.button_continue.is_none() || self.button_quit.is_none() {
             world.exec(|ui_finder: UiFinder<'_>| {
                 self.button_start = ui_finder.find(BUTTON_START);
                 self.button_continue = ui_finder.find(BUTTON_CONTINUE);
@@ -74,7 +76,7 @@ impl SimpleState for MainMenu {
                 } else {
                     Trans::None
                 }
-            }
+            },
             StateEvent::Ui(UiEvent {
                 event_type: UiEventType::Click,
                 target,
@@ -99,7 +101,7 @@ impl SimpleState for MainMenu {
                 }
 
                 Trans::None
-            }
+            },
             _ => Trans::None,
         }
     }

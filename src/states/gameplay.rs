@@ -19,6 +19,8 @@ use amethyst::{
 
 use derive_new::new;
 
+use log::info;
+
 use crate::entities::{
     enemy::{Enemy, EnemyPrefab},
     laser::Laser,
@@ -46,15 +48,13 @@ use crate::{
     systems,
 };
 
-use rand::{thread_rng, Rng};
-
-// could use separate states here, but they feel a little heavy. all the
-// modes here share the same gameplay logic
+/// This tracks whether we're in a level, transitioning between levels,
+/// or if we've finished all of them.
 #[derive(Clone, Debug, PartialEq)]
 pub enum GameplayMode {
     LevelMode,
     TransitionMode,
-    EndlessMode,
+    CompletedMode,
 }
 
 use GameplayMode::*;
@@ -170,7 +170,6 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         // render the background
         init_background(
             world,
-            &self.gameplay_mode,
             &dimensions,
             self.handles.clone().unwrap().background_sprite_handle,
         );
@@ -215,12 +214,11 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
                 LevelStatus::SmallLevel(next_level_metadata) => init_level(world, next_level_metadata, handles),
                 LevelStatus::LargeLevel(next_level_metadata) => init_level(world, next_level_metadata, handles),
                 LevelStatus::TransitionTime => self.gameplay_mode = TransitionMode,
-                LevelStatus::AllDone => self.gameplay_mode = EndlessMode,
+                LevelStatus::AllDone => self.gameplay_mode = CompletedMode,
             },
-            EndlessMode => {
-                spawn_player_in_center(world, &dimensions, handles.clone());
-                // TODO: spawn on timer via update()
-                spawn_enemies(world, handles);
+            CompletedMode => {
+                // You win screen should go here
+                info!("You did it!");
             },
             _ => {},
         };
@@ -270,9 +268,6 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         }
 
         let handles = self.handles.clone().expect("failure accessing GameplayHandles struct");
-        // if self.gameplay_mode == EndlessMode {
-        //     spawn_enemies(data.world, handles);
-        // }
 
         // this branch decides whether or not to switch state. if a level is
         // loaded and all enemies are defeated, it's time to transition, otherwise
@@ -291,13 +286,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
                 self.sound_config.clone(),
                 None,
             )))
-        } else if self.gameplay_mode == EndlessMode {
-            //info!("I could be updating now!!!!");
-            // endless logic needs to go here
-            Trans::None
-        }
-        // otherwise, nothing to see here folks!
-        else {
+        } else {
             Trans::None
         }
     }
@@ -307,15 +296,18 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         if let StateEvent::Window(event) = &event {
             // Check if the window should be closed
             if is_close_requested(&event) || is_key_down(&event, VirtualKeyCode::Escape) {
-                return Trans::Push(Box::new(MainMenu::new(self.levels.clone(), self.sound_config.clone(), self.gameplay_mode.clone(), true)));
-                //return Trans::Quit;
+                return Trans::Push(Box::new(MainMenu::new(
+                    self.levels.clone(),
+                    self.sound_config.clone(),
+                    self.gameplay_mode.clone(),
+                    true,
+                )));
             }
 
             if is_key_down(&event, VirtualKeyCode::P) {
                 return Trans::Push(Box::new(PausedState));
             }
         }
-
         // no state changes required
         Trans::None
     }
@@ -365,19 +357,16 @@ fn init_camera(world: &mut World, dimensions: &ScreenDimensions) {
 
 // render the background, giving it a low z value so it renders under
 // everything else
-fn init_background(
-    world: &mut World,
-    gameplay_mode: &GameplayMode,
-    dimensions: &ScreenDimensions,
-    bg_sprite_sheet_handle: Handle<SpriteSheet>,
-) {
+fn init_background(world: &mut World, dimensions: &ScreenDimensions, bg_sprite_sheet_handle: Handle<SpriteSheet>) {
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
 
     let scale = Vector3::new(1.0, 1.0, 1.0);
     let position = Translation3::new(dimensions.width() * 0.5, dimensions.height() * 0.5, -25.0);
     let transform = Transform::new(position, rotation, scale);
 
-    let sprite_number = if gameplay_mode == &EndlessMode { 1 } else { 0 };
+    // 0 here refers to the arcade machine background with a smaller playable window,
+    // and 1 (which is used by `transition.rs`) is the widescreen background
+    let sprite_number = 0;
     let bg_render = SpriteRender {
         sprite_sheet: bg_sprite_sheet_handle,
         sprite_number,
@@ -393,36 +382,7 @@ fn init_background(
         .build();
 }
 
-// takes the current level metadata and gameplay handles, then adds
-// all the associated entities and components to the world
-fn spawn_player_in_center(world: &mut World, dimensions: &ScreenDimensions, handles: GameplayHandles) {
-    let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
-    let scale = Vector3::new(0.25, 0.25, 0.25);
-
-    let player_render = SpriteRender {
-        sprite_sheet: handles.player_sprites_handle,
-        sprite_number: 0,
-    };
-
-    let position = Translation3::new(dimensions.width() * 0.5, dimensions.height() * 0.5, 0.0);
-
-    let transform = Transform::new(position, rotation, scale);
-    let cleanup_tag = CleanupTag {};
-
-    world
-        .create_entity()
-        .with(handles.player_prefab_handle)
-        .with(player_render)
-        .with(transform)
-        .with(cleanup_tag)
-        .build();
-}
-
 fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: GameplayHandles) {
-    // let (play_width, play_height) = {
-    //     let playable_area = (*world.read_resource::<PlayableArea>()).clone();
-    //     (playable_area.max_x, playable_area.max_y)
-    // };
     let playable_area = (*world.read_resource::<PlayableArea>()).clone();
 
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
@@ -500,91 +460,6 @@ fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: Gamepla
                     .with(cleanup_tag)
                     .build();
             },
-        }
-    }
-}
-// takes the current level metadata and gameplay handles, then adds
-// all the associated entities and components to the world
-fn spawn_enemies(world: &mut World, handles: GameplayHandles) {
-    let playable_area = (*world.read_resource::<PlayableArea>()).clone();
-    let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
-    let scale = Vector3::new(0.25, 0.25, 0.25);
-
-    let boss_render = SpriteRender {
-        sprite_sheet: handles.enemy_sprites_handle.clone(),
-        sprite_number: 0,
-    };
-
-    let square_render = SpriteRender {
-        sprite_sheet: handles.enemy_sprites_handle.clone(),
-        sprite_number: 1,
-    };
-
-    let flying_render = SpriteRender {
-        sprite_sheet: handles.enemy_sprites_handle,
-        sprite_number: 2,
-    };
-
-    let (x_min, y_min) = playable_area.relative_coordinates(&0.12, &0.12);
-    let (x_max, y_max) = playable_area.relative_coordinates(&0.88, &0.88);
-
-    for n in 1 .. 12 {
-        let mut rng = thread_rng();
-
-        // for spawning we want x to be 0 or max and y to be anything
-        // or, y to be 0 or max and x to be anything. this ends up
-        // placing enemies around the edges, but if we were to spawn
-        // continuously we'd still have to avoid spawning on a player
-        let y_aligned = n % 2 == 0;
-
-        let (x, y) = if y_aligned {
-            let choose_min_x: bool = rng.gen();
-            let x_value = if choose_min_x { x_min } else { x_max };
-            let y_value = rng.gen_range(y_min, y_max);
-            (x_value, y_value)
-        } else {
-            let choose_min_y: bool = rng.gen();
-            let x_value = rng.gen_range(x_min, x_max);
-            let y_value = if choose_min_y { y_min } else { y_max };
-            (x_value, y_value)
-        };
-
-        //info!("computed x, y ({:?}, {:?})", x, y);
-        let cleanup_tag = CleanupTag {};
-        let position = Translation3::new(x, y, 0.0);
-        let transform = Transform::new(position, rotation, scale);
-
-        let entity_type: EntityType = rng.gen();
-
-        match entity_type {
-            EntityType::Boss => {
-                world
-                    .create_entity()
-                    .with(handles.boss_prefab_handle.clone())
-                    .with(boss_render.clone())
-                    .with(transform)
-                    .with(cleanup_tag)
-                    .build();
-            },
-            EntityType::SquareEnemy => {
-                world
-                    .create_entity()
-                    .with(handles.enemy_prefab_handle.clone())
-                    .with(square_render.clone())
-                    .with(transform)
-                    .with(cleanup_tag)
-                    .build();
-            },
-            EntityType::FlyingEnemy => {
-                world
-                    .create_entity()
-                    .with(handles.flying_enemy_prefab_handle.clone())
-                    .with(flying_render.clone())
-                    .with(transform)
-                    .with(cleanup_tag)
-                    .build();
-            },
-            _ => {},
         }
     }
 }

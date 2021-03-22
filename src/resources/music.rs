@@ -1,17 +1,15 @@
 use std::{iter::Cycle, vec::IntoIter};
 
 use amethyst::{
-    core::{bundle::SystemBundle, SystemDesc},
-    assets::{Loader},
+    assets::Loader,
     audio::{AudioSink, DjSystemDesc, OggFormat, SourceHandle},
+    core::{bundle::SystemBundle, SystemDesc},
     ecs::{DispatcherBuilder, World, WorldExt},
     error::Error,
 };
 
 // starting out by copying the pong example in the amethyst book
-const MUSIC_TRACKS: &[&str] = &[
-    "music/Quatronaut_-_Angles_Of_Attack_v01.ogg",
-];
+const MUSIC_TRACKS: &[&str] = &["music/Quatronaut_-_Angles_Of_Attack_v01.ogg"];
 
 pub struct Music {
     pub music: Cycle<IntoIter<SourceHandle>>,
@@ -53,11 +51,7 @@ pub fn initialize_music(world: &mut World) {
 pub struct MusicBundle;
 
 impl<'a, 'b> SystemBundle<'a, 'b> for MusicBundle {
-    fn build(
-        self,
-        world: &mut World,
-        builder: &mut DispatcherBuilder<'a, 'b>,
-    ) -> Result<(), Error> {
+    fn build(self, world: &mut World, builder: &mut DispatcherBuilder<'a, 'b>) -> Result<(), Error> {
         builder.add(
             DjSystemDesc::new(|music: &mut Music| music.music.next()).build(world),
             "dj_system",

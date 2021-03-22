@@ -2,7 +2,7 @@
 // from the main.rs file in https://github.com/amethyst/amethyst-starter-2d
 use amethyst::{
     assets::PrefabLoaderSystemDesc,
-    audio::{AudioBundle},
+    audio::AudioBundle,
     core::transform::TransformBundle,
     input::{InputBundle, StringBindings},
     prelude::*,
