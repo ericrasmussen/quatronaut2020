@@ -9,9 +9,7 @@ use amethyst::{
 use crate::{
     components::{collider::Collider, launcher::Projectile},
     entities::{enemy::Enemy, player::Player},
-    resources::{
-        audio::{SoundType, Sounds},
-    },
+    resources::audio::{SoundType, Sounds},
 };
 use log::info;
 
@@ -34,8 +32,9 @@ impl<'s> System<'s> for AttackedSystem {
         Option<Read<'s, Output>>,
     );
 
-    // we don't need `player` here, though if we add health it'd be useful. keeping for now
-    // until deciding
+    // note that `_player` is needed here as part of the query to ensure we're
+    // dealing with player entities (otherwise we'd be checking every game entity with projectiles and
+    // colliders)
     fn run(
         &mut self,
         (transforms, players, enemies, colliders, entities, storage, sounds, audio_output): Self::SystemData,
@@ -80,7 +79,8 @@ impl<'s> System<'s> for ProjectileHitSystem {
     );
 
     // note that `_player` is needed here as part of the query to ensure we're
-    // dealing with player entities (otherwise we'd be checking every game entity)
+    // dealing with player entities (otherwise we'd be checking every game entity with projectiles and
+    // colliders)
     fn run(&mut self, (transforms, players, projectiles, colliders, entities): Self::SystemData) {
         for (player_entity, _player, player_transform, player_collider) in
             (&entities, &players, &transforms, &colliders).join()

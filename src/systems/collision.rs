@@ -12,9 +12,7 @@ use amethyst::{
 use crate::{
     components::collider::Collider,
     entities::{enemy::Enemy, laser::Laser},
-    resources::{
-        audio::{SoundType, Sounds},
-    },
+    resources::audio::{SoundType, Sounds},
 };
 
 //use log::info;
@@ -39,16 +37,7 @@ impl<'s> System<'s> for CollisionSystem {
 
     fn run(
         &mut self,
-        (
-            transforms,
-            lasers,
-            mut enemies,
-            entities,
-            colliders,
-            storage,
-            sounds,
-            audio_output
-        ): Self::SystemData,
+        (transforms, lasers, mut enemies, entities, colliders, storage, sounds, audio_output): Self::SystemData,
     ) {
         for (laser_entity, _laser_a, transform_a) in (&entities, &lasers, &transforms).join() {
             // this is for a laser much larger than ours. agh.
