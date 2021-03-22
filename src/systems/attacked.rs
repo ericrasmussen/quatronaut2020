@@ -11,7 +11,6 @@ use crate::{
     entities::{enemy::Enemy, player::Player},
     resources::{
         audio::{SoundType, Sounds},
-        playerstats::PlayerStats,
     },
 };
 use log::info;
@@ -30,7 +29,6 @@ impl<'s> System<'s> for AttackedSystem {
         WriteStorage<'s, Enemy>,
         ReadStorage<'s, Collider>,
         Entities<'s>,
-        Read<'s, PlayerStats>,
         Read<'s, AssetStorage<Source>>,
         ReadExpect<'s, Sounds>,
         Option<Read<'s, Output>>,
@@ -40,7 +38,7 @@ impl<'s> System<'s> for AttackedSystem {
     // until deciding
     fn run(
         &mut self,
-        (transforms, players, enemies, colliders, entities, stats, storage, sounds, audio_output): Self::SystemData,
+        (transforms, players, enemies, colliders, entities, storage, sounds, audio_output): Self::SystemData,
     ) {
         for (player_entity, _player, player_transform, player_collider) in
             (&entities, &players, &transforms, &colliders).join()
@@ -60,7 +58,8 @@ impl<'s> System<'s> for AttackedSystem {
                 if collides {
                     sounds.play_sound(SoundType::PlayerDeath, &storage, audio_output.as_deref());
                     entities.delete(player_entity).unwrap();
-                    info!("player was hit! final score: {:?}", *stats);
+                    // TODO: send a game over or other event here
+                    info!("player was hit!");
                 }
             }
         }
@@ -78,12 +77,11 @@ impl<'s> System<'s> for ProjectileHitSystem {
         WriteStorage<'s, Projectile>,
         ReadStorage<'s, Collider>,
         Entities<'s>,
-        Read<'s, PlayerStats>,
     );
 
-    // we don't need `player` here, though if we add health it'd be useful. keeping for now
-    // until deciding
-    fn run(&mut self, (transforms, players, projectiles, colliders, entities, stats): Self::SystemData) {
+    // note that `_player` is needed here as part of the query to ensure we're
+    // dealing with player entities (otherwise we'd be checking every game entity)
+    fn run(&mut self, (transforms, players, projectiles, colliders, entities): Self::SystemData) {
         for (player_entity, _player, player_transform, player_collider) in
             (&entities, &players, &transforms, &colliders).join()
         {
@@ -102,7 +100,8 @@ impl<'s> System<'s> for ProjectileHitSystem {
                 if collides {
                     // we probably don't actually want to delete the player instantly,
                     // but how else will we artificially inflate difficulty in a short game
-                    info!("player was hit! final score: {:?}", *stats);
+                    // TODO: this is also a game over event condition
+                    info!("player was hit!");
                     entities.delete(player_entity).unwrap();
 
                     // the projectile for sure is no longer needed after contact

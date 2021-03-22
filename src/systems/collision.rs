@@ -6,7 +6,7 @@ use amethyst::{
     audio::{output::Output, Source},
     core::Transform,
     derive::SystemDesc,
-    ecs::{Entities, Join, Read, ReadExpect, ReadStorage, System, SystemData, Write, WriteStorage},
+    ecs::{Entities, Join, Read, ReadExpect, ReadStorage, System, SystemData, WriteStorage},
 };
 
 use crate::{
@@ -14,7 +14,6 @@ use crate::{
     entities::{enemy::Enemy, laser::Laser},
     resources::{
         audio::{SoundType, Sounds},
-        playerstats::PlayerStats,
     },
 };
 
@@ -33,7 +32,6 @@ impl<'s> System<'s> for CollisionSystem {
         WriteStorage<'s, Enemy>,
         Entities<'s>,
         ReadStorage<'s, Collider>,
-        Write<'s, PlayerStats>,
         Read<'s, AssetStorage<Source>>,
         ReadExpect<'s, Sounds>,
         Option<Read<'s, Output>>,
@@ -47,7 +45,6 @@ impl<'s> System<'s> for CollisionSystem {
             mut enemies,
             entities,
             colliders,
-            mut stats,
             storage,
             sounds,
             audio_output
@@ -91,7 +88,6 @@ impl<'s> System<'s> for CollisionSystem {
                     // TODO: may be a latent bug in associating this with laser hits...
                     if enemy.is_dead() && entities.delete(enemy_entity).is_ok() {
                         //info!("enemy deleted due to insufficient laser dodging abilities");
-                        stats.add_to_score(10);
                         sounds.play_sound(SoundType::EnemyDeath, &storage, audio_output.as_deref());
                     }
                 }

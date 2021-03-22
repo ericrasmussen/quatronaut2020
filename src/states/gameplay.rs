@@ -13,7 +13,6 @@ use amethyst::{
     input::{is_close_requested, is_key_down, VirtualKeyCode},
     prelude::*,
     renderer::{Camera, SpriteRender, SpriteSheet},
-    ui::{UiCreator, UiFinder, UiText},
     window::ScreenDimensions,
 };
 
@@ -43,7 +42,6 @@ use crate::{
         level::{EntityType, LevelMetadata, LevelStatus},
         music,
         playablearea::PlayableArea,
-        playerstats::PlayerStats,
     },
     states::{menu::MainMenu, paused::PausedState, transition::TransitionState},
     systems,
@@ -62,9 +60,6 @@ pub struct GameplayState<'a, 'b> {
     // default initializes this value with false
     #[new(default)]
     pub level_is_loaded: bool,
-
-    #[new(default)]
-    pub ui_root: Option<Entity>,
 
     #[new(default)]
     pub handles: Option<GameplayHandles>,
@@ -122,7 +117,6 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         world.register::<Movement>();
         world.register::<Launcher>();
         world.register::<PlayableArea>();
-        world.register::<PlayerStats>();
 
         // Place the camera
         init_camera(world, &dimensions);
@@ -168,10 +162,8 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         // setup our music player
         music::initialize_music(world);
 
-        // we want to preserve palyer stats across levels, so only insert if it isn't there yet
-        world.entry::<PlayerStats>().or_insert_with(PlayerStats::default);
-
-        //
+        // this will be used to match the type of level (if there are levels yet)
+        // and other level metadata
         let next_level_status = self.game_config.current_levels.pop();
 
         // setup the playable area. this is still messy but if we begin in small level mode,
@@ -184,16 +176,6 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         world.insert(playable_area);
 
         let handles = self.handles.clone().expect("failure accessing GameplayHandles struct");
-
-        // maybe use one of two configs here? and clean up each time
-        // UI setup
-        let ui_config = match next_level_status {
-            LevelStatus::SmallLevel(_) => "ui/ui.ron",
-            _ => "ui/ui_big.ron",
-        };
-
-        let ui_handle = world.exec(|mut creator: UiCreator<'_>| creator.create(ui_config, &mut self.progress_counter));
-        self.ui_root = Some(ui_handle);
 
         match &self.game_config.gameplay_mode {
             GameplayMode::LevelMode => match next_level_status {
@@ -216,25 +198,6 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             // when the counter is complete, rather than checking every time here
             if self.progress_counter.is_complete() {
                 dispatcher.dispatch(&data.world);
-            }
-        }
-
-        // ui text handling
-        if self.high_score_text.is_none() {
-            data.world.exec(|finder: UiFinder| {
-                if let Some(entity) = finder.find("high_score") {
-                    self.high_score_text = Some(entity);
-                }
-            });
-        }
-        // this must be used in a separate scope
-        // but this should really be in a system anyway, I think
-        let mut ui_text = data.world.write_storage::<UiText>();
-        let score = data.world.read_resource::<PlayerStats>();
-
-        {
-            if let Some(high_score_text) = self.high_score_text.and_then(|entity| ui_text.get_mut(entity)) {
-                high_score_text.text = format!("{}", score.get_score());
             }
         }
 
@@ -306,13 +269,6 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
                 entities.delete(entity).expect(&err);
             }
         }
-        // ui cleanup
-        if let Some(root_entity) = self.ui_root {
-            data.world
-                .delete_entity(root_entity)
-                .expect("Failed to remove UI elements");
-        }
-        self.ui_root = None;
     }
 }
 
