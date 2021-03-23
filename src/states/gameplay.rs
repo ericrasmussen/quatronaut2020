@@ -277,7 +277,11 @@ fn init_camera(world: &mut World, dimensions: &ScreenDimensions) {
     // the entire screen
     let mut transform = Transform::default();
     transform.set_translation_xyz(dimensions.width() * 0.5, dimensions.height() * 0.5, 1.);
-    info!("computed dimensions: {:?} x {:?}", dimensions.width(), dimensions.height());
+    info!(
+        "computed dimensions: {:?} x {:?}",
+        dimensions.width(),
+        dimensions.height()
+    );
     // many amethyst examples show using dimensions here, but it turns out we want the
     // intended dimensions (say, based on sprite sizes) and not the computed dimensions
     // (which are affected by hidpi and other factors, and may not be what we intended)
