@@ -7,7 +7,7 @@ use amethyst::{
 
 use serde::{Deserialize, Serialize};
 
-use crate::components::collider::Collider;
+use crate::{components::collider::Collider, resources::direction::Direction};
 
 // this entity is a grouping of components, which allows the prefab loads to aggregate
 // components from a config file (`prefabs/enemy.ron` in our case)
@@ -48,6 +48,7 @@ pub struct Player {
     // time to delay laser shots in seconds
     pub fire_delay: f32,
     pub seconds_since_firing: f32,
+    pub direction: Direction,
 }
 
 impl Player {

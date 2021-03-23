@@ -1,0 +1,43 @@
+(
+  volume: 0.2,
+  player_blaster: [
+    "sfx/blaster_player_01_v01.ogg",
+    "sfx/blaster_player_01_v02.ogg",
+    "sfx/blaster_player_01_v03.ogg",
+    "sfx/blaster_player_01_v04.ogg",
+    "sfx/blaster_player_01_v05.ogg",
+    "sfx/blaster_player_01_v06.ogg",
+    "sfx/blaster_player_01_v07.ogg",
+  ],
+  player_death: [
+    "sfx/death_player_01_v01.ogg",
+    "sfx/death_player_01_v02.ogg",
+    "sfx/death_player_01_v03.ogg",
+    "sfx/death_player_01_v04.ogg",
+    "sfx/death_player_01_v05.ogg",
+    "sfx/death_player_01_v06.ogg",
+  ],
+  enemy_blaster: [
+    "sfx/blaster_enemy_01_v01.ogg",
+    "sfx/blaster_enemy_01_v02.ogg",
+    "sfx/blaster_enemy_01_v03.ogg",
+    "sfx/blaster_enemy_01_v04.ogg",
+    "sfx/blaster_enemy_01_v05.ogg",
+    "sfx/blaster_enemy_01_v06.ogg",
+    "sfx/blaster_enemy_01_v07.ogg",
+  ],
+  enemy_death: [
+    "sfx/death_enemy_01_v01.ogg",
+    "sfx/death_enemy_01_v02.ogg",
+    "sfx/death_enemy_01_v03.ogg",
+    "sfx/death_enemy_01_v04.ogg",
+    "sfx/death_enemy_01_v05.ogg",
+    "sfx/death_enemy_01_v06.ogg",
+  ],
+  triangle_lock: [
+    "sfx/Triangle_lockon_01_v02.ogg",
+    "sfx/Triangle_lockon_01_v03.ogg",
+  ],
+  short_transition: "sfx/Transition_02_v01.ogg",
+  long_transition: "sfx/Transition_01_v01.ogg",
+)

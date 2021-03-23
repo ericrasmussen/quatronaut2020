@@ -1,4 +1,6 @@
 use amethyst::{
+    assets::AssetStorage,
+    audio::{output::Output, Source},
     core::{timing::Time, Transform},
     derive::SystemDesc,
     ecs::{Entities, Join, LazyUpdate, Read, ReadExpect, ReadStorage, System, SystemData, WriteStorage},
@@ -10,9 +12,15 @@ use crate::entities::{
     player::Player,
 };
 
-use crate::resources::playablearea::PlayableArea;
+use crate::resources::{
+    audio::{SoundType, Sounds},
+    direction::Direction,
+    playablearea::PlayableArea,
+};
 
 use amethyst_rendy::sprite::SpriteRender;
+
+//use log::info;
 
 #[derive(SystemDesc)]
 pub struct PlayerSystem;
@@ -31,11 +39,26 @@ impl<'s> System<'s> for PlayerSystem {
         ReadExpect<'s, LazyUpdate>,
         Read<'s, Time>,
         Read<'s, PlayableArea>,
+        Read<'s, AssetStorage<Source>>,
+        ReadExpect<'s, Sounds>,
+        Option<Read<'s, Output>>,
     );
 
     fn run(
         &mut self,
-        (mut transforms, mut characters, input, entities, sprites, lazy_update, time, playable_area): Self::SystemData,
+        (
+            mut transforms,
+            mut characters,
+            input,
+            entities,
+            sprites,
+            lazy_update,
+            time,
+            playable_area,
+            storage,
+            sounds,
+            audio_output,
+        ): Self::SystemData,
     ) {
         for (character, transform, sprite) in (&mut characters, &mut transforms, &sprites).join() {
             // the input names here are defined in config/bindings.ron.
@@ -48,6 +71,7 @@ impl<'s> System<'s> for PlayerSystem {
             // no movement then new_x and new_y will equal 0 and the transform
             // coordinates will not be changed)
             if let Some(x_amt) = movement_x {
+                //info!("MOVINGGNGNGNGN");
                 let new_x = time.delta_seconds() * x_amt * character.get_speed() + transform.translation().x;
                 transform.set_translation_x(playable_area.clamp_x(new_x));
             }
@@ -63,6 +87,13 @@ impl<'s> System<'s> for PlayerSystem {
             let laser_x = input.axis_value("x_laser");
             let laser_y = input.axis_value("y_laser");
 
+            // rotate the player to face the direction they're firing in
+            let maybe_direction = Direction::from_coordinates(laser_x, laser_y);
+            if let Some(dir) = maybe_direction {
+                character.direction = dir;
+            }
+            transform.set_rotation_2d(character.direction.direction_to_radians());
+
             // this computes Some(laser_with_direction) or None, based on input
             // (e.g. right and up arrows will create Some(Laser::new(RightUp)))
             let maybe_laser = Laser::from_coordinates(laser_x, laser_y, character.laser_speed);
@@ -73,6 +104,10 @@ impl<'s> System<'s> for PlayerSystem {
             if let Some(laser) = maybe_laser {
                 if character.can_fire(time.delta_seconds()) {
                     spawn_laser(sprite.clone().sprite_sheet, laser, &transform, &entities, &lazy_update);
+                    // if we created a laser, play a laser sound
+                    // TODO: make sure there's not lag with the sound effect and the laser being inserted
+                    // lazily into the `world`
+                    sounds.play_sound(SoundType::PlayerBlaster, &storage, audio_output.as_deref());
                 }
             }
         }

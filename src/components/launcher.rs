@@ -4,18 +4,22 @@ use amethyst::{
     assets::PrefabData,
     core::Transform,
     derive::PrefabData,
-    ecs::prelude::{Component, DenseVecStorage, Entities, Entity, LazyUpdate, ReadExpect, WriteStorage},
+    ecs::prelude::{Component, DenseVecStorage, Entities, Entity, LazyUpdate, NullStorage, ReadExpect, WriteStorage},
     renderer::{sprite::SpriteSheetHandle, SpriteRender},
     Error,
 };
 
+use rand::{thread_rng, Rng};
+
 use serde::{Deserialize, Serialize};
 
 use crate::components::{
-    cleanup::CleanupTag,
     collider::Collider,
     movement::{Movement, MovementType},
+    tags::CleanupTag,
 };
+
+use crate::resources::audio::SoundType;
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PrefabData)]
 #[prefab(Component)]
@@ -32,8 +36,12 @@ impl Launcher {
     // `bool` check, but it also ensures we don't rely on calling code
     // to manage the timer.
     pub fn can_fire(&mut self, time: f32) -> bool {
+        // this offset here is to make the firing less predictable,
+        // which is important when multiple enemies would otherwise fire
+        // each shot at the same time
         if self.seconds_since_firing >= self.fire_delay {
-            self.seconds_since_firing = 0.0;
+            let mut rng = thread_rng();
+            self.seconds_since_firing = rng.gen_range(0.1, 0.9);
             true
         } else {
             self.seconds_since_firing += time;
@@ -48,11 +56,11 @@ impl Component for Launcher {
 
 // empty struct for now because this is used as a way to track projectiles
 // in systems, and so far there's no real data we need to associate with it
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Projectile;
 
 impl Component for Projectile {
-    type Storage = DenseVecStorage<Self>;
+    type Storage = NullStorage<Self>;
 }
 
 // this needs to be run by a system that has a launcher, sprites, transforms,
@@ -79,6 +87,7 @@ pub fn launch_projectile(
         freeze_direction: false,
         locked_direction: None,
         already_rotated: false,
+        launch_sound: Some(SoundType::EnemyBlaster),
         movement_type: MovementType::ProjectileRush,
     };
 

@@ -8,7 +8,7 @@ use amethyst::{
     assets::{Handle, PrefabLoader, ProgressCounter, RonFormat},
     core::math::{Translation3, UnitQuaternion, Vector3},
     core::{transform::Transform, ArcThreadPool},
-    ecs::prelude::{Dispatcher, DispatcherBuilder, Join},
+    ecs::prelude::{Dispatcher, DispatcherBuilder, Entity, Join},
     ecs::world::EntitiesRes,
     input::{is_close_requested, is_key_down, VirtualKeyCode},
     prelude::*,
@@ -18,6 +18,8 @@ use amethyst::{
 
 use derive_new::new;
 
+use log::info;
+
 use crate::entities::{
     enemy::{Enemy, EnemyPrefab},
     laser::Laser,
@@ -25,18 +27,25 @@ use crate::entities::{
 };
 
 use crate::{
-    components::{cleanup::CleanupTag, collider::Collider, launcher::Launcher, movement::Movement},
+    components::{
+        collider::Collider,
+        launcher::Launcher,
+        movement::Movement,
+        perspective::Perspective,
+        tags::{BackgroundTag, CameraTag, CleanupTag},
+    },
     resources::{
+        audio,
+        gameconfig::{GameConfig, GameplayMode},
         handles,
         handles::GameplayHandles,
-        level::{EntityType, LevelMetadata, Levels},
+        level::{EntityType, LevelMetadata, LevelStatus},
+        music,
         playablearea::PlayableArea,
     },
-    states::{paused::PausedState, transition::TransitionState},
+    states::{menu::MainMenu, paused::PausedState, transition::TransitionState},
     systems,
 };
-
-use log::info;
 
 /// Collects our state-specific dispatcher, progress counter for asset
 /// loading, struct with gameplay handles, and levels. Note that the
@@ -44,9 +53,11 @@ use log::info;
 /// config file without gameplay state knowledge)
 #[derive(new)]
 pub struct GameplayState<'a, 'b> {
-    pub levels: Levels,
+    // this is mostly for use in creating a new menu, but
+    // there might be better options (like Trans::Pop)
+    pub game_config: GameConfig,
 
-    // initializes this value with false
+    // default initializes this value with false
     #[new(default)]
     pub level_is_loaded: bool,
 
@@ -58,6 +69,9 @@ pub struct GameplayState<'a, 'b> {
 
     #[new(default)]
     pub dispatcher: Option<Dispatcher<'a, 'b>>,
+
+    #[new(default)]
+    pub high_score_text: Option<Entity>,
 }
 
 impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
@@ -89,7 +103,20 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         // place our sprites correctly later. We'll clone this since we'll
         // pass the world mutably to the following functions.
         let dimensions = (*world.read_resource::<ScreenDimensions>()).clone();
-        info!("computed dimensions are: {:?}", &dimensions);
+        //info!("computed dimensions are: {:?}", &dimensions);
+
+        // register our entities and resources before inserting them or
+        // having them created as part of `init_level` in `update`
+        world.register::<BackgroundTag>();
+        world.register::<CameraTag>();
+        world.register::<CleanupTag>();
+        world.register::<Player>();
+        world.register::<Laser>();
+        world.register::<Enemy>();
+        world.register::<Collider>();
+        world.register::<Movement>();
+        world.register::<Launcher>();
+        world.register::<PlayableArea>();
 
         // Place the camera
         init_camera(world, &dimensions);
@@ -129,36 +156,40 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             self.handles.clone().unwrap().background_sprite_handle,
         );
 
-        // register our entities and resources before inserting them or
-        // having them created as part of `init_level` in `update`
-        world.register::<CleanupTag>();
-        world.register::<Player>();
-        world.register::<Laser>();
-        world.register::<Enemy>();
-        world.register::<Collider>();
-        world.register::<Movement>();
-        world.register::<Launcher>();
-        world.register::<PlayableArea>();
+        // audio should not need to be initialized multiple times
+        audio::initialize_audio(world, &self.game_config.sound_config);
 
-        // setup the playable area. depending on how many backgrounds we have these
-        // percentages might go into the levels.ron config. these percentages are
-        // used to represent rectangular boundaries in a given background
-        let playable_area = PlayableArea::new(
-            dimensions.width() * 0.33,
-            dimensions.width() * 0.67,
-            dimensions.height() * 0.22,
-            dimensions.height() * 0.78,
-        );
+        // setup our music player
+        music::initialize_music(world);
+
+        // this will be used to match the type of level (if there are levels yet)
+        // and other level metadata
+        let next_level_status = self.game_config.current_levels.pop();
+
+        // setup the playable area. this is still messy but if we begin in small level mode,
+        // we setup the constrained level mode
+        let playable_area = match next_level_status {
+            LevelStatus::SmallLevel(_) => PlayableArea::new(dimensions.width(), dimensions.height(), true),
+            _ => PlayableArea::new(dimensions.width(), dimensions.height(), false),
+        };
 
         world.insert(playable_area);
 
-        let next_level = self.levels.pop();
-
         let handles = self.handles.clone().expect("failure accessing GameplayHandles struct");
 
-        if let Some(next_level_metadata) = next_level {
-            init_level(world, next_level_metadata, handles);
-        }
+        match &self.game_config.gameplay_mode {
+            GameplayMode::LevelMode => match next_level_status {
+                LevelStatus::SmallLevel(next_level_metadata) => init_level(world, next_level_metadata, handles),
+                LevelStatus::LargeLevel(next_level_metadata) => init_level(world, next_level_metadata, handles),
+                LevelStatus::TransitionTime => self.game_config.gameplay_mode = GameplayMode::TransitionMode,
+                LevelStatus::AllDone => self.game_config.gameplay_mode = GameplayMode::CompletedMode,
+            },
+            GameplayMode::CompletedMode => {
+                // You win screen should go here
+                info!("You did it!");
+            },
+            _ => {},
+        };
     }
 
     fn update(&mut self, data: &mut StateData<'_, GameData<'_, '_>>) -> SimpleTrans {
@@ -185,17 +216,24 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             self.level_is_loaded = true;
         }
 
+        let handles = self.handles.clone().expect("failure accessing GameplayHandles struct");
+
         // this branch decides whether or not to switch state. if a level is
         // loaded and all enemies are defeated, it's time to transition, otherwise
         // keep going
-        if total == 0 && self.level_is_loaded {
+        if self.game_config.gameplay_mode == GameplayMode::TransitionMode {
             Trans::Switch(Box::new(TransitionState::new(
-                self.handles.clone().unwrap().overlay_sprite_handle,
-                self.levels.clone(),
+                handles.overlay_sprite_handle,
+                self.game_config.clone(),
+                Some(Perspective::new(1.8, 0.3, audio::SoundType::LongTransition)),
             )))
-        }
-        // otherwise, nothing to see here folks!
-        else {
+        } else if total == 0 && self.level_is_loaded {
+            Trans::Switch(Box::new(TransitionState::new(
+                handles.overlay_sprite_handle,
+                self.game_config.clone(),
+                None,
+            )))
+        } else {
             Trans::None
         }
     }
@@ -205,22 +243,13 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         if let StateEvent::Window(event) = &event {
             // Check if the window should be closed
             if is_close_requested(&event) || is_key_down(&event, VirtualKeyCode::Escape) {
-                return Trans::Quit;
+                return Trans::Push(Box::new(MainMenu::new(self.game_config.clone(), true)));
             }
 
             if is_key_down(&event, VirtualKeyCode::P) {
                 return Trans::Push(Box::new(PausedState));
             }
-
-            // when should this actually run?
-            if is_key_down(&event, VirtualKeyCode::Space) {
-                return Trans::Switch(Box::new(TransitionState::new(
-                    self.handles.clone().unwrap().overlay_sprite_handle,
-                    self.levels.clone(),
-                )));
-            }
         }
-
         // no state changes required
         Trans::None
     }
@@ -229,12 +258,16 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         // state items that should be cleaned up (players, entities, lasers,
         // projectiles) should all be marked with `CleanupTag` and removed
         // here when this state ends
-        let entities = data.world.read_resource::<EntitiesRes>();
-        let cleanup_tags = data.world.read_storage::<CleanupTag>();
+        // note the separate scope because we're borrowing `data.world`
+        // as immutable
+        {
+            let entities = data.world.read_resource::<EntitiesRes>();
+            let cleanup_tags = data.world.read_storage::<CleanupTag>();
 
-        for (entity, _tag) in (&entities, &cleanup_tags).join() {
-            let err = format!("unable to delete entity: {:?}", entity);
-            entities.delete(entity).expect(&err);
+            for (entity, _tag) in (&entities, &cleanup_tags).join() {
+                let err = format!("unable to delete entity: {:?}", entity);
+                entities.delete(entity).expect(&err);
+            }
         }
     }
 }
@@ -244,14 +277,21 @@ fn init_camera(world: &mut World, dimensions: &ScreenDimensions) {
     // the entire screen
     let mut transform = Transform::default();
     transform.set_translation_xyz(dimensions.width() * 0.5, dimensions.height() * 0.5, 1.);
-
+    info!(
+        "computed dimensions: {:?} x {:?}",
+        dimensions.width(),
+        dimensions.height()
+    );
     // many amethyst examples show using dimensions here, but it turns out we want the
     // intended dimensions (say, based on sprite sizes) and not the computed dimensions
     // (which are affected by hidpi and other factors, and may not be what we intended)
+    // even though transforms can use the computed dimensions, the camera needs the original
+    // dimensions (from display_config.ron)
     world
         .create_entity()
         .with(Camera::standard_2d(1920.0, 1080.0))
         .with(transform)
+        .with(CameraTag::default())
         .build();
 }
 
@@ -264,17 +304,27 @@ fn init_background(world: &mut World, dimensions: &ScreenDimensions, bg_sprite_s
     let position = Translation3::new(dimensions.width() * 0.5, dimensions.height() * 0.5, -25.0);
     let transform = Transform::new(position, rotation, scale);
 
+    // 0 here refers to the arcade machine background with a smaller playable window,
+    // and 1 (which is used by `transition.rs`) is the widescreen background
+    let sprite_number = 0;
     let bg_render = SpriteRender {
         sprite_sheet: bg_sprite_sheet_handle,
-        sprite_number: 0,
+        sprite_number,
     };
 
-    world.create_entity().with(bg_render).with(transform).build();
+    let bg_tag = BackgroundTag::default();
+
+    world
+        .create_entity()
+        .with(bg_render)
+        .with(bg_tag)
+        .with(transform)
+        .build();
 }
 
-// takes the current level metadata and gameplay handles, then adds
-// all the associated entities and components to the world
 fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: GameplayHandles) {
+    let playable_area = (*world.read_resource::<PlayableArea>()).clone();
+
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
     let scale = Vector3::new(0.25, 0.25, 0.25);
 
@@ -298,10 +348,19 @@ fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: Gamepla
         sprite_number: 2,
     };
 
+    // TODO: maybe it's better not to have the x or y coordinates here.
+    // using the relative position as a percentage would let us multiply
+    // it by the computed playable area dimensions instead
     for rec in level_metadata.get_layout() {
-        let (entity_type, x, y) = rec;
+        let (entity_type, x_percentage, y_percentage) = rec;
         let cleanup_tag = CleanupTag {};
-        let position = Translation3::new(*x, *y, 0.0);
+        // these use logical width/height, which comes from the screen
+        // dimensions resource. it is computed by that resource and does
+        // not match the intended resolution in display_config.ron
+        // on hidpi monitors
+        let (x_pos, y_pos) = playable_area.relative_coordinates(x_percentage, y_percentage);
+        //info!("x, y are {}, {}", &x_pos, &y_pos);
+        let position = Translation3::new(x_pos, y_pos, 0.0);
         let transform = Transform::new(position, rotation, scale);
 
         match entity_type {

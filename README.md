@@ -26,3 +26,19 @@ The information below comes from the https://github.com/amethyst/amethyst-starte
 
 You might need to install some dependencies. Please refer to [this section](https://github.com/amethyst/amethyst#dependencies) of the README for more details.
 
+#### Assets
+
+Special thanks to Joel Steudler at https://joelsteudler.itch.io/ for making every art and sound asset in the game. If you
+are a game developer, check out his site! His asset packs are top-notch and have appeared regularly on
+Humble Bundle and https://gameassetbundle.com/
+
+
+##### Font
+
+The primary font used in the game is the free font "Font Over" (https://fontesk.com/font-over-typeface/) by Ilya Zakharov.
+Check out his other work at https://www.behance.net/zielgraphic
+
+
+#### Copyright Information
+
+Quatronaut 2020 name and logo is Copyright 2020 Eric Rasmussen and Joel Steudler.

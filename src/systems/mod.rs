@@ -1,5 +1,6 @@
 pub use self::{
     attacked::{AttackedSystem, ProjectileHitSystem},
+    camera::CameraShakeSystem,
     collision::CollisionSystem,
     fade::FadeSystem,
     laser::LaserSystem,
@@ -9,6 +10,7 @@ pub use self::{
 };
 
 mod attacked;
+mod camera;
 mod collision;
 mod fade;
 mod laser;

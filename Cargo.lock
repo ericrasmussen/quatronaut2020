@@ -2670,6 +2670,7 @@ dependencies = [
  "log",
  "nalgebra 0.23.0",
  "ncollide2d",
+ "rand 0.7.3",
  "serde",
 ]
 

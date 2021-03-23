@@ -5,7 +5,7 @@ use amethyst::{
     renderer::{palette::Srgba, resources::Tint},
 };
 
-use crate::resources::fade::{FadeStatus, Fader};
+use crate::components::fade::{FadeStatus, Fader};
 
 //use log::info;
 

@@ -29,13 +29,14 @@ Prefab (
                     freeze_direction: false,
                     locked_direction: None,
                     already_rotated: false,
+                    launch_sound: None,
                     movement_type: Gravitate,
                 ),
                 // END movement: Movement
 
                 // BEGIN launcher: Launcher
                 launcher: Launcher(
-                    fire_delay: 1.5,
+                    fire_delay: 2.0,
                     projectile_speed: 250,
                     seconds_since_firing: 0.17,
                 ),

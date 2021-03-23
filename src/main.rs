@@ -2,6 +2,7 @@
 // from the main.rs file in https://github.com/amethyst/amethyst-starter-2d
 use amethyst::{
     assets::PrefabLoaderSystemDesc,
+    audio::AudioBundle,
     core::transform::TransformBundle,
     input::{InputBundle, StringBindings},
     prelude::*,
@@ -10,6 +11,7 @@ use amethyst::{
         types::DefaultBackend,
         RenderingBundle,
     },
+    ui::{RenderUi, UiBundle},
     utils::application_root_dir,
 };
 
@@ -29,25 +31,43 @@ fn main() -> amethyst::Result<()> {
     let display_config = app_root.join("config").join("display_config.ron");
     let binding_path = app_root.join("config").join("bindings.ron");
 
-    // load all the levels
-    let level_config = app_root.join("config").join("levels.ron");
-    let levels = resources::level::LevelConfig::load(&level_config).unwrap();
-    let all_levels = resources::level::get_all_levels(levels);
+    let level_config_path = app_root.join("config").join("levels.ron");
+    let level_config = resources::level::LevelConfig::load(&level_config_path).unwrap();
+    let all_levels = resources::level::get_all_levels(level_config.clone());
+
+    let sound_config = app_root.join("config").join("audio.ron");
+    let sounds = resources::audio::SoundConfig::load(&sound_config).unwrap();
 
     let input_bundle = InputBundle::<StringBindings>::new().with_bindings_from_file(binding_path)?;
 
     let game_data = GameDataBuilder::default()
         .with_bundle(TransformBundle::new())?
         .with_bundle(input_bundle)?
+        .with_bundle(UiBundle::<StringBindings>::new())?
+        .with_bundle(AudioBundle::default())?
         .with_system_desc(PrefabLoaderSystemDesc::<EnemyPrefab>::default(), "", &[])
         .with_system_desc(PrefabLoaderSystemDesc::<PlayerPrefab>::default(), "", &[])
         .with_bundle(
             RenderingBundle::<DefaultBackend>::new()
                 .with_plugin(RenderToWindow::from_config_path(display_config)?.with_clear([0.0, 0.0, 0.0, 1.0]))
-                .with_plugin(RenderFlat2D::default()),
-        )?;
+                .with_plugin(RenderFlat2D::default())
+                .with_plugin(RenderUi::default()),
+        )?
+        .with_bundle(resources::music::MusicBundle)?;
 
-    let mut game = Application::new(assets, states::GameplayState::new(all_levels), game_data)?;
+    let starting_mode = resources::gameconfig::GameplayMode::LevelMode;
+    let game_config = resources::gameconfig::GameConfig {
+        level_config,
+        current_levels: all_levels,
+        sound_config: sounds,
+        gameplay_mode: starting_mode,
+    };
+    let mut game = Application::new(
+        assets,
+        // add level config here to a config struct of some kind
+        states::MainMenu::new(game_config, false),
+        game_data,
+    )?;
     game.run();
 
     Ok(())

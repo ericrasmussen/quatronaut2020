@@ -1,14 +1,20 @@
 use amethyst::{
+    assets::AssetStorage,
+    audio::{output::Output, Source},
     core::{timing::Time, Transform},
     derive::SystemDesc,
-    ecs::{Entities, Join, Read, ReadStorage, System, SystemData, WriteStorage},
+    ecs::{Entities, Join, Read, ReadExpect, ReadStorage, System, SystemData, WriteStorage},
 };
 
-use crate::{components::movement::Movement, entities::player::Player};
+use crate::{
+    components::movement::Movement,
+    entities::player::Player,
+    resources::{audio::Sounds, playablearea::PlayableArea},
+};
 
 use std::f32::consts::PI;
 
-use log::info;
+use log::debug;
 
 #[derive(SystemDesc)]
 pub struct MovementTrackingSystem;
@@ -51,19 +57,19 @@ impl<'s> System<'s> for TransformUpdateSystem {
         WriteStorage<'s, Movement>,
         Read<'s, Time>,
         Entities<'s>,
+        Read<'s, AssetStorage<Source>>,
+        ReadExpect<'s, Sounds>,
+        Option<Read<'s, Output>>,
+        Read<'s, PlayableArea>,
     );
 
-    fn run(&mut self, (mut transforms, mut movements, time, entities): Self::SystemData) {
+    fn run(
+        &mut self,
+        (mut transforms, mut movements, time, entities, storage, sounds, audio_output, playable_area): Self::SystemData,
+    ) {
         for (movement, enemy_entity, enemy_transform) in (&mut movements, &entities, &mut transforms).join() {
             enemy_transform.prepend_translation_x(movement.velocity_x * time.delta_seconds());
             enemy_transform.prepend_translation_y(movement.velocity_y * time.delta_seconds());
-            // TODO: decide if we need to clamp movement for enemies. and if so, perhaps look into why
-            // this code causes the game to speed through levels and exit quickly
-            //let new_x = playable_area.clamp_x(movement.velocity_x * time.delta_seconds());
-            //enemy_transform.prepend_translation_x(new_x);
-
-            //let new_y = playable_area.clamp_y(movement.velocity_y * time.delta_seconds());
-            //enemy_transform.prepend_translation_y(new_y);
 
             // these values should be based on game dimensions. the check is needed
             // for enemies that move off screen before getting hit
@@ -77,21 +83,17 @@ impl<'s> System<'s> for TransformUpdateSystem {
                     let dir = player_vec - enemy_transform.translation();
                     let angle = dir.y.atan2(dir.x);
                     let angle_facing = angle - (90.0 * PI / 180.0);
-                    info!("player: {:?}", player_vec);
-                    info!("enemy: {:?}", enemy_transform.translation());
-                    info!("dir: {:?}", dir);
-                    info!("calculated angle: {:?}", angle);
-                    info!("final angle: {:?}", angle_facing);
                     enemy_transform.set_rotation_2d(angle_facing);
+                    if let Some(sound_type) = movement.launch_sound {
+                        sounds.play_sound(sound_type, &storage, audio_output.as_deref());
+                    }
                     movement.already_rotated = true;
                 }
             }
 
-            // TODO: this should be based on some kind of "playable area" dimensions resource
-            let out_of_bounds = x < -500.0 || x > 2500.0 || y < -500.0 || y > 2500.0;
-
-            if out_of_bounds && entities.delete(enemy_entity).is_ok() {
-                info!("enemy out of bounds");
+            // the .delete here is the step that actually removes the enemy
+            if playable_area.out_of_bounds(x, y) && entities.delete(enemy_entity).is_ok() {
+                debug!("enemy out of bounds");
             }
         }
     }

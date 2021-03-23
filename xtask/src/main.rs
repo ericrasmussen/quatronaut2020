@@ -348,6 +348,9 @@ FLAGS:
             if let Some(values) = args.opt_value_from_fn("--rest", crate::rest)? {
                 cmd.args(values);
             }
+            // this should be optional, but the image loading is so laggy without it
+            // that it's a better default
+            cmd.args(&["--release"]);
             cmd.status()?;
             Ok(())
         }

@@ -1,12 +1,15 @@
 use amethyst::{
+    assets::AssetStorage,
+    audio::{output::Output, Source},
     core::Transform,
     derive::SystemDesc,
-    ecs::{Entities, Join, ReadStorage, System, SystemData, WriteStorage},
+    ecs::{Entities, Join, Read, ReadExpect, ReadStorage, System, SystemData, WriteStorage},
 };
 
 use crate::{
     components::{collider::Collider, launcher::Projectile},
     entities::{enemy::Enemy, player::Player},
+    resources::audio::{SoundType, Sounds},
 };
 use log::info;
 
@@ -17,17 +20,25 @@ use log::info;
 pub struct AttackedSystem;
 
 impl<'s> System<'s> for AttackedSystem {
+    #[allow(clippy::type_complexity)]
     type SystemData = (
         ReadStorage<'s, Transform>,
         WriteStorage<'s, Player>,
         WriteStorage<'s, Enemy>,
         ReadStorage<'s, Collider>,
         Entities<'s>,
+        Read<'s, AssetStorage<Source>>,
+        ReadExpect<'s, Sounds>,
+        Option<Read<'s, Output>>,
     );
 
-    // we don't need `player` here, though if we add health it'd be useful. keeping for now
-    // until deciding
-    fn run(&mut self, (transforms, players, enemies, colliders, entities): Self::SystemData) {
+    // note that `_player` is needed here as part of the query to ensure we're
+    // dealing with player entities (otherwise we'd be checking every game entity with projectiles and
+    // colliders)
+    fn run(
+        &mut self,
+        (transforms, players, enemies, colliders, entities, storage, sounds, audio_output): Self::SystemData,
+    ) {
         for (player_entity, _player, player_transform, player_collider) in
             (&entities, &players, &transforms, &colliders).join()
         {
@@ -44,8 +55,10 @@ impl<'s> System<'s> for AttackedSystem {
                 );
 
                 if collides {
-                    // this should be a call to some enemy method for reducing health
+                    sounds.play_sound(SoundType::PlayerDeath, &storage, audio_output.as_deref());
                     entities.delete(player_entity).unwrap();
+                    // TODO: send a game over or other event here
+                    info!("player was hit!");
                 }
             }
         }
@@ -56,6 +69,7 @@ impl<'s> System<'s> for AttackedSystem {
 pub struct ProjectileHitSystem;
 
 impl<'s> System<'s> for ProjectileHitSystem {
+    #[allow(clippy::type_complexity)]
     type SystemData = (
         ReadStorage<'s, Transform>,
         WriteStorage<'s, Player>,
@@ -64,8 +78,9 @@ impl<'s> System<'s> for ProjectileHitSystem {
         Entities<'s>,
     );
 
-    // we don't need `player` here, though if we add health it'd be useful. keeping for now
-    // until deciding
+    // note that `_player` is needed here as part of the query to ensure we're
+    // dealing with player entities (otherwise we'd be checking every game entity with projectiles and
+    // colliders)
     fn run(&mut self, (transforms, players, projectiles, colliders, entities): Self::SystemData) {
         for (player_entity, _player, player_transform, player_collider) in
             (&entities, &players, &transforms, &colliders).join()
@@ -85,6 +100,7 @@ impl<'s> System<'s> for ProjectileHitSystem {
                 if collides {
                     // we probably don't actually want to delete the player instantly,
                     // but how else will we artificially inflate difficulty in a short game
+                    // TODO: this is also a game over event condition
                     info!("player was hit!");
                     entities.delete(player_entity).unwrap();
 
@@ -93,7 +109,8 @@ impl<'s> System<'s> for ProjectileHitSystem {
                 }
 
                 let trans = projectile_transform.translation();
-                if trans.x < 0.0 || trans.x > 2500.0 || trans.y < 0.0 || trans.y > 2500.0 {
+                // 2880.0 x 1710.0
+                if trans.x < -5.0 || trans.x > 2900.0 || trans.y < -5.0 || trans.y > 2000.0 {
                     entities.delete(projectile_entity).unwrap();
                 }
             }

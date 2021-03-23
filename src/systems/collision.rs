@@ -2,17 +2,20 @@ use nalgebra::{Isometry2, Vector2};
 use ncollide2d::{bounding_volume, shape::Cuboid};
 
 use amethyst::{
+    assets::AssetStorage,
+    audio::{output::Output, Source},
     core::Transform,
     derive::SystemDesc,
-    ecs::{Entities, Join, ReadStorage, System, SystemData, WriteStorage},
+    ecs::{Entities, Join, Read, ReadExpect, ReadStorage, System, SystemData, WriteStorage},
 };
 
 use crate::{
     components::collider::Collider,
     entities::{enemy::Enemy, laser::Laser},
+    resources::audio::{SoundType, Sounds},
 };
 
-use log::info;
+//use log::info;
 
 // big TODO: as this system gets more complicated, at some point it'll probably
 // be worth using ncollide's broad phase collision
@@ -27,13 +30,16 @@ impl<'s> System<'s> for CollisionSystem {
         WriteStorage<'s, Enemy>,
         Entities<'s>,
         ReadStorage<'s, Collider>,
+        Read<'s, AssetStorage<Source>>,
+        ReadExpect<'s, Sounds>,
+        Option<Read<'s, Output>>,
     );
 
-    fn run(&mut self, (transforms, lasers, mut enemies, entities, colliders): Self::SystemData) {
+    fn run(
+        &mut self,
+        (transforms, lasers, mut enemies, entities, colliders, storage, sounds, audio_output): Self::SystemData,
+    ) {
         for (laser_entity, _laser_a, transform_a) in (&entities, &lasers, &transforms).join() {
-            /*
-             * Initialize the shapes.
-             */
             // this is for a laser much larger than ours. agh.
             // the x, y should be the half length along the x and y axes, respectively
             // for a ball type you'd use a radius instead. this creates a representation of
@@ -67,11 +73,11 @@ impl<'s> System<'s> for CollisionSystem {
                     enemy.take_damage(20.0);
                     // we should probably destroy the laser too
                     entities.delete(laser_entity).unwrap();
-
                     // if the enemy has taken enough damage, delete them
                     // TODO: may be a latent bug in associating this with laser hits...
                     if enemy.is_dead() && entities.delete(enemy_entity).is_ok() {
-                        info!("enemy deleted due to insufficient laser dodging abilities");
+                        //info!("enemy deleted due to insufficient laser dodging abilities");
+                        sounds.play_sound(SoundType::EnemyDeath, &storage, audio_output.as_deref());
                     }
                 }
             }
