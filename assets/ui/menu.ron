@@ -8,9 +8,21 @@ Container(
         width: 20.,
         height: 20.,
     ),
-    background: SolidColor(0.03, 0.03, 0.03, 1.0),
     children: [
-
+        Image(
+          transform: (
+              id: "background",
+              x: 0.,
+              y: 0.,
+              // TODO: why do these values need to be the computed retina display values?
+              // may need separate configs for retina displays
+              width: 2880.,
+              height: 1710.,
+              tab_order: 1,
+              anchor: Middle,
+          ),
+          image: Texture(File("ui/quatronaut_menu_w_title.jpg", ("IMAGE", ()))),
+        ),
         Container(
             transform: (
                 id: "container_start",

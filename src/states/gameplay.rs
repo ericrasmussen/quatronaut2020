@@ -225,7 +225,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             Trans::Switch(Box::new(TransitionState::new(
                 handles.overlay_sprite_handle,
                 self.game_config.clone(),
-                Some(Perspective::new(1.4, 0.3, audio::SoundType::LongTransition)),
+                Some(Perspective::new(1.8, 0.3, audio::SoundType::LongTransition)),
             )))
         } else if total == 0 && self.level_is_loaded {
             Trans::Switch(Box::new(TransitionState::new(
@@ -277,10 +277,11 @@ fn init_camera(world: &mut World, dimensions: &ScreenDimensions) {
     // the entire screen
     let mut transform = Transform::default();
     transform.set_translation_xyz(dimensions.width() * 0.5, dimensions.height() * 0.5, 1.);
+    info!("computed dimensions: {:?} x {:?}", dimensions.width(), dimensions.height());
     // many amethyst examples show using dimensions here, but it turns out we want the
     // intended dimensions (say, based on sprite sizes) and not the computed dimensions
     // (which are affected by hidpi and other factors, and may not be what we intended)
-    // even though transforms can use the computed dimensions, the camera needs the requested
+    // even though transforms can use the computed dimensions, the camera needs the original
     // dimensions (from display_config.ron)
     world
         .create_entity()
