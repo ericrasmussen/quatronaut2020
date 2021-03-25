@@ -43,7 +43,7 @@ use crate::{
         music,
         playablearea::PlayableArea,
     },
-    states::{menu::MainMenu, paused::PausedState, transition::TransitionState},
+    states::{alldone::AllDone, menu::MainMenu, paused::PausedState, transition::TransitionState},
     systems,
 };
 
@@ -184,10 +184,6 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
                 LevelStatus::TransitionTime => self.game_config.gameplay_mode = GameplayMode::TransitionMode,
                 LevelStatus::AllDone => self.game_config.gameplay_mode = GameplayMode::CompletedMode,
             },
-            GameplayMode::CompletedMode => {
-                // You win screen should go here
-                info!("You did it!");
-            },
             _ => {},
         };
     }
@@ -200,6 +196,14 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
                 dispatcher.dispatch(&data.world);
             }
         }
+
+        // since we can have potentially more than one player, this counts
+        // them and lets us treat 0 `player_lives` as game over
+        let player_lives = {
+            let entities = data.world.read_resource::<EntitiesRes>();
+            let enemies = data.world.read_storage::<Player>();
+            (&entities, &enemies).join().count()
+        };
 
         // this removes the need to track a count of enemies and have multiple
         // systems read and write to that resource
@@ -227,12 +231,23 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
                 self.game_config.clone(),
                 Some(Perspective::new(1.8, 0.3, audio::SoundType::LongTransition)),
             )))
+        // we're in a level and all enemies are defeated -- fade out to a new level
         } else if total == 0 && self.level_is_loaded {
             Trans::Switch(Box::new(TransitionState::new(
                 handles.overlay_sprite_handle,
                 self.game_config.clone(),
                 None,
             )))
+        // we've finished the game! you did it! you're awesome! make sure this
+        // comes before the game over check, because technically there are 0 players
+        // when the game is complete
+        } else if self.game_config.gameplay_mode == GameplayMode::CompletedMode {
+            info!("YOU WIN!");
+            Trans::Replace(Box::new(AllDone::new(self.game_config.clone(), true)))
+        // the level is still going and you ran out of lives. keep tryin'
+        } else if self.level_is_loaded && player_lives == 0 {
+            info!("YOU LOSE!");
+            Trans::Replace(Box::new(AllDone::new(self.game_config.clone(), false)))
         } else {
             Trans::None
         }

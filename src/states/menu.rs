@@ -91,11 +91,10 @@ impl SimpleState for MainMenu {
                     // get a brand new `GameplayState`
                     return Trans::Replace(Box::new(GameplayState::new(new_game_config)));
                 }
-                if Some(target) == self.button_continue || Some(target) == self.button_continue {
+                if Some(target) == self.button_continue {
                     log::info!("Going back to the prior state (should be an ongoing game)");
                     return Trans::Pop;
                 }
-
                 Trans::None
             },
             _ => Trans::None,

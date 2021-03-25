@@ -31,8 +31,6 @@ impl<'s> System<'s> for CameraShakeSystem {
         Option<Read<'s, Output>>,
     );
 
-    // hm, why is this running... something being inserted by default
-    // maybe the default should be completed?
     fn run(
         &mut self,
         (mut transforms, cameras, mut perspective, time, storage, sounds, audio_output): Self::SystemData,
