@@ -177,14 +177,13 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
         let handles = self.handles.clone().expect("failure accessing GameplayHandles struct");
 
-        match &self.game_config.gameplay_mode {
-            GameplayMode::LevelMode => match next_level_status {
+        if let GameplayMode::LevelMode = &self.game_config.gameplay_mode {
+            match next_level_status {
                 LevelStatus::SmallLevel(next_level_metadata) => init_level(world, next_level_metadata, handles),
                 LevelStatus::LargeLevel(next_level_metadata) => init_level(world, next_level_metadata, handles),
                 LevelStatus::TransitionTime => self.game_config.gameplay_mode = GameplayMode::TransitionMode,
                 LevelStatus::AllDone => self.game_config.gameplay_mode = GameplayMode::CompletedMode,
-            },
-            _ => {},
+            };
         };
     }
 

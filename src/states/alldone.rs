@@ -5,15 +5,12 @@
 /// tl;dr this is where you go for "You Win" or "Game Over" screens
 use amethyst::{
     ecs::Entity,
-    input::{is_close_requested},
+    input::is_close_requested,
     prelude::*,
     ui::{UiCreator, UiEvent, UiEventType, UiFinder},
 };
 
-use crate::{
-    resources::{gameconfig::GameConfig},
-    states::menu::MainMenu,
-};
+use crate::{resources::gameconfig::GameConfig, states::menu::MainMenu};
 
 use derive_new::new;
 
@@ -93,7 +90,5 @@ impl SimpleState for AllDone {
                 .delete_entity(root_entity)
                 .expect("Failed to remove MainMenu");
         }
-
     }
 }
-
