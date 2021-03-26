@@ -26,12 +26,13 @@ Container(
         Container(
             transform: (
                 id: "container_start",
-                y: 210,
+                y: -100,
                 width: 755.,
                 height: 150.,
                 anchor: Middle,
             ),
-            background: SolidColor(1.0, 0.65, 0.0, 1.0),
+            //background: SolidColor(1.0, 0.65, 0.0, 1.0),
+            background: SolidColor(1.0, 0.61, 0.94, 1.0),
             children: [
 
                 Button(
@@ -47,7 +48,7 @@ Container(
                         text: "NEW GAME",
                         font: File("fonts/font_over.otf", ("TTF", ())),
                         font_size: 75.,
-                        normal_text_color: (1.0, 0.65, 0., 1.0), // ffa500
+                        normal_text_color: (1.0, 0.61, 0.94, 1.0), // ff9ef1
                         normal_image: SolidColor(0., 0., 0., 1.),
                         hover_image: SolidColor(0.1, 0.1, 0.1, 1.),
                         press_image: SolidColor(0.15, 0.15, 0.15, 1.),
@@ -60,12 +61,12 @@ Container(
         Container(
             transform: (
                 id: "container_load",
-                y: 50,
+                y: -250,
                 width: 755.,
                 height: 150.,
                 anchor: Middle,
             ),
-            background: SolidColor(1.0, 0.65, 0.0, 1.0),
+            background: SolidColor(1.0, 0.61, 0.94, 1.0),
             children: [
 
                 // Complex Button
@@ -82,7 +83,7 @@ Container(
                         text: "CONTINUE",
                         font: File("fonts/font_over.otf", ("TTF", ())),
                         font_size: 75.,
-                        normal_text_color: (1.0, 0.65, 0., 1.0), // ffa500
+                        normal_text_color: (1.0, 0.61, 0.94, 1.0), // ff9ef1
                         normal_image: SolidColor(0., 0., 0., 1.),
                         hover_image: SolidColor(0.1, 0.1, 0.1, 1.),
                         press_image: SolidColor(0.15, 0.15, 0.15, 1.),
@@ -95,12 +96,12 @@ Container(
         Container(
             transform: (
                 id: "container_quit",
-                y: -270,
+                y: -400,
                 width: 755.,
                 height: 150.,
                 anchor: Middle,
             ),
-            background: SolidColor(1.0, 0.65, 0.0, 1.0),
+            background: SolidColor(1.0, 0.61, 0.94, 1.0),
             children: [
 
                 // Complex Button
@@ -117,7 +118,7 @@ Container(
                         text: "QUIT",
                         font: File("fonts/font_over.otf", ("TTF", ())),
                         font_size: 75.,
-                        normal_text_color: (1.0, 0.65, 0., 1.0), // ffa500
+                        normal_text_color: (1.0, 0.61, 0.94, 1.0), // ff9ef1
                         normal_image: SolidColor(0., 0., 0., 1.),
                         hover_image: SolidColor(0.1, 0.1, 0.1, 1.),
                         press_image: SolidColor(0.15, 0.15, 0.15, 1.),

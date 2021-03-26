@@ -5,10 +5,9 @@ Container(
         id: "background",
         anchor: Middle,
         stretch: XY( x_margin: 0., y_margin: 0., keep_aspect_ratio: false),
-        width: 1920.,
-        height: 1080.,
+        width: 20.,
+        height: 20.,
     ),
-
     children: [
         Image(
           transform: (
@@ -22,45 +21,27 @@ Container(
               tab_order: 1,
               anchor: Middle,
           ),
-          image: Texture(File("ui/quatronaut_menu_w_title.jpg", ("IMAGE", ()))),
+          image: Texture(File("ui/quatronaut_menu_no_title.jpg", ("IMAGE", ()))),
+        ),
+        Image(
+          transform: (
+              id: "game_over",
+              x: 0.,
+              y: 250.,
+              // TODO: why do these values need to be the computed retina display values?
+              // may need separate configs for retina displays
+              // win is 357 x 217
+              // game over is 454 x 217
+              width: 1021.5,
+              height: 516.,
+              tab_order: 2,
+              anchor: Middle,
+          ),
+          image: Texture(File("ui/end_gameover.png", ("IMAGE", ()))),
         ),
         Container(
             transform: (
-                id: "container_start",
-                y: -100,
-                width: 755.,
-                height: 150.,
-                anchor: Middle,
-            ),
-            background: SolidColor(1.0, 0.61, 0.94, 1.0),
-            children: [
-
-                Button(
-                    transform: (
-                        id: "start",
-                        width: 750.,
-                        height: 145.,
-                        tab_order: 1,
-                        anchor: Middle,
-                        mouse_reactive: true,
-                    ),
-                    button: (
-                        text: "NEW GAME",
-                        font: File("fonts/font_over.otf", ("TTF", ())),
-                        font_size: 75.,
-                        normal_text_color: (1.0, 0.61, 0.94, 1.0), // ff9ef1
-                        normal_image: SolidColor(0., 0., 0., 1.),
-                        hover_image: SolidColor(0.1, 0.1, 0.1, 1.),
-                        press_image: SolidColor(0.15, 0.15, 0.15, 1.),
-                    )
-                ),
-            ]
-        ),
-
-
-        Container(
-            transform: (
-                id: "container_quit",
+                id: "container_menu",
                 y: -400,
                 width: 755.,
                 height: 150.,
@@ -69,18 +50,17 @@ Container(
             background: SolidColor(1.0, 0.61, 0.94, 1.0),
             children: [
 
-                // Complex Button
                 Button(
                     transform: (
-                        id: "quit",
+                        id: "menu",
                         width: 750.,
                         height: 145.,
-                        tab_order: 3,
+                        tab_order: 1,
                         anchor: Middle,
                         mouse_reactive: true,
                     ),
                     button: (
-                        text: "QUIT",
+                        text: "BACK TO MENU",
                         font: File("fonts/font_over.otf", ("TTF", ())),
                         font_size: 75.,
                         normal_text_color: (1.0, 0.61, 0.94, 1.0), // ff9ef1
@@ -91,6 +71,5 @@ Container(
                 ),
             ]
         ),
-
     ],
 )

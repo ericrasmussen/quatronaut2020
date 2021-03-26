@@ -1,42 +1,60 @@
 (
   large_levels: [
-      // large level 8
+    // 12. Utter destruction
     [
       "  B   B   B   B   B   B   B   B   B   B   B   B   B   B   B   B   B ",
       "                                                                    ",
       "                                                                    ",
+      " S                                                                S ",
+      "                                                                    ",
+      " S                             P                                  S ",
+      "                             P   P                                  ",
+      " S                         P   P   P                              S ",
+      "                            P P P P                                 ",
+      " S                                                                S ",
+      "                              P P                                   ",
+      " S                                                                S ",
       "                                                                    ",
       "                                                                    ",
-      "                                                                    ",
-      "   F                                                             F  ",
-      "   F                                                             F  ",
-      "                                                                    ",
-      "                                P P                                 ",
-      "                                                                    ",
-      "                                                                    ",
-      "                                                                    ",
-      "                                                                    ",
-      "                                                                    ",
-    ],
-      // large level 7
-    [
       "  B   B   B   B   B   B   B   B   B   B   B   B   B   B   B   B   B ",
+    ],
+    // 11. Think fast
+    [
+      "                                                                    ",
+      "                F F F F F F F F F F F F F F F F F F                 ",
+      "                                                                    ",
+      "     F F F F F F                                    F F F F F F     ",
+      "                                                                    ",
+      "  F F                                                           F F ",
       "                                                                    ",
       "                                                                    ",
       "                                                                    ",
       "                                                                    ",
       "                                                                    ",
-      "   F                                                             F  ",
-      "   F                                                             F  ",
-      "                                                                    ",
-      "                                P P                                 ",
       "                                                                    ",
       "                                                                    ",
-      "                                                                    ",
-      "                                                                    ",
+      "                     P        P        P                            ",
       "                                                                    ",
     ],
-      // large level 6
+    // 10. Dodge and roll
+    [
+      "                                                                    ",
+      "                    F          F            F                       ",
+      "                                                                    ",
+      "                                                                    ",
+      "  P                                                                 ",
+      "                               P                                    ",
+      "                 B                            B                     ",
+      "                            P     P                                 ",
+      "                                                                    ",
+      "                                                                    ",
+      "                     B                B                             ",
+      "                                                                    ",
+      "                                                                    ",
+      "                                                                    ",
+      "                            F  F  F                                 ",
+    ],
+    // 9. Cornered
     [
       "                                                                    ",
       "  P         S                                           S         P ",
@@ -54,7 +72,7 @@
       "  P         S                                           S         P ",
       "                                                                    ",
     ],
-      // large level 5
+      // 8. Pincer
     [
       "  B   B   B   B   B   B   B   B   B   B   B   B   B   B   B   B   B ",
       "                                                                    ",
@@ -69,10 +87,10 @@
       "                                                                    ",
       "                                                                    ",
       "                                                                    ",
-      "                                                                    ",
+      "                      S                      S                      ",
       "                                                                    ",
     ],
-      // large level 4
+      // 7. Dive
     [
       "   F  F  F  F  F  F  F  F  F  F  F  F  F  F  F  F  F  F  F  F  F  F ",
       "                                                                    ",
@@ -91,7 +109,7 @@
       "                                                                    ",
     ],
 
-    // large level 3
+    // 6. Make it rain
     [
       "                                                                    ",
       "                             P P                                    ",
@@ -105,12 +123,12 @@
       "                                                                    ",
       "                         B        B                                 ",
       "                                                                    ",
-      "                              B         B                           ",
+      "                    B        B         B                            ",
       "                                                                    ",
       "                                                                    ",
     ],
 
-    // large level 2
+    // 5. Twin shooters
     [
       "   F  F  F                                                 F  F  F  ",
       "                                                                    ",
@@ -122,46 +140,76 @@
       "                                                                    ",
       "                                                                    ",
       "                                                                    ",
-      "                         P                                          ",
+      "                         P    P                                     ",
       "                                                                    ",
       "   S                                                            S   ",
       "     S                                                        S     ",
       "       S                                                    S       ",
     ],
-    // large level 1
+  ],
+  // this is for the LevelConfig struct
+  small_levels: [
+    // 4. breaking free
     [
-      "        F            F            F               ",
+      "           F                    F                 ",
       "                                                  ",
+      "                      B                           ",
+      "  F                                            F  ",
       "                                                  ",
-      "    S    B                             S          ",
-      "                                                  ",
-      "                                                  ",
-      "                   S                              ",
-      "                                  S               ",
-      "                                                  ",
-      "     S                                            ",
-      "                                                  ",
-      "                                                  ",
-      "              S                                   ",
+      "   S        S       S       S       S        S    ",
       "                                                  ",
       "                                                  ",
       "                                                  ",
       "                                                  ",
-      "                           P                      ",
+      "                                                  ",
+      "      S      S      S      S      S      S        ",
       "                                                  ",
       "                                                  ",
       "                                                  ",
+      "                                                  ",
+      "                                                  ",
+      "                                                  ",
+      "                                                  ",
+      "                                                  ",
+      "                                                  ",
+      "                                                  ",
+      "                      P                           ",
+      "                                                  ",
+      "                                                  ",
+    ],
+    // 3. it's a trap!
+    [
+      "                                                  ",
+      "                                  F       F  F    ",
+      "                                       F          ",
+      "                                                  ",
+      "              S                           F  F    ",
+      "                                                  ",
+      "                  S                       F  F    ",
+      "         S                                        ",
+      "                                                  ",
+      "                                                  ",
+      "     S                P                           ",
+      "                                                  ",
+      "                                                  ",
+      "                                                  ",
+      "                                                  ",
+      "                                                  ",
+      "    S                                   S         ",
+      "                                                  ",
+      "                                                  ",
+      "          S                     S                 ",
+      "                                                  ",
+      "                     S                            ",
       "                                                  ",
       "                                                  ",
       "                                                  ",
     ],
-  ],
-  // this is for the LevelConfig struct
-  small_levels: [
-    // level 1
+
+    // 2. fliers approach
     [
       "                                                  ",
-      "        F            F            F               ",
+      "        F            F            F          F    ",
       "                                                  ",
       "                                                  ",
       "    S                                  S          ",
@@ -187,7 +235,7 @@
       "                                                  ",
     ],
 
-    // level 0
+    // 1. a gentle introduction to squares
     [
       "                                                  ",
       "                               S                  ",
@@ -197,6 +245,7 @@
       "                                                  ",
       "                                                  ",
       "                      S                           ",
+      "                                          S       ",
       "                                                  ",
       "                                                  ",
       "                                                  ",
@@ -205,11 +254,10 @@
       "                                                  ",
       "                                                  ",
       "                                                  ",
-      "                     P                            ",
       "                                                  ",
       "                                                  ",
       "                                                  ",
-      "                                                  ",
+      "                       P                          ",
       "                                                  ",
       "                                                  ",
       "                                                  ",

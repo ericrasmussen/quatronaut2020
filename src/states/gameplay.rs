@@ -43,7 +43,7 @@ use crate::{
         music,
         playablearea::PlayableArea,
     },
-    states::{menu::MainMenu, paused::PausedState, transition::TransitionState},
+    states::{alldone::AllDone, menu::MainMenu, paused::PausedState, transition::TransitionState},
     systems,
 };
 
@@ -175,20 +175,18 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
         world.insert(playable_area);
 
+        // switches back to the small background if needed
+        change_background(world, &next_level_status);
+
         let handles = self.handles.clone().expect("failure accessing GameplayHandles struct");
 
-        match &self.game_config.gameplay_mode {
-            GameplayMode::LevelMode => match next_level_status {
+        if let GameplayMode::LevelMode = &self.game_config.gameplay_mode {
+            match next_level_status {
                 LevelStatus::SmallLevel(next_level_metadata) => init_level(world, next_level_metadata, handles),
                 LevelStatus::LargeLevel(next_level_metadata) => init_level(world, next_level_metadata, handles),
                 LevelStatus::TransitionTime => self.game_config.gameplay_mode = GameplayMode::TransitionMode,
                 LevelStatus::AllDone => self.game_config.gameplay_mode = GameplayMode::CompletedMode,
-            },
-            GameplayMode::CompletedMode => {
-                // You win screen should go here
-                info!("You did it!");
-            },
-            _ => {},
+            };
         };
     }
 
@@ -200,6 +198,14 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
                 dispatcher.dispatch(&data.world);
             }
         }
+
+        // since we can have potentially more than one player, this counts
+        // them and lets us treat 0 `player_lives` as game over
+        let player_lives = {
+            let entities = data.world.read_resource::<EntitiesRes>();
+            let enemies = data.world.read_storage::<Player>();
+            (&entities, &enemies).join().count()
+        };
 
         // this removes the need to track a count of enemies and have multiple
         // systems read and write to that resource
@@ -227,12 +233,23 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
                 self.game_config.clone(),
                 Some(Perspective::new(1.8, 0.3, audio::SoundType::LongTransition)),
             )))
+        // we're in a level and all enemies are defeated -- fade out to a new level
         } else if total == 0 && self.level_is_loaded {
             Trans::Switch(Box::new(TransitionState::new(
                 handles.overlay_sprite_handle,
                 self.game_config.clone(),
                 None,
             )))
+        // we've finished the game! you did it! you're awesome! make sure this
+        // comes before the game over check, because technically there are 0 players
+        // when the game is complete
+        } else if self.game_config.gameplay_mode == GameplayMode::CompletedMode {
+            info!("YOU WIN!");
+            Trans::Replace(Box::new(AllDone::new(self.game_config.clone(), true)))
+        // the level is still going and you ran out of lives. keep tryin'
+        } else if self.level_is_loaded && player_lives == 0 {
+            info!("YOU LOSE!");
+            Trans::Replace(Box::new(AllDone::new(self.game_config.clone(), false)))
         } else {
             Trans::None
         }
@@ -322,6 +339,21 @@ fn init_background(world: &mut World, dimensions: &ScreenDimensions, bg_sprite_s
         .build();
 }
 
+fn change_background(world: &mut World, level_status: &LevelStatus) {
+    // this is duplicated from transition.rs and should probably be
+    // handled elsewhere. it resets the main background (from big to small)
+    // for new games
+    let sprite_number = match level_status {
+        LevelStatus::LargeLevel(_) => 1,
+        _ => 0,
+    };
+
+    let mut sprites = world.write_storage::<SpriteRender>();
+    let backgrounds = world.read_storage::<BackgroundTag>();
+    for (sprite, _bg) in (&mut sprites, &backgrounds).join() {
+        sprite.sprite_number = sprite_number;
+    }
+}
 fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: GameplayHandles) {
     let playable_area = (*world.read_resource::<PlayableArea>()).clone();
 
