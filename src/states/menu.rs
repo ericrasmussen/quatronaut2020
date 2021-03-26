@@ -6,12 +6,12 @@ use amethyst::{
     winit::VirtualKeyCode,
 };
 
+use derive_new::new;
+
 use crate::{
-    resources::{gameconfig::GameConfig, level::get_all_levels},
+    resources::{gameconfig::{GameConfig, GameplayMode}, level::get_all_levels},
     states::gameplay::GameplayState,
 };
-
-use derive_new::new;
 
 const BUTTON_START: &str = "start";
 const BUTTON_CONTINUE: &str = "continue";
@@ -87,6 +87,7 @@ impl SimpleState for MainMenu {
                     let mut new_game_config = self.game_config.clone();
                     let all_levels = get_all_levels(self.game_config.level_config.clone());
                     new_game_config.current_levels = all_levels;
+                    new_game_config.gameplay_mode = GameplayMode::LevelMode;
                     // Switch doesn't work here for whatever reason, but Replace ensures we
                     // get a brand new `GameplayState`
                     return Trans::Replace(Box::new(GameplayState::new(new_game_config)));

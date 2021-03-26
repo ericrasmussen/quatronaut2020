@@ -1,5 +1,41 @@
 (
   large_levels: [
+    // 12. Utter destruction
+    [
+      "  B   B   B   B   B   B   B   B   B   B   B   B   B   B   B   B   B ",
+      "                                                                    ",
+      "                                                                    ",
+      " S                                                                S ",
+      "                                                                    ",
+      " S                             P                                  S ",
+      "                             P   P                                  ",
+      " S                         P   P   P                              S ",
+      "                            P P P P                                 ",
+      " S                                                                S ",
+      "                              P P                                   ",
+      " S                                                                S ",
+      "                                                                    ",
+      "                                                                    ",
+      "  B   B   B   B   B   B   B   B   B   B   B   B   B   B   B   B   B ",
+    ],
+    // 11. Think fast
+    [
+      "                                                                    ",
+      "                F F F F F F F F F F F F F F F F F F                 ",
+      "                                                                    ",
+      "     F F F F F F                                    F F F F F F     ",
+      "                                                                    ",
+      "  F F                                                           F F ",
+      "                                                                    ",
+      "                                                                    ",
+      "                                                                    ",
+      "                                                                    ",
+      "                                                                    ",
+      "                                                                    ",
+      "                                                                    ",
+      "                     P        P        P                            ",
+      "                                                                    ",
+    ],
     // 10. Dodge and roll
     [
       "                                                                    ",

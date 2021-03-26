@@ -175,6 +175,9 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
         world.insert(playable_area);
 
+        // switches back to the small background if needed
+        change_background(world, &next_level_status);
+
         let handles = self.handles.clone().expect("failure accessing GameplayHandles struct");
 
         if let GameplayMode::LevelMode = &self.game_config.gameplay_mode {
@@ -336,6 +339,21 @@ fn init_background(world: &mut World, dimensions: &ScreenDimensions, bg_sprite_s
         .build();
 }
 
+fn change_background(world: &mut World, level_status: &LevelStatus) {
+    // this is duplicated from transition.rs and should probably be
+    // handled elsewhere. it resets the main background (from big to small)
+    // for new games
+    let sprite_number = match level_status {
+        LevelStatus::LargeLevel(_) => 1,
+        _ => 0,
+    };
+
+    let mut sprites = world.write_storage::<SpriteRender>();
+    let backgrounds = world.read_storage::<BackgroundTag>();
+    for (sprite, _bg) in (&mut sprites, &backgrounds).join() {
+        sprite.sprite_number = sprite_number;
+    }
+}
 fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: GameplayHandles) {
     let playable_area = (*world.read_resource::<PlayableArea>()).clone();
 
