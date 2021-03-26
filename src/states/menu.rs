@@ -9,7 +9,10 @@ use amethyst::{
 use derive_new::new;
 
 use crate::{
-    resources::{gameconfig::{GameConfig, GameplayMode}, level::get_all_levels},
+    resources::{
+        gameconfig::{GameConfig, GameplayMode},
+        level::get_all_levels,
+    },
     states::gameplay::GameplayState,
 };
 
