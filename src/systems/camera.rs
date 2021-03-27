@@ -13,9 +13,6 @@ use crate::{
 
 // use log::info;
 
-// big TODO: as this system gets more complicated, at some point it'll probably
-// be worth using ncollide's broad phase collision, which would let us consolidate
-// this and collision.rs.
 #[derive(SystemDesc)]
 pub struct CameraShakeSystem;
 
