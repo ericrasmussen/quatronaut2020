@@ -231,7 +231,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             Trans::Switch(Box::new(TransitionState::new(
                 handles.overlay_sprite_handle,
                 self.game_config.clone(),
-                Some(Perspective::new(1.8, 0.3, audio::SoundType::LongTransition)),
+                Some(Perspective::new(1.8, 0.3, 3.0, audio::SoundType::LongTransition)),
             )))
         // we're in a level and all enemies are defeated -- fade out to a new level
         } else if total == 0 && self.level_is_loaded {

@@ -16,9 +16,7 @@ use crate::resources::audio::SoundType;
 pub enum PerspectiveStatus {
     Zooming,
     Reversing,
-    // TODO: add in a paused status here so we can delay for a bit before
-    // the dramatic zoom out.
-    //    Paused,
+    Paused,
     Completed,
 }
 
@@ -28,6 +26,7 @@ use PerspectiveStatus::*;
 pub struct Perspective {
     scale_factor: f32,
     scale_min: f32,
+    pause_duration: f32,
     pub status: PerspectiveStatus,
     already_played_sound: bool,
     sound: SoundType,
@@ -42,6 +41,7 @@ impl Default for Perspective {
         Perspective {
             scale_factor: 0.0,
             scale_min: 0.0,
+            pause_duration: 0.0,
             status: Zooming,
             already_played_sound: false,
             sound: SoundType::ShortTransition,
@@ -50,10 +50,11 @@ impl Default for Perspective {
 }
 
 impl Perspective {
-    pub fn new(scale_factor: f32, scale_min: f32, sound: SoundType) -> Perspective {
+    pub fn new(scale_factor: f32, scale_min: f32, pause_duration: f32, sound: SoundType) -> Perspective {
         Perspective {
             scale_factor,
             scale_min,
+            pause_duration,
             status: Zooming,
             already_played_sound: false,
             sound,
@@ -89,7 +90,8 @@ impl Perspective {
     }
 
     // compute the next value by which to scale the camera. increasing
-    // the value creates a zooming out effect
+    // the value creates a zooming out effect. this is called repeatedly
+    // by systems until it returns None
     pub fn next_scale(&mut self, current_scale: f32, time: f32) -> Option<Vector3<f32>> {
         match self.status {
             // all done!
@@ -106,11 +108,21 @@ impl Perspective {
                     Some(Vector3::new(new_scale, new_scale, new_scale))
                 }
             },
+            // start reversing when enough time has elapsed, otherwise keep
+            // returning the current scale (effectively pausing the camera
+            // changes)
+            Paused => {
+                self.pause_duration -= time;
+                if self.pause_duration <= 0.0 {
+                    self.status = Reversing;
+                }
+                Some(Vector3::new(current_scale, current_scale, current_scale))
+            },
             // still zoomin'
             Zooming => {
-                // if we've zoomed past our threshold, start reversing
+                // if we've zoomed past our threshold, pause before reversing
                 if current_scale <= self.scale_min {
-                    self.status = Reversing;
+                    self.status = Paused;
                     None
                 // otherwise keep going
                 } else {
