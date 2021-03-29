@@ -61,9 +61,8 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
         self.dispatcher = Some(dispatcher);
 
         world.register::<Perspective>();
-        if let Some(perspective) = &self.perspective_shift {
-            //info!("adding some perspective");
-            world.insert(*perspective);
+        if let Some(perspective) = self.perspective_shift {
+            world.insert(perspective);
         }
 
         // this is all a little over complicated, but the status is a shared
@@ -106,11 +105,11 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
                     sprite.sprite_number = 1;
                 }
             }
-            // special case to return early if we're done with our scaling and shaking
+            // return early if we're done with our scaling and shaking
             if perspective.status == PerspectiveStatus::Completed {
                 let mut game_config = self.game_config.clone();
                 game_config.gameplay_mode = GameplayMode::LevelMode;
-                return Trans::Switch(Box::new(GameplayState::new(game_config)));
+                return Trans::Replace(Box::new(GameplayState::new(game_config)));
             }
         }
 
@@ -122,7 +121,7 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
             let mut game_config = self.game_config.clone();
             game_config.gameplay_mode = GameplayMode::LevelMode;
 
-            Trans::Switch(Box::new(GameplayState::new(game_config)))
+            Trans::Replace(Box::new(GameplayState::new(game_config)))
         } else {
             Trans::None
         }
@@ -139,6 +138,16 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
         for (entity, _tag) in (&entities, &faders).join() {
             let err = format!("unable to delete entity: {:?}", entity);
             entities.delete(entity).expect(&err);
+        }
+
+        // make sure we clean up any perspective resources (that contain information
+        // about shaking the camera or zooming in and out)
+        if let Some(_perspective) = &self.perspective_shift {
+            let perspectives = data.world.read_storage::<Perspective>();
+            for (entity, _perspective) in (&entities, &perspectives).join() {
+                let err = format!("unable to delete entity: {:?}", entity);
+                entities.delete(entity).expect(&err);
+            }
         }
     }
 

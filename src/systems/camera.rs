@@ -11,8 +11,6 @@ use crate::{
     resources::audio::Sounds,
 };
 
-// use log::info;
-
 #[derive(SystemDesc)]
 pub struct CameraShakeSystem;
 

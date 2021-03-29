@@ -1,5 +1,8 @@
 (
-  volume: 0.2,
+  // max volume, 0.0 - 1.0
+  // in audio.rs the individual sounds are assigned volumes
+  // for balancing
+  max_volume: 0.5,
   player_blaster: [
     "sfx/blaster_player_01_v01.ogg",
     "sfx/blaster_player_01_v02.ogg",

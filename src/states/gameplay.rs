@@ -57,6 +57,10 @@ pub struct GameplayState<'a, 'b> {
     // there might be better options (like Trans::Pop)
     pub game_config: GameConfig,
 
+    // useful to know the level status for choosing transitions
+    #[new(default)]
+    pub large_level: bool,
+
     // default initializes this value with false
     #[new(default)]
     pub level_is_loaded: bool,
@@ -182,8 +186,14 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
         if let GameplayMode::LevelMode = &self.game_config.gameplay_mode {
             match next_level_status {
-                LevelStatus::SmallLevel(next_level_metadata) => init_level(world, next_level_metadata, handles),
-                LevelStatus::LargeLevel(next_level_metadata) => init_level(world, next_level_metadata, handles),
+                LevelStatus::SmallLevel(next_level_metadata) => {
+                    self.large_level = false;
+                    init_level(world, next_level_metadata, handles)
+                },
+                LevelStatus::LargeLevel(next_level_metadata) => {
+                    self.large_level = true;
+                    init_level(world, next_level_metadata, handles)
+                },
                 LevelStatus::TransitionTime => self.game_config.gameplay_mode = GameplayMode::TransitionMode,
                 LevelStatus::AllDone => self.game_config.gameplay_mode = GameplayMode::CompletedMode,
             };
@@ -228,17 +238,24 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         // loaded and all enemies are defeated, it's time to transition, otherwise
         // keep going
         if self.game_config.gameplay_mode == GameplayMode::TransitionMode {
-            Trans::Switch(Box::new(TransitionState::new(
+            Trans::Replace(Box::new(TransitionState::new(
                 handles.overlay_sprite_handle,
                 self.game_config.clone(),
-                Some(Perspective::new(1.8, 0.3, 3.0, audio::SoundType::LongTransition)),
+                Some(Perspective::new(1.8, 0.3, 0.0, 3.0, audio::SoundType::LongTransition)),
             )))
         // we're in a level and all enemies are defeated -- fade out to a new level
         } else if total == 0 && self.level_is_loaded {
-            Trans::Switch(Box::new(TransitionState::new(
+            // once we're in large level mode we don't transition sounds or zooming/shaking
+            let new_perspective = if self.large_level {
+                None
+            } else {
+                Some(Perspective::new(0.0, 1.0, 0.7, 0.0, audio::SoundType::ShortTransition))
+            };
+            Trans::Replace(Box::new(TransitionState::new(
                 handles.overlay_sprite_handle,
                 self.game_config.clone(),
-                None,
+                // default perspective won't zoom in and out
+                new_perspective,
             )))
         // we've finished the game! you did it! you're awesome! make sure this
         // comes before the game over check, because technically there are 0 players

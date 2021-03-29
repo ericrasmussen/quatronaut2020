@@ -1,6 +1,9 @@
 /// This is a fun little module for describing how
 /// we manipulate the camera during our transition to
 /// the damaged background/wide-screen mode.
+/// By fun, I mostly mean overly complicated. The short and long
+/// transitions should really be separated out. Changing one or the other
+/// is likely to break something.
 use amethyst::{
     core::math::Vector3,
     ecs::{storage::DenseVecStorage, Component},
@@ -27,8 +30,9 @@ pub struct Perspective {
     scale_factor: f32,
     scale_min: f32,
     pause_duration: f32,
+    min_shake_seconds: f32,
     pub status: PerspectiveStatus,
-    already_played_sound: bool,
+    pub already_played_sound: bool,
     sound: SoundType,
 }
 
@@ -40,7 +44,9 @@ impl Default for Perspective {
     fn default() -> Perspective {
         Perspective {
             scale_factor: 0.0,
-            scale_min: 0.0,
+            // default minimum should be 1, i.e. don't scale a all
+            scale_min: 1.0,
+            min_shake_seconds: 0.5,
             pause_duration: 0.0,
             status: Zooming,
             already_played_sound: false,
@@ -50,10 +56,17 @@ impl Default for Perspective {
 }
 
 impl Perspective {
-    pub fn new(scale_factor: f32, scale_min: f32, pause_duration: f32, sound: SoundType) -> Perspective {
+    pub fn new(
+        scale_factor: f32,
+        scale_min: f32,
+        min_shake_seconds: f32,
+        pause_duration: f32,
+        sound: SoundType,
+    ) -> Perspective {
         Perspective {
             scale_factor,
             scale_min,
+            min_shake_seconds,
             pause_duration,
             status: Zooming,
             already_played_sound: false,
@@ -95,7 +108,10 @@ impl Perspective {
     pub fn next_scale(&mut self, current_scale: f32, time: f32) -> Option<Vector3<f32>> {
         match self.status {
             // all done!
-            Completed => None,
+            Completed => {
+                // self.already_played_sound = false;
+                None
+            },
             // going back to normal scale
             Reversing => {
                 let new_scale = current_scale + (self.scale_factor * time);
@@ -120,12 +136,14 @@ impl Perspective {
             },
             // still zoomin'
             Zooming => {
-                // if we've zoomed past our threshold, pause before reversing
-                if current_scale <= self.scale_min {
+                // if we've zoomed past our threshold and have shaken the screen
+                // sufficiently, pause before reversing
+                if current_scale <= self.scale_min && self.min_shake_seconds <= 0.0 {
                     self.status = Paused;
                     None
                 // otherwise keep going
                 } else {
+                    self.min_shake_seconds -= time;
                     let new_scale = current_scale - (self.scale_factor * time);
                     Some(Vector3::new(new_scale, new_scale, new_scale))
                 }
