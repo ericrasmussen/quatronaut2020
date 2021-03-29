@@ -25,7 +25,7 @@ pub fn initialize_music(world: &mut World) {
         let loader = world.read_resource::<Loader>();
 
         let mut sink = world.write_resource::<AudioSink>();
-        sink.set_volume(0.5); // Music is a bit loud, reduce the volume.
+        sink.set_volume(0.5);
 
         let music = MUSIC_TRACKS
             .iter()

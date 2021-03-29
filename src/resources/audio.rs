@@ -71,8 +71,12 @@ impl Sounds {
                     let index = self.random_int(self.triangle_lock.len() - 1);
                     &self.triangle_lock[index]
                 },
-                SoundType::ShortTransition => &self.short_transition,
-                SoundType::LongTransition => &self.long_transition,
+                SoundType::ShortTransition => {
+                    &self.short_transition
+                }
+                SoundType::LongTransition => {
+                    &self.long_transition
+                }
             };
 
             if let Some(sound) = storage.get(&sound_ref) {
