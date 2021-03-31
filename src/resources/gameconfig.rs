@@ -20,4 +20,5 @@ pub struct GameConfig {
     pub sound_config: SoundConfig,
     pub current_levels: Levels,
     pub gameplay_mode: GameplayMode,
+    pub immortal_hyper_mode: bool,
 }

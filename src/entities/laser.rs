@@ -72,7 +72,7 @@ pub fn spawn_laser(
     // an incorrect sprite number here will lead to a memory leak
     let sprite_render = SpriteRender {
         sprite_sheet: sprite_sheet_handle,
-        sprite_number: 2,
+        sprite_number: 3,
     };
 
     let mut transform = player_transform.clone();

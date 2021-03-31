@@ -30,6 +30,14 @@ The controls are wasd for movement and the arrow keys for firing lasers.
 - working menu screens! kind of! ...sometimes
 - will be shipped ahead of schedule with lots of bugs
 
+### Secret cheat codes
+
+OK, there's only one secret. Press 'g' during gameplay to toggle HYPER IMMORTAL mode.
+If you start a new level in this mode, you'll have increased movement speed and fire rate.
+
+There's also 'p' to pause without a menu, but if you forget to press 'p' a second time to
+unpause, you may become stuck in a timeless land for a brief eternity or two.
+
 ### Additional build instructions
 
 The information below comes from the https://github.com/amethyst/amethyst-starter-2d README:

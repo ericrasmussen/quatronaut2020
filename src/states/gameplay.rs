@@ -138,6 +138,10 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             loader.load("prefabs/player.ron", RonFormat, &mut self.progress_counter)
         });
 
+        let player_hyper_prefab_handle = world.exec(|loader: PrefabLoader<'_, PlayerPrefab>| {
+            loader.load("prefabs/player_hyper.ron", RonFormat, &mut self.progress_counter)
+        });
+
         let boss_prefab_handle = world.exec(|loader: PrefabLoader<'_, EnemyPrefab>| {
             loader.load("prefabs/boss.ron", RonFormat, &mut self.progress_counter)
         });
@@ -149,6 +153,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             enemy_prefab_handle,
             flying_enemy_prefab_handle,
             player_prefab_handle,
+            player_hyper_prefab_handle,
             boss_prefab_handle,
         );
         self.handles = Some(gameplay_handles);
@@ -184,15 +189,16 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
         let handles = self.handles.clone().expect("failure accessing GameplayHandles struct");
 
+        let immortal_hyper_mode = self.game_config.immortal_hyper_mode;
         if let GameplayMode::LevelMode = &self.game_config.gameplay_mode {
             match next_level_status {
                 LevelStatus::SmallLevel(next_level_metadata) => {
                     self.large_level = false;
-                    init_level(world, next_level_metadata, handles)
+                    init_level(world, next_level_metadata, handles, immortal_hyper_mode)
                 },
                 LevelStatus::LargeLevel(next_level_metadata) => {
                     self.large_level = true;
-                    init_level(world, next_level_metadata, handles)
+                    init_level(world, next_level_metadata, handles, immortal_hyper_mode)
                 },
                 LevelStatus::TransitionTime => self.game_config.gameplay_mode = GameplayMode::TransitionMode,
                 LevelStatus::AllDone => self.game_config.gameplay_mode = GameplayMode::CompletedMode,
@@ -211,10 +217,24 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
         // since we can have potentially more than one player, this counts
         // them and lets us treat 0 `player_lives` as game over
+        // let player_lives = {
+        //     let entities = data.world.read_resource::<EntitiesRes>();
+        //     let players = data.world.read_storage::<Player>();
+        //     (&entities, &players).join().count()
+        // };
+
+        // this does two things, which is probably bad. it makes sure we have the right
+        // player sprite and invulnerability settings (which can change throughout the game),
+        // and then returns the remaining number of player lives (used down below)
         let player_lives = {
             let entities = data.world.read_resource::<EntitiesRes>();
-            let enemies = data.world.read_storage::<Player>();
-            (&entities, &enemies).join().count()
+            let mut sprites = data.world.write_storage::<SpriteRender>();
+            let mut players = data.world.write_storage::<Player>();
+            for (_entity, sprite, player) in (&entities, &mut sprites, &mut players).join() {
+                player.invulnerable = self.game_config.immortal_hyper_mode;
+                sprite.sprite_number = if self.game_config.immortal_hyper_mode { 1 } else { 0 };
+            }
+            (&entities, &players).join().count()
         };
 
         // this removes the need to track a count of enemies and have multiple
@@ -265,7 +285,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             Trans::Replace(Box::new(AllDone::new(self.game_config.clone(), true)))
         // the level is still going and you ran out of lives. keep tryin'
         } else if self.level_is_loaded && player_lives == 0 {
-            info!("YOU LOSE!");
+            info!("try again!");
             Trans::Replace(Box::new(AllDone::new(self.game_config.clone(), false)))
         } else {
             Trans::None
@@ -282,6 +302,10 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
             if is_key_down(&event, VirtualKeyCode::P) {
                 return Trans::Push(Box::new(PausedState));
+            }
+            if is_key_down(&event, VirtualKeyCode::G) {
+                self.game_config.immortal_hyper_mode = !self.game_config.immortal_hyper_mode;
+                return Trans::None;
             }
         }
         // no state changes required
@@ -371,15 +395,20 @@ fn change_background(world: &mut World, level_status: &LevelStatus) {
         sprite.sprite_number = sprite_number;
     }
 }
-fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: GameplayHandles) {
+fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: GameplayHandles, immortal_hyper_mode: bool) {
     let playable_area = (*world.read_resource::<PlayableArea>()).clone();
 
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
     let scale = Vector3::new(0.25, 0.25, 0.25);
 
     let player_render = SpriteRender {
-        sprite_sheet: handles.player_sprites_handle,
+        sprite_sheet: handles.player_sprites_handle.clone(),
         sprite_number: 0,
+    };
+
+    let player_hyper_render = SpriteRender {
+        sprite_sheet: handles.player_sprites_handle,
+        sprite_number: 1,
     };
 
     let boss_render = SpriteRender {
@@ -441,10 +470,15 @@ fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: Gamepla
                     .build();
             },
             EntityType::Player => {
+                let (prefab_handle, renderer) = if immortal_hyper_mode {
+                    (handles.player_hyper_prefab_handle.clone(), player_hyper_render.clone())
+                } else {
+                    (handles.player_prefab_handle.clone(), player_render.clone())
+                };
                 world
                     .create_entity()
-                    .with(handles.player_prefab_handle.clone())
-                    .with(player_render.clone())
+                    .with(prefab_handle)
+                    .with(renderer)
                     .with(transform)
                     .with(cleanup_tag)
                     .build();

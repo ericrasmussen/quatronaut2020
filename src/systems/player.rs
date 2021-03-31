@@ -104,8 +104,6 @@ impl<'s> System<'s> for PlayerSystem {
                 if character.can_fire(time.delta_seconds()) {
                     spawn_laser(sprite.clone().sprite_sheet, laser, &transform, &entities, &lazy_update);
                     // if we created a laser, play a laser sound
-                    // TODO: make sure there's not lag with the sound effect and the laser being inserted
-                    // lazily into the `world`
                     sounds.play_sound(SoundType::PlayerBlaster, &storage, audio_output.as_deref());
                 }
             }

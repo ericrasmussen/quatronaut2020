@@ -61,6 +61,7 @@ fn main() -> amethyst::Result<()> {
         current_levels: all_levels,
         sound_config: sounds,
         gameplay_mode: starting_mode,
+        immortal_hyper_mode: false,
     };
     let mut game = Application::new(
         assets,
