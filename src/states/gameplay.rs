@@ -316,16 +316,14 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         // state items that should be cleaned up (players, entities, lasers,
         // projectiles) should all be marked with `CleanupTag` and removed
         // here when this state ends
-        // note the separate scope because we're borrowing `data.world`
-        // as immutable
-        {
-            let entities = data.world.read_resource::<EntitiesRes>();
-            let cleanup_tags = data.world.read_storage::<CleanupTag>();
+        // BUG: sometimes lasers or projectiles aren't removed, despite always
+        // getting a cleanup tag
+        let entities = data.world.read_resource::<EntitiesRes>();
+        let cleanup_tags = data.world.read_storage::<CleanupTag>();
 
-            for (entity, _tag) in (&entities, &cleanup_tags).join() {
-                let err = format!("unable to delete entity: {:?}", entity);
-                entities.delete(entity).expect(&err);
-            }
+        for (entity, _tag) in (&entities, &cleanup_tags).join() {
+            let err = format!("unable to delete entity: {:?}", entity);
+            entities.delete(entity).expect(&err);
         }
     }
 }
