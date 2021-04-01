@@ -1,4 +1,3 @@
-use rand::distributions::{Distribution, Standard};
 use serde::{Deserialize, Serialize};
 
 /// This represents everything we need to know about one level in order
@@ -33,19 +32,6 @@ pub enum EntityType {
     Player,
 }
 
-/// Allows callers to randomly generate entity types for spawning
-impl Distribution<EntityType> for Standard {
-    fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> EntityType {
-        // randomly chooses 1, 2, or 3
-        let n: u32 = rng.gen_range(1, 4);
-        match n {
-            1 => EntityType::FlyingEnemy,
-            2 => EntityType::SquareEnemy,
-            _ => EntityType::Boss,
-        }
-    }
-}
-
 // entity to create, x coordinate, y coordinate
 pub type EntityRecord = (EntityType, f32, f32);
 
@@ -56,10 +42,11 @@ pub struct Levels {
     use_small_levels: bool,
 }
 
+#[derive(Debug)]
 pub enum LevelStatus {
-    TransitionTime,
     SmallLevel(LevelMetadata),
     LargeLevel(LevelMetadata),
+    TransitionTime(LevelMetadata),
     AllDone,
 }
 
@@ -69,20 +56,27 @@ impl Levels {
     // 2) an indicator we should transition to the large bg
     // 3) the next large level
     // 4?) something to indicate levels are exhausted?
-    pub fn pop(&mut self) -> LevelStatus {
+    pub fn pop(&mut self) -> Option<LevelStatus> {
         // if we have any small levels left, use that vec
         if self.use_small_levels {
             match self.small_levels.pop() {
-                Some(metadata) => LevelStatus::SmallLevel(metadata),
-                None => {
-                    self.use_small_levels = false;
-                    LevelStatus::TransitionTime
+                Some(metadata) => {
+                    // we're on the last small level and want to transition
+                    // we also don't want to use small levels next time
+                    if self.small_levels.is_empty() {
+                        self.use_small_levels = false;
+                        Some(LevelStatus::TransitionTime(metadata))
+                    } else {
+                        Some(LevelStatus::SmallLevel(metadata))
+                    }
                 },
+                // this can only be reached if there are no small levels at all
+                None => None,
             }
         } else {
             match self.large_levels.pop() {
-                Some(metadata) => LevelStatus::LargeLevel(metadata),
-                None => LevelStatus::AllDone,
+                Some(metadata) => Some(LevelStatus::LargeLevel(metadata)),
+                None => Some(LevelStatus::AllDone),
             }
         }
     }

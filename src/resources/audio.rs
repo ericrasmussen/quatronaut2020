@@ -3,7 +3,6 @@ use amethyst::{
     audio::{output::Output, OggFormat, Source, SourceHandle},
     ecs::{World, WorldExt},
 };
-//use log::info;
 use rand::{thread_rng, Rng};
 use serde::{Deserialize, Serialize};
 
@@ -16,6 +15,7 @@ pub enum SoundType {
     TriangleLock,
     ShortTransition,
     LongTransition,
+    None,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -76,6 +76,9 @@ impl Sounds {
                     (1.0, &self.short_transition)
                 },
                 SoundType::LongTransition => (1.0, &self.long_transition),
+                SoundType::None => {
+                    return;
+                },
             };
 
             if let Some(sound) = storage.get(&sound_ref) {

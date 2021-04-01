@@ -1,25 +1,14 @@
-/// This is a fun little module for describing how
-/// we manipulate the camera during our transition to
-/// the damaged background/wide-screen mode.
-/// By fun, I mostly mean overly complicated. The short and long
-/// transitions should really be separated out. Changing one or the other
-/// is likely to break something.
-use amethyst::{
-    core::math::Vector3,
-    ecs::{storage::DenseVecStorage, Component},
-};
+/// This component lets us capture information about shaking the camera,
+/// for use in certain level transitions (decided by `gameplay.rs`)
+use amethyst::ecs::{storage::DenseVecStorage, Component};
 
 use rand::{thread_rng, Rng};
-
-//use log::info;
 
 use crate::resources::audio::SoundType;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PerspectiveStatus {
-    Zooming,
-    Reversing,
-    Paused,
+    Shaking,
     Completed,
 }
 
@@ -27,9 +16,6 @@ use PerspectiveStatus::*;
 
 #[derive(Clone, Copy, Debug)]
 pub struct Perspective {
-    scale_factor: f32,
-    scale_min: f32,
-    pause_duration: f32,
     min_shake_seconds: f32,
     pub status: PerspectiveStatus,
     pub already_played_sound: bool,
@@ -40,35 +26,25 @@ impl Component for Perspective {
     type Storage = DenseVecStorage<Self>;
 }
 
+// amethyst requres `Default` for components used in systems, so
+// this ensures it's empty (no shaking or sounds) in case it's ever
+// created by amethyst and used in a system
 impl Default for Perspective {
     fn default() -> Perspective {
         Perspective {
-            scale_factor: 0.0,
-            // default minimum should be 1, i.e. don't scale a all
-            scale_min: 1.0,
-            min_shake_seconds: 0.5,
-            pause_duration: 0.0,
-            status: Zooming,
-            already_played_sound: false,
-            sound: SoundType::ShortTransition,
+            min_shake_seconds: 0.0,
+            status: Completed,
+            already_played_sound: true,
+            sound: SoundType::None,
         }
     }
 }
 
 impl Perspective {
-    pub fn new(
-        scale_factor: f32,
-        scale_min: f32,
-        min_shake_seconds: f32,
-        pause_duration: f32,
-        sound: SoundType,
-    ) -> Perspective {
+    pub fn new(min_shake_seconds: f32, sound: SoundType) -> Perspective {
         Perspective {
-            scale_factor,
-            scale_min,
             min_shake_seconds,
-            pause_duration,
-            status: Zooming,
+            status: Shaking,
             already_played_sound: false,
             sound,
         }
@@ -88,66 +64,20 @@ impl Perspective {
 
     // compute the next value by which we'll modify the z axis of
     // the camera transform (thus rotating our whole view)
-    // note that the timing and presentation all depends on scaling,
-    // so this function does not modify self.completed or self.reversing
     pub fn next_z_rotation(&mut self, time: f32) -> Option<f32> {
         match self.status {
-            Zooming => {
+            Shaking => {
+                // decrement time until we reach 0, then mark it as `Complete`
+                self.min_shake_seconds -= time;
+                if self.min_shake_seconds <= 0.0 {
+                    self.status = Completed;
+                }
                 // this is a range in radians that will shake up the camera
                 let mut rng = thread_rng();
                 let next_rotation = rng.gen_range(-0.5, 0.5);
                 Some(next_rotation * time)
             },
             _ => None,
-        }
-    }
-
-    // compute the next value by which to scale the camera. increasing
-    // the value creates a zooming out effect. this is called repeatedly
-    // by systems until it returns None
-    pub fn next_scale(&mut self, current_scale: f32, time: f32) -> Option<Vector3<f32>> {
-        match self.status {
-            // all done!
-            Completed => {
-                // self.already_played_sound = false;
-                None
-            },
-            // going back to normal scale
-            Reversing => {
-                let new_scale = current_scale + (self.scale_factor * time);
-                // we've gone too far. reset and stop!
-                if new_scale >= 1.0 {
-                    self.status = Completed;
-                    Some(Vector3::from_element(1.0))
-                // more reversing to do still
-                } else {
-                    Some(Vector3::new(new_scale, new_scale, new_scale))
-                }
-            },
-            // start reversing when enough time has elapsed, otherwise keep
-            // returning the current scale (effectively pausing the camera
-            // changes)
-            Paused => {
-                self.pause_duration -= time;
-                if self.pause_duration <= 0.0 {
-                    self.status = Reversing;
-                }
-                Some(Vector3::new(current_scale, current_scale, current_scale))
-            },
-            // still zoomin'
-            Zooming => {
-                // if we've zoomed past our threshold and have shaken the screen
-                // sufficiently, pause before reversing
-                if current_scale <= self.scale_min && self.min_shake_seconds <= 0.0 {
-                    self.status = Paused;
-                    None
-                // otherwise keep going
-                } else {
-                    self.min_shake_seconds -= time;
-                    let new_scale = current_scale - (self.scale_factor * time);
-                    Some(Vector3::new(new_scale, new_scale, new_scale))
-                }
-            },
         }
     }
 }

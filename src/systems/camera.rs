@@ -38,13 +38,6 @@ impl<'s> System<'s> for CameraShakeSystem {
                 None => transform.set_rotation_z_axis(0.0),
             };
 
-            // we also continue updating the scale as long as the `Perspective` provides
-            // Some(next_scale)
-            let current_scale = transform.scale().x;
-            if let Some(next_scale) = perspective.next_scale(current_scale, time.delta_seconds()) {
-                transform.set_scale(next_scale);
-            }
-
             // play a sound, if not played already
             if !perspective.sound_already_played() {
                 sounds.play_sound(perspective.get_sound_type(), &storage, audio_output.as_deref());
@@ -53,3 +46,11 @@ impl<'s> System<'s> for CameraShakeSystem {
         }
     }
 }
+
+// impl System Cutscene? or multiple systems
+// // we also continue updating the scale as long as the `Perspective` provides
+// // Some(next_scale)
+// let current_scale = transform.scale().x;
+// if let Some(next_scale) = perspective.next_scale(current_scale, time.delta_seconds()) {
+//     transform.set_scale(next_scale);
+// }

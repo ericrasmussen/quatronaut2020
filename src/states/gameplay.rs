@@ -173,13 +173,17 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
         // this will be used to match the type of level (if there are levels yet)
         // and other level metadata
-        let next_level_status = self.game_config.current_levels.pop();
+        let next_level_status = self
+            .game_config
+            .current_levels
+            .pop()
+            .expect("levels.ron needs at least one small level!");
 
         // setup the playable area. this is still messy but if we begin in small level mode,
         // we setup the constrained level mode
         let playable_area = match next_level_status {
-            LevelStatus::SmallLevel(_) => PlayableArea::new(dimensions.width(), dimensions.height(), true),
-            _ => PlayableArea::new(dimensions.width(), dimensions.height(), false),
+            LevelStatus::LargeLevel(_) => PlayableArea::new(dimensions.width(), dimensions.height(), false),
+            _ => PlayableArea::new(dimensions.width(), dimensions.height(), true),
         };
 
         world.insert(playable_area);
@@ -200,7 +204,11 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
                     self.large_level = true;
                     init_level(world, next_level_metadata, handles, immortal_hyper_mode)
                 },
-                LevelStatus::TransitionTime => self.game_config.gameplay_mode = GameplayMode::TransitionMode,
+                LevelStatus::TransitionTime(next_level_metadata) => {
+                    self.game_config.gameplay_mode = GameplayMode::TransitionMode;
+                    self.large_level = false;
+                    init_level(world, next_level_metadata, handles, immortal_hyper_mode)
+                },
                 LevelStatus::AllDone => self.game_config.gameplay_mode = GameplayMode::CompletedMode,
             };
         };
@@ -214,14 +222,6 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
                 dispatcher.dispatch(&data.world);
             }
         }
-
-        // since we can have potentially more than one player, this counts
-        // them and lets us treat 0 `player_lives` as game over
-        // let player_lives = {
-        //     let entities = data.world.read_resource::<EntitiesRes>();
-        //     let players = data.world.read_storage::<Player>();
-        //     (&entities, &players).join().count()
-        // };
 
         // this does two things, which is probably bad. it makes sure we have the right
         // player sprite and invulnerability settings (which can change throughout the game),
@@ -254,22 +254,26 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
         let handles = self.handles.clone().expect("failure accessing GameplayHandles struct");
 
+        let level_complete = total == 0 && self.level_is_loaded;
+
         // this branch decides whether or not to switch state. if a level is
         // loaded and all enemies are defeated, it's time to transition, otherwise
         // keep going
-        if self.game_config.gameplay_mode == GameplayMode::TransitionMode {
+        // TODO: this will be what triggers the glass breaking cutscene
+        if level_complete && self.game_config.gameplay_mode == GameplayMode::TransitionMode {
+            info!("transitioning with NO perspective");
             Trans::Replace(Box::new(TransitionState::new(
                 handles.overlay_sprite_handle,
                 self.game_config.clone(),
-                Some(Perspective::new(1.8, 0.3, 0.0, 3.0, audio::SoundType::LongTransition)),
+                None, // Some(Perspective::new(1.8, 0.3, 0.0, 3.0, audio::SoundType::LongTransition)),
             )))
         // we're in a level and all enemies are defeated -- fade out to a new level
-        } else if total == 0 && self.level_is_loaded {
+        } else if level_complete {
             // once we're in large level mode we don't transition sounds or zooming/shaking
             let new_perspective = if self.large_level {
                 None
             } else {
-                Some(Perspective::new(0.0, 1.0, 0.7, 0.0, audio::SoundType::ShortTransition))
+                Some(Perspective::new(0.5, audio::SoundType::ShortTransition))
             };
             Trans::Replace(Box::new(TransitionState::new(
                 handles.overlay_sprite_handle,

@@ -20,14 +20,11 @@ use crate::{
     components::{
         fade::{Fade, FadeStatus, Fader},
         perspective::{Perspective, PerspectiveStatus},
-        tags::BackgroundTag,
     },
     resources::gameconfig::{GameConfig, GameplayMode},
     states::{gameplay::GameplayState, paused::PausedState},
     systems::{CameraShakeSystem, FadeSystem},
 };
-
-//use log::info;
 
 /// This state will be pushed on top of `GameplayState` to give more
 /// control over level transitions, and, based on the meta level
@@ -98,13 +95,13 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
 
             // change the background image if we've zoomed all the way in
             // and are getting ready to zoom out and reveal the larger background
-            if perspective.status == PerspectiveStatus::Reversing {
-                let mut sprites = data.world.write_storage::<SpriteRender>();
-                let backgrounds = data.world.read_storage::<BackgroundTag>();
-                for (sprite, _bg) in (&mut sprites, &backgrounds).join() {
-                    sprite.sprite_number = 1;
-                }
-            }
+            // if perspective.status == PerspectiveStatus::Reversing {
+            //     let mut sprites = data.world.write_storage::<SpriteRender>();
+            //     let backgrounds = data.world.read_storage::<BackgroundTag>();
+            //     for (sprite, _bg) in (&mut sprites, &backgrounds).join() {
+            //         sprite.sprite_number = 1;
+            //     }
+            // }
             // return early if we're done with our scaling and shaking
             if perspective.status == PerspectiveStatus::Completed {
                 let mut game_config = self.game_config.clone();
@@ -127,7 +124,6 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
         }
     }
 
-    // TODO: remove the Perspective resource here too
     fn on_stop(&mut self, data: StateData<GameData>) {
         // state items that should be cleaned up (players, entities, lasers,
         // projectiles) should all be marked with `CleanupTag` and removed
