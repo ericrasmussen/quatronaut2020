@@ -13,12 +13,7 @@ Container(
         Image(
           transform: (
               id: "background",
-              x: 0.,
-              y: 0.,
-              // TODO: why do these values need to be the computed retina display values?
-              // may need separate configs for retina displays
-              width: 2880.,
-              height: 1710.,
+              stretch: XY( x_margin: 0., y_margin: 0., keep_aspect_ratio: false),
               tab_order: 1,
               anchor: Middle,
           ),
