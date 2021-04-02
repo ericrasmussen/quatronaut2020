@@ -1987,6 +1987,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "matrixmultiply"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1300bdbea33ec2836b01ff1f5a6eed8bad66d0c31f94d9b7993407a8b054c3a1"
+dependencies = [
+ "rawpointer",
+]
+
+[[package]]
 name = "maybe-uninit"
 version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2102,7 +2111,7 @@ dependencies = [
  "alga",
  "approx 0.3.2",
  "generic-array 0.13.2",
- "matrixmultiply",
+ "matrixmultiply 0.2.3",
  "mint",
  "num-complex 0.2.4",
  "num-rational 0.2.4",
@@ -2116,19 +2125,36 @@ dependencies = [
 
 [[package]]
 name = "nalgebra"
-version = "0.23.0"
+version = "0.23.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "02f2c3d9ba22f24e44de8652a9745d5985ce158a5081b04e7e75a5091ba7ac43"
+checksum = "c9bd52e9c9922d5702d5c2a105ceacc3c1206e781d3d130f4d2b7ad5f43c144b"
 dependencies = [
  "approx 0.4.0",
  "generic-array 0.14.4",
- "matrixmultiply",
+ "matrixmultiply 0.2.3",
  "num-complex 0.3.0",
  "num-rational 0.3.0",
  "num-traits 0.2.12",
  "rand 0.7.3",
  "rand_distr 0.3.0",
- "simba",
+ "simba 0.3.1",
+ "typenum",
+]
+
+[[package]]
+name = "nalgebra"
+version = "0.25.4"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c70c9e8c5f213c8e93fc8c112ade4edd3ee62062fb897776c23dcebac7932900"
+dependencies = [
+ "approx 0.4.0",
+ "generic-array 0.14.4",
+ "matrixmultiply 0.3.0",
+ "num-complex 0.3.0",
+ "num-rational 0.3.0",
+ "num-traits 0.2.12",
+ "serde",
+ "simba 0.4.0",
  "typenum",
 ]
 
@@ -2142,10 +2168,10 @@ dependencies = [
  "bitflags",
  "downcast-rs",
  "either",
- "nalgebra 0.23.0",
+ "nalgebra 0.23.2",
  "num-traits 0.2.12",
  "petgraph",
- "simba",
+ "simba 0.3.1",
  "slab",
  "slotmap",
  "smallvec 1.4.2",
@@ -2668,7 +2694,7 @@ dependencies = [
  "amethyst_rendy",
  "derive-new",
  "log",
- "nalgebra 0.23.0",
+ "nalgebra 0.25.4",
  "ncollide2d",
  "rand 0.7.3",
  "serde",
@@ -3551,6 +3577,18 @@ name = "simba"
 version = "0.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "17bfe642b1728a6e89137ad428ef5d4738eca4efaba9590f9e110b8944028621"
+dependencies = [
+ "approx 0.4.0",
+ "num-complex 0.3.0",
+ "num-traits 0.2.12",
+ "paste 1.0.2",
+]
+
+[[package]]
+name = "simba"
+version = "0.4.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5132a955559188f3d13c9ba831e77c802ddc8782783f050ed0c52f5988b95f4c"
 dependencies = [
  "approx 0.4.0",
  "num-complex 0.3.0",
