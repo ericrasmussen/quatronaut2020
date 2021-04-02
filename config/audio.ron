@@ -42,5 +42,7 @@
     "sfx/Triangle_lockon_01_v03.ogg",
   ],
   short_transition: "sfx/Transition_02_v01.ogg",
+  // this might not be needed now
   long_transition: "sfx/Transition_01_v01.ogg",
+  glass_transition: "sfx/Quatronaut_-_glassbreak_v01.ogg",
 )

@@ -1,6 +1,6 @@
 pub use self::{
     attacked::{AttackedSystem, ProjectileHitSystem},
-    camera::CameraShakeSystem,
+    camera::{CameraShakeSystem, CameraZoomSystem},
     collision::CollisionSystem,
     fade::FadeSystem,
     laser::LaserSystem,

@@ -29,6 +29,7 @@ use crate::entities::{
 use crate::{
     components::{
         collider::Collider,
+        cutscene::Cutscene,
         launcher::Launcher,
         movement::Movement,
         perspective::Perspective,
@@ -261,11 +262,12 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         // keep going
         // TODO: this will be what triggers the glass breaking cutscene
         if level_complete && self.game_config.gameplay_mode == GameplayMode::TransitionMode {
-            info!("transitioning with NO perspective");
+            info!("transitioning with cutscene");
             Trans::Replace(Box::new(TransitionState::new(
                 handles.overlay_sprite_handle,
                 self.game_config.clone(),
-                None, // Some(Perspective::new(1.8, 0.3, 0.0, 3.0, audio::SoundType::LongTransition)),
+                None,
+                Some(Cutscene::new(15.0, 0.3, 0.0, 45.0))
             )))
         // we're in a level and all enemies are defeated -- fade out to a new level
         } else if level_complete {
@@ -278,8 +280,8 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             Trans::Replace(Box::new(TransitionState::new(
                 handles.overlay_sprite_handle,
                 self.game_config.clone(),
-                // default perspective won't zoom in and out
                 new_perspective,
+                None,
             )))
         // we've finished the game! you did it! you're awesome! make sure this
         // comes before the game over check, because technically there are 0 players

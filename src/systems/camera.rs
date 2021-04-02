@@ -7,7 +7,7 @@ use amethyst::{
 };
 
 use crate::{
-    components::{perspective::Perspective, tags::CameraTag},
+    components::{cutscene::Cutscene, perspective::Perspective, tags::CameraTag},
     resources::audio::Sounds,
 };
 
@@ -47,10 +47,38 @@ impl<'s> System<'s> for CameraShakeSystem {
     }
 }
 
-// impl System Cutscene? or multiple systems
-// // we also continue updating the scale as long as the `Perspective` provides
-// // Some(next_scale)
-// let current_scale = transform.scale().x;
-// if let Some(next_scale) = perspective.next_scale(current_scale, time.delta_seconds()) {
-//     transform.set_scale(next_scale);
-// }
+#[derive(SystemDesc)]
+pub struct CameraZoomSystem;
+
+impl<'s> System<'s> for CameraZoomSystem {
+    #[allow(clippy::type_complexity)]
+    type SystemData = (
+        WriteStorage<'s, Transform>,
+        ReadStorage<'s, CameraTag>,
+        Write<'s, Cutscene>,
+        Read<'s, Time>,
+        Read<'s, AssetStorage<Source>>,
+        ReadExpect<'s, Sounds>,
+        Option<Read<'s, Output>>,
+    );
+
+    fn run(
+        &mut self,
+        (mut transforms, cameras, mut cutscene, time, storage, sounds, audio_output): Self::SystemData,
+    ) {
+        for (transform, _camera) in (&mut transforms, &cameras).join() {
+            // we also continue updating the scale as long as the `Cutscene` provides
+            // Some(next_scale)
+            let current_scale = transform.scale().x;
+            if let Some(next_scale) = cutscene.next_scale(current_scale, time.delta_seconds()) {
+                transform.set_scale(next_scale);
+            }
+
+            // play a sound, if not played already
+            if !cutscene.sound_already_played() {
+                sounds.play_sound(cutscene.get_sound_type(), &storage, audio_output.as_deref());
+                cutscene.played_sound();
+            }
+        }
+    }
+}

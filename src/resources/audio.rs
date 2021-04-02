@@ -15,6 +15,7 @@ pub enum SoundType {
     TriangleLock,
     ShortTransition,
     LongTransition,
+    GlassTransition,
     None,
 }
 
@@ -28,6 +29,7 @@ pub struct SoundConfig {
     triangle_lock: Vec<String>,
     short_transition: String,
     long_transition: String,
+    glass_transition: String,
 }
 
 pub struct Sounds {
@@ -39,6 +41,7 @@ pub struct Sounds {
     pub triangle_lock: Vec<SourceHandle>,
     pub short_transition: SourceHandle,
     pub long_transition: SourceHandle,
+    pub glass_transition: SourceHandle,
 }
 
 impl Sounds {
@@ -76,6 +79,7 @@ impl Sounds {
                     (1.0, &self.short_transition)
                 },
                 SoundType::LongTransition => (1.0, &self.long_transition),
+                SoundType::GlassTransition => (1.0, &self.glass_transition),
                 SoundType::None => {
                     return;
                 },
@@ -130,6 +134,7 @@ pub fn initialize_audio(world: &mut World, config: &SoundConfig) {
                 .collect(),
             short_transition: load_audio_track(&loader, &world, &config.short_transition),
             long_transition: load_audio_track(&loader, &world, &config.long_transition),
+            glass_transition: load_audio_track(&loader, &world, &config.glass_transition),
         }
     };
 

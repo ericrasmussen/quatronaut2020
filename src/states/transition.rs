@@ -19,17 +19,26 @@ use derive_new::new;
 use crate::{
     components::{
         fade::{Fade, FadeStatus, Fader},
+        cutscene::{Cutscene, CutsceneStatus},
         perspective::{Perspective, PerspectiveStatus},
+        tags::BackgroundTag,
     },
     resources::gameconfig::{GameConfig, GameplayMode},
     states::{gameplay::GameplayState, paused::PausedState},
-    systems::{CameraShakeSystem, FadeSystem},
+    systems::{CameraShakeSystem, CameraZoomSystem, FadeSystem},
 };
 
-/// This state will be pushed on top of `GameplayState` to give more
-/// control over level transitions, and, based on the meta level
-/// resource, display some kind of cutscene (really, just moving the
-/// player to an exit marker on completion)
+/// This state offers different ways to transition between levels.
+/// If it's given a perspective shift, it'll rotate the camera on the z-axis
+/// and play a sound. If it's given a cutscene, it'll zoom in, break some
+/// glass, and zoom out to reveal a new background.
+/// Otherwise it'll just do a quick fade to black and back.
+/// NOTE: I dunno what'll happen if you give it a perspective shift and a
+/// cutscene. Probably two sound effects at the same time, rotating and zooming
+/// camera, and one of the two will cause an exit before the other is done.
+/// So don't do that.
+/// Or you know, if you're reading this, maybe just make a new enum or a
+/// TransitionLike trait. I would, but I'm really busy writing comments right now.
 #[derive(new)]
 pub struct TransitionState<'a, 'b> {
     #[new(default)]
@@ -37,6 +46,7 @@ pub struct TransitionState<'a, 'b> {
     pub overlay_sprite_handle: Handle<SpriteSheet>,
     pub game_config: GameConfig,
     pub perspective_shift: Option<Perspective>,
+    pub cutscene: Option<Cutscene>,
 }
 
 impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
@@ -48,6 +58,7 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
 
         dispatcher_builder.add(FadeSystem, "fade_system", &[]);
         dispatcher_builder.add(CameraShakeSystem, "camera_shake_system", &[]);
+        dispatcher_builder.add(CameraZoomSystem, "camera_zoom_system", &[]);
 
         // builds and sets up the dispatcher
         let mut dispatcher = dispatcher_builder
@@ -60,6 +71,11 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
         world.register::<Perspective>();
         if let Some(perspective) = self.perspective_shift {
             world.insert(perspective);
+        }
+
+        world.register::<Cutscene>();
+        if let Some(cutscene) = self.cutscene {
+            world.insert(cutscene);
         }
 
         // this is all a little over complicated, but the status is a shared
@@ -81,10 +97,6 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
             self.perspective_shift,
         );
     }
-
-    // TODO: maybe check for the Perspective and then go back to gameplay (damaged art
-    // mode)
-    // should the actual background change here though?
     fn update(&mut self, data: &mut StateData<'_, GameData<'_, '_>>) -> SimpleTrans {
         if let Some(dispatcher) = self.dispatcher.as_mut() {
             dispatcher.dispatch(&data.world);
@@ -93,15 +105,6 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
         if let Some(_p) = &self.perspective_shift {
             let perspective = data.world.read_resource::<Perspective>();
 
-            // change the background image if we've zoomed all the way in
-            // and are getting ready to zoom out and reveal the larger background
-            // if perspective.status == PerspectiveStatus::Reversing {
-            //     let mut sprites = data.world.write_storage::<SpriteRender>();
-            //     let backgrounds = data.world.read_storage::<BackgroundTag>();
-            //     for (sprite, _bg) in (&mut sprites, &backgrounds).join() {
-            //         sprite.sprite_number = 1;
-            //     }
-            // }
             // return early if we're done with our scaling and shaking
             if perspective.status == PerspectiveStatus::Completed {
                 let mut game_config = self.game_config.clone();
@@ -110,9 +113,31 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
             }
         }
 
+        if let Some(_c) = &self.cutscene {
+            let cutscene = data.world.read_resource::<Cutscene>();
+
+            // change the background image if we've zoomed all the way in
+            // and are getting ready to zoom out and reveal the larger background
+            if cutscene.status == CutsceneStatus::Reversing {
+                let mut sprites = data.world.write_storage::<SpriteRender>();
+                let backgrounds = data.world.read_storage::<BackgroundTag>();
+                for (sprite, _bg) in (&mut sprites, &backgrounds).join() {
+                    sprite.sprite_number = 1;
+                }
+            } else if cutscene.status == CutsceneStatus::Completed {
+                let mut game_config = self.game_config.clone();
+                game_config.gameplay_mode = GameplayMode::LevelMode;
+                return Trans::Replace(Box::new(GameplayState::new(game_config)));
+            }
+        }
+
         let mut fade_status = data.world.write_resource::<FadeStatus>();
 
-        if fade_status.is_completed() {
+        // if we have any kind of non-fade transition, they determine when to switch
+        // states
+        let managed_scene = self.perspective_shift.is_some() || self.cutscene.is_some();
+
+        if fade_status.is_completed() && !managed_scene {
             fade_status.clear();
 
             let mut game_config = self.game_config.clone();
@@ -141,6 +166,13 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
         if let Some(_perspective) = &self.perspective_shift {
             let perspectives = data.world.read_storage::<Perspective>();
             for (entity, _perspective) in (&entities, &perspectives).join() {
+                let err = format!("unable to delete entity: {:?}", entity);
+                entities.delete(entity).expect(&err);
+            }
+        }
+        if let Some(_cutscene) = &self.cutscene {
+            let cutscenes = data.world.read_storage::<Cutscene>();
+            for (entity, _perspective) in (&entities, &cutscenes).join() {
                 let err = format!("unable to delete entity: {:?}", entity);
                 entities.delete(entity).expect(&err);
             }
