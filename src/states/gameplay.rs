@@ -181,10 +181,14 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             .expect("levels.ron needs at least one small level!");
 
         // setup the playable area. this is still messy but if we begin in small level mode,
-        // we setup the constrained level mode
+        // we setup the constrained level mode. hidpi_factor should be 1.0 for a normal screen
+        // and something higher for hidpi/retina displays, which affect the number of pixels in
+        // the background images
+        let is_hidpi = dimensions.hidpi_factor() > 1.0;
+        //info!("high dpi factor bool: {:?}", is_hidpi);
         let playable_area = match next_level_status {
-            LevelStatus::LargeLevel(_) => PlayableArea::new(dimensions.width(), dimensions.height(), false),
-            _ => PlayableArea::new(dimensions.width(), dimensions.height(), true),
+            LevelStatus::LargeLevel(_) => PlayableArea::new(dimensions.width(), dimensions.height(), false, is_hidpi),
+            _ => PlayableArea::new(dimensions.width(), dimensions.height(), true, is_hidpi),
         };
 
         world.insert(playable_area);
