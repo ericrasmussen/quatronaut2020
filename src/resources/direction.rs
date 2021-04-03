@@ -1,6 +1,6 @@
+use rand::distributions::{Distribution, Standard};
 use serde::{Deserialize, Serialize};
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, PI};
-use rand::distributions::{Distribution, Standard};
 
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -34,7 +34,6 @@ impl Distribution<Direction> for Standard {
         }
     }
 }
-
 
 // the sprites in this game default to facing up.
 // if that changes, so should this

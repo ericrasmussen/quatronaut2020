@@ -62,10 +62,7 @@ impl<'s> System<'s> for CameraZoomSystem {
         Option<Read<'s, Output>>,
     );
 
-    fn run(
-        &mut self,
-        (mut transforms, cameras, mut cutscene, time, storage, sounds, audio_output): Self::SystemData,
-    ) {
+    fn run(&mut self, (mut transforms, cameras, mut cutscene, time, storage, sounds, audio_output): Self::SystemData) {
         for (transform, _camera) in (&mut transforms, &cameras).join() {
             // we also continue updating the scale as long as the `Cutscene` provides
             // Some(next_scale)

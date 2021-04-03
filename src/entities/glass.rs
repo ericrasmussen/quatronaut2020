@@ -1,7 +1,5 @@
 /// This module is for
-use amethyst::{
-    ecs::prelude::{Component, DenseVecStorage},
-};
+use amethyst::ecs::prelude::{Component, DenseVecStorage};
 
 use crate::resources::direction::Direction;
 

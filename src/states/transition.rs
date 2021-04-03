@@ -20,8 +20,8 @@ use rand::{thread_rng, Rng};
 
 use crate::{
     components::{
-        fade::{Fade, FadeStatus, Fader},
         cutscene::{Cutscene, CutsceneStatus},
+        fade::{Fade, FadeStatus, Fader},
         perspective::{Perspective, PerspectiveStatus},
         tags::{BackgroundTag, CleanupTag},
     },
@@ -32,7 +32,7 @@ use crate::{
         playablearea::PlayableArea,
     },
     states::{gameplay::GameplayState, paused::PausedState},
-    systems::{CameraShakeSystem, CameraZoomSystem, GlassSystem, FadeSystem},
+    systems::{CameraShakeSystem, CameraZoomSystem, FadeSystem, GlassSystem},
 };
 
 use log::info;
@@ -111,6 +111,7 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
             self.perspective_shift,
         );
     }
+
     fn update(&mut self, data: &mut StateData<'_, GameData<'_, '_>>) -> SimpleTrans {
         if let Some(dispatcher) = self.dispatcher.as_mut() {
             dispatcher.dispatch(&data.world);
@@ -271,7 +272,6 @@ fn init_overlay(
 }
 
 fn init_glass(world: &mut World, glass_sprite_handle: Handle<SpriteSheet>) {
-
     let playable_area = (*world.read_resource::<PlayableArea>()).clone();
 
     let base_rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
@@ -279,8 +279,8 @@ fn init_glass(world: &mut World, glass_sprite_handle: Handle<SpriteSheet>) {
     info!("inserting some glass shards now!");
 
     // the step by is mostly arbitrary based on what seems to look ok
-    for x_coord in (-4..101).step_by(4) {
-        for y_coord in (-4..101).step_by(4) {
+    for x_coord in (-4 .. 101).step_by(4) {
+        for y_coord in (-4 .. 101).step_by(4) {
             let cleanup_tag = CleanupTag {};
 
             let mut rng = thread_rng();
@@ -323,7 +323,6 @@ fn init_glass(world: &mut World, glass_sprite_handle: Handle<SpriteSheet>) {
                 .with(transform)
                 .with(cleanup_tag)
                 .build();
-
         }
     }
 }

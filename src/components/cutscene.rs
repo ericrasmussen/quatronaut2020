@@ -65,12 +65,7 @@ impl Default for Cutscene {
 }
 
 impl Cutscene {
-    pub fn new(
-        zoom_in_duration: f32,
-        zoom_in_scale: f32,
-        spawn_duration: f32,
-        zoom_out_duration: f32,
-    ) -> Cutscene {
+    pub fn new(zoom_in_duration: f32, zoom_in_scale: f32, spawn_duration: f32, zoom_out_duration: f32) -> Cutscene {
         Cutscene {
             status: Zooming, // zooming in starts the cutscene
             zoom_in_duration,
@@ -100,9 +95,7 @@ impl Cutscene {
     pub fn next_scale(&mut self, current_scale: f32, time: f32) -> Option<Vector3<f32>> {
         match self.status {
             // all done!
-            Completed => {
-                None
-            },
+            Completed => None,
             // going back to normal scale
             Reversing => {
                 let scale_factor = (1.0 - self.zoom_in_scale) / self.zoom_out_duration;
