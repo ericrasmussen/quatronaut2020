@@ -3,6 +3,7 @@ pub use self::{
     camera::{CameraShakeSystem, CameraZoomSystem},
     collision::CollisionSystem,
     fade::FadeSystem,
+    glass::GlassSystem,
     laser::LaserSystem,
     movement::{MovementTrackingSystem, TransformUpdateSystem},
     player::PlayerSystem,
@@ -13,6 +14,7 @@ mod attacked;
 mod camera;
 mod collision;
 mod fade;
+mod glass;
 mod laser;
 mod movement;
 mod player;

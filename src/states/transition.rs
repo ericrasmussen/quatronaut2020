@@ -25,13 +25,14 @@ use crate::{
         perspective::{Perspective, PerspectiveStatus},
         tags::{BackgroundTag, CleanupTag},
     },
+    entities::glass::Glass,
     resources::{
         direction::Direction,
         gameconfig::{GameConfig, GameplayMode},
         playablearea::PlayableArea,
     },
     states::{gameplay::GameplayState, paused::PausedState},
-    systems::{CameraShakeSystem, CameraZoomSystem, FadeSystem},
+    systems::{CameraShakeSystem, CameraZoomSystem, GlassSystem, FadeSystem},
 };
 
 use log::info;
@@ -71,6 +72,7 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
         dispatcher_builder.add(FadeSystem, "fade_system", &[]);
         dispatcher_builder.add(CameraShakeSystem, "camera_shake_system", &[]);
         dispatcher_builder.add(CameraZoomSystem, "camera_zoom_system", &[]);
+        dispatcher_builder.add(GlassSystem, "glass_system", &[]);
 
         // builds and sets up the dispatcher
         let mut dispatcher = dispatcher_builder
@@ -307,9 +309,16 @@ fn init_glass(world: &mut World, glass_sprite_handle: Handle<SpriteSheet>) {
 
             // rotate based on the randomly chosen `Direction`
             transform.set_rotation_2d(rotation);
+
+            // create the glass entity (systems will use this to decide how to move it)
+            // admittedly speed is still a pretty arbitrary unit here, but the player
+            // is 400 and lasers are 800, so something faster makes the most sense
+            let speed: f32 = rng.gen_range(1000.0, 2000.0);
+            let glass = Glass::new(dir, speed);
+
             world
                 .create_entity()
-                //.with(glass_component)
+                .with(glass)
                 .with(render)
                 .with(transform)
                 .with(cleanup_tag)

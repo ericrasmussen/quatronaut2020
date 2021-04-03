@@ -5,40 +5,38 @@ use amethyst::{
 };
 
 use crate::{
-    entities::laser::Laser,
+    entities::glass::Glass,
     resources::{direction::Direction, playablearea::PlayableArea},
 };
 
 use log::info;
 
-// this system is concerned only with lasers that have already been spawned.
-// the entity exists but the transform needs to be continuously updated based
-// on the direction.
+// this system sends glass flying off in whatever ``glass.direction`` they
+// have, at their given ``glass.speed``
 // if it collides with a border it should also be destroyed.
 #[derive(SystemDesc)]
-pub struct LaserSystem;
+pub struct GlassSystem;
 
-impl<'s> System<'s> for LaserSystem {
+impl<'s> System<'s> for GlassSystem {
     type SystemData = (
         WriteStorage<'s, Transform>,
-        WriteStorage<'s, Laser>,
+        WriteStorage<'s, Glass>,
         Entities<'s>,
         Read<'s, Time>,
         Read<'s, PlayableArea>,
     );
 
-    fn run(&mut self, (mut transforms, lasers, entities, time, playable_area): Self::SystemData) {
-        for (entity, laser, transform) in (&entities, &lasers, &mut transforms).join() {
+    fn run(&mut self, (mut transforms, glass_shards, entities, time, playable_area): Self::SystemData) {
+        for (entity, glass, transform) in (&entities, &glass_shards, &mut transforms).join() {
+            // mostly stolen from laser.rs. ideally each glass struct would have a closure
+            // for trans.<var> <op> speed, which would then be multiplied by delta seconds here
             let &trans = transform.translation();
-            let neg_x = trans.x - laser.speed * time.delta_seconds();
-            let neg_y = trans.y - laser.speed * time.delta_seconds();
-            let pos_x = trans.x + laser.speed * time.delta_seconds();
-            let pos_y = trans.y + laser.speed * time.delta_seconds();
+            let neg_x = trans.x - glass.speed * time.delta_seconds();
+            let neg_y = trans.y - glass.speed * time.delta_seconds();
+            let pos_x = trans.x + glass.speed * time.delta_seconds();
+            let pos_y = trans.y + glass.speed * time.delta_seconds();
 
-            // probably no reason to compute this every frame for every laser
-            // it'd be easier to have the laser track `.next_change` or something
-            // similar
-            match &laser.direction {
+            match &glass.direction {
                 Direction::Left => {
                     transform.set_translation_x(neg_x);
                 },

@@ -268,7 +268,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
                 handles.glass_sprite_handle,
                 self.game_config.clone(),
                 None,
-                Some(Cutscene::new(0.5, 0.3, 5.0, 4.0))
+                Some(Cutscene::new(0.5, 0.4, 5.0, 2.0))
             )))
         // we're in a level and all enemies are defeated -- fade out to a new level
         } else if level_complete {
