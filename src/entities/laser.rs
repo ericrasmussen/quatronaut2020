@@ -1,7 +1,6 @@
 /// This module includes the laser component creation, laser entity,
 /// and the Direction enum used for rotating the sprite and determining
 /// velocity.
-/// If we need to reuse Direction it can be turned into a separate component.
 use amethyst::{
     core::Transform,
     ecs::prelude::{Component, DenseVecStorage, Entities, Entity, LazyUpdate, ReadExpect},
@@ -17,7 +16,7 @@ use crate::{components::tags::CleanupTag, resources::direction::Direction};
 /// The systems/player.rs file determines, based on player input, when to
 /// fire lasers.
 /// The systems/laser.rs module is responsible for updating the laser position
-/// and eventually destroying it. It will eventually be used for collision detection.
+/// and eventually destroying it.
 #[derive(Debug)]
 pub struct Laser {
     pub direction: Direction,
@@ -58,10 +57,9 @@ impl Component for Laser {
 // this is used by systems/player.rs to create lasers whenever the player fires
 // them. the lazy_update usage is from the space-menace game example and may
 // not be required.
-// BIG TODO: we should not be borrowing the sprite sheet handle from the player.
-// it should be available as a separate game resource and used as a prefab or
-// otherwise found in the world. this implementation ties the laser image to
-// the sprite sheet being used by the player.
+// UNFORTUNATE: this implementation ties the laser image to
+// the sprite sheet being used by the player. Ideally we'd have some other way
+// to get the correct sprite.
 pub fn spawn_laser(
     sprite_sheet_handle: SpriteSheetHandle,
     laser: Laser,
@@ -69,10 +67,11 @@ pub fn spawn_laser(
     entities: &Entities,
     lazy_update: &ReadExpect<LazyUpdate>,
 ) {
-    // an incorrect sprite number here will lead to a memory leak
+    // an incorrect sprite number here will lead to a memory leak. this should
+    // correspond to the position of the laser sprite in sprite_sheet.png
     let sprite_render = SpriteRender {
         sprite_sheet: sprite_sheet_handle,
-        sprite_number: 2,
+        sprite_number: 3,
     };
 
     let mut transform = player_transform.clone();

@@ -29,6 +29,7 @@ use crate::entities::{
 use crate::{
     components::{
         collider::Collider,
+        cutscene::Cutscene,
         launcher::Launcher,
         movement::Movement,
         perspective::Perspective,
@@ -56,6 +57,10 @@ pub struct GameplayState<'a, 'b> {
     // this is mostly for use in creating a new menu, but
     // there might be better options (like Trans::Pop)
     pub game_config: GameConfig,
+
+    // useful to know the level status for choosing transitions
+    #[new(default)]
+    pub large_level: bool,
 
     // default initializes this value with false
     #[new(default)]
@@ -134,6 +139,10 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             loader.load("prefabs/player.ron", RonFormat, &mut self.progress_counter)
         });
 
+        let player_hyper_prefab_handle = world.exec(|loader: PrefabLoader<'_, PlayerPrefab>| {
+            loader.load("prefabs/player_hyper.ron", RonFormat, &mut self.progress_counter)
+        });
+
         let boss_prefab_handle = world.exec(|loader: PrefabLoader<'_, EnemyPrefab>| {
             loader.load("prefabs/boss.ron", RonFormat, &mut self.progress_counter)
         });
@@ -145,6 +154,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             enemy_prefab_handle,
             flying_enemy_prefab_handle,
             player_prefab_handle,
+            player_hyper_prefab_handle,
             boss_prefab_handle,
         );
         self.handles = Some(gameplay_handles);
@@ -164,13 +174,21 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
         // this will be used to match the type of level (if there are levels yet)
         // and other level metadata
-        let next_level_status = self.game_config.current_levels.pop();
+        let next_level_status = self
+            .game_config
+            .current_levels
+            .pop()
+            .expect("levels.ron needs at least one small level!");
 
         // setup the playable area. this is still messy but if we begin in small level mode,
-        // we setup the constrained level mode
+        // we setup the constrained level mode. hidpi_factor should be 1.0 for a normal screen
+        // and something higher for hidpi/retina displays, which affect the number of pixels in
+        // the background images
+        let is_hidpi = dimensions.hidpi_factor() > 1.0;
+        //info!("high dpi factor bool: {:?}", is_hidpi);
         let playable_area = match next_level_status {
-            LevelStatus::SmallLevel(_) => PlayableArea::new(dimensions.width(), dimensions.height(), true),
-            _ => PlayableArea::new(dimensions.width(), dimensions.height(), false),
+            LevelStatus::LargeLevel(_) => PlayableArea::new(dimensions.width(), dimensions.height(), false, is_hidpi),
+            _ => PlayableArea::new(dimensions.width(), dimensions.height(), true, is_hidpi),
         };
 
         world.insert(playable_area);
@@ -180,11 +198,22 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
         let handles = self.handles.clone().expect("failure accessing GameplayHandles struct");
 
+        let immortal_hyper_mode = self.game_config.immortal_hyper_mode;
         if let GameplayMode::LevelMode = &self.game_config.gameplay_mode {
             match next_level_status {
-                LevelStatus::SmallLevel(next_level_metadata) => init_level(world, next_level_metadata, handles),
-                LevelStatus::LargeLevel(next_level_metadata) => init_level(world, next_level_metadata, handles),
-                LevelStatus::TransitionTime => self.game_config.gameplay_mode = GameplayMode::TransitionMode,
+                LevelStatus::SmallLevel(next_level_metadata) => {
+                    self.large_level = false;
+                    init_level(world, next_level_metadata, handles, immortal_hyper_mode)
+                },
+                LevelStatus::LargeLevel(next_level_metadata) => {
+                    self.large_level = true;
+                    init_level(world, next_level_metadata, handles, immortal_hyper_mode)
+                },
+                LevelStatus::TransitionTime(next_level_metadata) => {
+                    self.game_config.gameplay_mode = GameplayMode::TransitionMode;
+                    self.large_level = false;
+                    init_level(world, next_level_metadata, handles, immortal_hyper_mode)
+                },
                 LevelStatus::AllDone => self.game_config.gameplay_mode = GameplayMode::CompletedMode,
             };
         };
@@ -199,12 +228,18 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             }
         }
 
-        // since we can have potentially more than one player, this counts
-        // them and lets us treat 0 `player_lives` as game over
+        // this does two things, which is probably bad. it makes sure we have the right
+        // player sprite and invulnerability settings (which can change throughout the game),
+        // and then returns the remaining number of player lives (used down below)
         let player_lives = {
             let entities = data.world.read_resource::<EntitiesRes>();
-            let enemies = data.world.read_storage::<Player>();
-            (&entities, &enemies).join().count()
+            let mut sprites = data.world.write_storage::<SpriteRender>();
+            let mut players = data.world.write_storage::<Player>();
+            for (_entity, sprite, player) in (&entities, &mut sprites, &mut players).join() {
+                player.invulnerable = self.game_config.immortal_hyper_mode;
+                sprite.sprite_number = if self.game_config.immortal_hyper_mode { 1 } else { 0 };
+            }
+            (&entities, &players).join().count()
         };
 
         // this removes the need to track a count of enemies and have multiple
@@ -224,20 +259,34 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
         let handles = self.handles.clone().expect("failure accessing GameplayHandles struct");
 
+        let level_complete = total == 0 && self.level_is_loaded;
+
         // this branch decides whether or not to switch state. if a level is
         // loaded and all enemies are defeated, it's time to transition, otherwise
         // keep going
-        if self.game_config.gameplay_mode == GameplayMode::TransitionMode {
-            Trans::Switch(Box::new(TransitionState::new(
+        // TODO: this will be what triggers the glass breaking cutscene
+        if level_complete && self.game_config.gameplay_mode == GameplayMode::TransitionMode {
+            info!("transitioning with cutscene");
+            Trans::Replace(Box::new(TransitionState::new(
                 handles.overlay_sprite_handle,
+                handles.glass_sprite_handle,
                 self.game_config.clone(),
-                Some(Perspective::new(1.8, 0.3, audio::SoundType::LongTransition)),
+                None,
+                Some(Cutscene::new(0.5, 0.4, 5.0, 2.0)),
             )))
         // we're in a level and all enemies are defeated -- fade out to a new level
-        } else if total == 0 && self.level_is_loaded {
-            Trans::Switch(Box::new(TransitionState::new(
+        } else if level_complete {
+            // once we're in large level mode we don't transition sounds or zooming/shaking
+            let new_perspective = if self.large_level {
+                None
+            } else {
+                Some(Perspective::new(0.5, audio::SoundType::ShortTransition))
+            };
+            Trans::Replace(Box::new(TransitionState::new(
                 handles.overlay_sprite_handle,
+                handles.glass_sprite_handle,
                 self.game_config.clone(),
+                new_perspective,
                 None,
             )))
         // we've finished the game! you did it! you're awesome! make sure this
@@ -248,7 +297,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             Trans::Replace(Box::new(AllDone::new(self.game_config.clone(), true)))
         // the level is still going and you ran out of lives. keep tryin'
         } else if self.level_is_loaded && player_lives == 0 {
-            info!("YOU LOSE!");
+            info!("try again!");
             Trans::Replace(Box::new(AllDone::new(self.game_config.clone(), false)))
         } else {
             Trans::None
@@ -266,6 +315,10 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             if is_key_down(&event, VirtualKeyCode::P) {
                 return Trans::Push(Box::new(PausedState));
             }
+            if is_key_down(&event, VirtualKeyCode::G) {
+                self.game_config.immortal_hyper_mode = !self.game_config.immortal_hyper_mode;
+                return Trans::None;
+            }
         }
         // no state changes required
         Trans::None
@@ -275,16 +328,14 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         // state items that should be cleaned up (players, entities, lasers,
         // projectiles) should all be marked with `CleanupTag` and removed
         // here when this state ends
-        // note the separate scope because we're borrowing `data.world`
-        // as immutable
-        {
-            let entities = data.world.read_resource::<EntitiesRes>();
-            let cleanup_tags = data.world.read_storage::<CleanupTag>();
+        // BUG: sometimes lasers or projectiles aren't removed, despite always
+        // getting a cleanup tag
+        let entities = data.world.read_resource::<EntitiesRes>();
+        let cleanup_tags = data.world.read_storage::<CleanupTag>();
 
-            for (entity, _tag) in (&entities, &cleanup_tags).join() {
-                let err = format!("unable to delete entity: {:?}", entity);
-                entities.delete(entity).expect(&err);
-            }
+        for (entity, _tag) in (&entities, &cleanup_tags).join() {
+            let err = format!("unable to delete entity: {:?}", entity);
+            entities.delete(entity).expect(&err);
         }
     }
 }
@@ -294,11 +345,11 @@ fn init_camera(world: &mut World, dimensions: &ScreenDimensions) {
     // the entire screen
     let mut transform = Transform::default();
     transform.set_translation_xyz(dimensions.width() * 0.5, dimensions.height() * 0.5, 1.);
-    info!(
-        "computed dimensions: {:?} x {:?}",
-        dimensions.width(),
-        dimensions.height()
-    );
+    // info!(
+    //     "computed dimensions: {:?} x {:?}",
+    //     dimensions.width(),
+    //     dimensions.height()
+    // );
     // many amethyst examples show using dimensions here, but it turns out we want the
     // intended dimensions (say, based on sprite sizes) and not the computed dimensions
     // (which are affected by hidpi and other factors, and may not be what we intended)
@@ -354,15 +405,21 @@ fn change_background(world: &mut World, level_status: &LevelStatus) {
         sprite.sprite_number = sprite_number;
     }
 }
-fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: GameplayHandles) {
+
+fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: GameplayHandles, immortal_hyper_mode: bool) {
     let playable_area = (*world.read_resource::<PlayableArea>()).clone();
 
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
     let scale = Vector3::new(0.25, 0.25, 0.25);
 
     let player_render = SpriteRender {
-        sprite_sheet: handles.player_sprites_handle,
+        sprite_sheet: handles.player_sprites_handle.clone(),
         sprite_number: 0,
+    };
+
+    let player_hyper_render = SpriteRender {
+        sprite_sheet: handles.player_sprites_handle,
+        sprite_number: 1,
     };
 
     let boss_render = SpriteRender {
@@ -380,9 +437,6 @@ fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: Gamepla
         sprite_number: 2,
     };
 
-    // TODO: maybe it's better not to have the x or y coordinates here.
-    // using the relative position as a percentage would let us multiply
-    // it by the computed playable area dimensions instead
     for rec in level_metadata.get_layout() {
         let (entity_type, x_percentage, y_percentage) = rec;
         let cleanup_tag = CleanupTag {};
@@ -424,10 +478,15 @@ fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: Gamepla
                     .build();
             },
             EntityType::Player => {
+                let (prefab_handle, renderer) = if immortal_hyper_mode {
+                    (handles.player_hyper_prefab_handle.clone(), player_hyper_render.clone())
+                } else {
+                    (handles.player_prefab_handle.clone(), player_render.clone())
+                };
                 world
                     .create_entity()
-                    .with(handles.player_prefab_handle.clone())
-                    .with(player_render.clone())
+                    .with(prefab_handle)
+                    .with(renderer)
                     .with(transform)
                     .with(cleanup_tag)
                     .build();

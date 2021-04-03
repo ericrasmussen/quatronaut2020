@@ -16,30 +16,50 @@ use amethyst::{
 
 use derive_new::new;
 
+use rand::{thread_rng, Rng};
+
 use crate::{
     components::{
+        cutscene::{Cutscene, CutsceneStatus},
         fade::{Fade, FadeStatus, Fader},
-        perspective::Perspective,
-        tags::BackgroundTag,
+        perspective::{Perspective, PerspectiveStatus},
+        tags::{BackgroundTag, CleanupTag},
     },
-    resources::gameconfig::{GameConfig, GameplayMode},
+    entities::glass::Glass,
+    resources::{
+        direction::Direction,
+        gameconfig::{GameConfig, GameplayMode},
+        playablearea::PlayableArea,
+    },
     states::{gameplay::GameplayState, paused::PausedState},
-    systems::{CameraShakeSystem, FadeSystem},
+    systems::{CameraShakeSystem, CameraZoomSystem, FadeSystem, GlassSystem},
 };
 
-//use log::info;
+use log::info;
 
-/// This state will be pushed on top of `GameplayState` to give more
-/// control over level transitions, and, based on the meta level
-/// resource, display some kind of cutscene (really, just moving the
-/// player to an exit marker on completion)
+/// This state offers different ways to transition between levels.
+/// If it's given a perspective shift, it'll rotate the camera on the z-axis
+/// and play a sound. If it's given a cutscene, it'll zoom in, break some
+/// glass, and zoom out to reveal a new background.
+/// Otherwise it'll just do a quick fade to black and back.
+/// NOTE: I dunno what'll happen if you give it a perspective shift and a
+/// cutscene. Probably two sound effects at the same time, rotating and zooming
+/// camera, and one of the two will cause an exit before the other is done.
+/// So don't do that.
+/// Or you know, if you're reading this, maybe just make a new enum or a
+/// TransitionLike trait. I would, but I'm really busy writing comments right now.
 #[derive(new)]
 pub struct TransitionState<'a, 'b> {
     #[new(default)]
     pub dispatcher: Option<Dispatcher<'a, 'b>>,
+    #[new(default)]
+    pub glass_spawned: bool,
+
     pub overlay_sprite_handle: Handle<SpriteSheet>,
+    pub glass_sprite_handle: Handle<SpriteSheet>,
     pub game_config: GameConfig,
     pub perspective_shift: Option<Perspective>,
+    pub cutscene: Option<Cutscene>,
 }
 
 impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
@@ -51,6 +71,8 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
 
         dispatcher_builder.add(FadeSystem, "fade_system", &[]);
         dispatcher_builder.add(CameraShakeSystem, "camera_shake_system", &[]);
+        dispatcher_builder.add(CameraZoomSystem, "camera_zoom_system", &[]);
+        dispatcher_builder.add(GlassSystem, "glass_system", &[]);
 
         // builds and sets up the dispatcher
         let mut dispatcher = dispatcher_builder
@@ -61,9 +83,13 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
         self.dispatcher = Some(dispatcher);
 
         world.register::<Perspective>();
-        if let Some(perspective) = &self.perspective_shift {
-            //info!("adding some perspective");
-            world.insert(*perspective);
+        if let Some(perspective) = self.perspective_shift {
+            world.insert(perspective);
+        }
+
+        world.register::<Cutscene>();
+        if let Some(cutscene) = self.cutscene {
+            world.insert(cutscene);
         }
 
         // this is all a little over complicated, but the status is a shared
@@ -86,9 +112,6 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
         );
     }
 
-    // TODO: maybe check for the Perspective and then go back to gameplay (damaged art
-    // mode)
-    // should the actual background change here though?
     fn update(&mut self, data: &mut StateData<'_, GameData<'_, '_>>) -> SimpleTrans {
         if let Some(dispatcher) = self.dispatcher.as_mut() {
             dispatcher.dispatch(&data.world);
@@ -96,46 +119,93 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
 
         if let Some(_p) = &self.perspective_shift {
             let perspective = data.world.read_resource::<Perspective>();
-            if perspective.is_reversing() {
+
+            // return early if we're done with our scaling and shaking
+            if perspective.status == PerspectiveStatus::Completed {
+                let mut game_config = self.game_config.clone();
+                game_config.gameplay_mode = GameplayMode::LevelMode;
+                return Trans::Replace(Box::new(GameplayState::new(game_config)));
+            }
+        }
+
+        if let Some(_c) = &self.cutscene {
+            // separate scope here to avoid the immutable borrow and ensure
+            // we're done with the world
+            let cutscene = {
+                let world_ref_cutscene = data.world.read_resource::<Cutscene>();
+                *world_ref_cutscene
+            };
+
+            // change the background image if we've zoomed all the way in
+            // and are getting ready to zoom out and reveal the larger background
+            if cutscene.status == CutsceneStatus::Reversing {
                 let mut sprites = data.world.write_storage::<SpriteRender>();
                 let backgrounds = data.world.read_storage::<BackgroundTag>();
                 for (sprite, _bg) in (&mut sprites, &backgrounds).join() {
                     sprite.sprite_number = 1;
                 }
-            }
-            // special case to return early if we're done with our scaling and shaking
-            if perspective.is_completed() {
+            } else if cutscene.status == CutsceneStatus::Completed {
                 let mut game_config = self.game_config.clone();
                 game_config.gameplay_mode = GameplayMode::LevelMode;
-                return Trans::Switch(Box::new(GameplayState::new(game_config)));
+                return Trans::Replace(Box::new(GameplayState::new(game_config)));
+            } else if cutscene.status == CutsceneStatus::Spawning && !self.glass_spawned {
+                init_glass(data.world, self.glass_sprite_handle.clone());
+                // make sure glass is only spawned once
+                self.glass_spawned = true;
             }
         }
 
         let mut fade_status = data.world.write_resource::<FadeStatus>();
 
-        if fade_status.is_completed() {
+        // if we have any kind of non-fade transition, they determine when to switch
+        // states
+        let managed_scene = self.perspective_shift.is_some() || self.cutscene.is_some();
+
+        if fade_status.is_completed() && !managed_scene {
             fade_status.clear();
 
             let mut game_config = self.game_config.clone();
             game_config.gameplay_mode = GameplayMode::LevelMode;
 
-            Trans::Switch(Box::new(GameplayState::new(game_config)))
+            Trans::Replace(Box::new(GameplayState::new(game_config)))
         } else {
             Trans::None
         }
     }
 
-    // TODO: remove the Perspective resource here too
     fn on_stop(&mut self, data: StateData<GameData>) {
         // state items that should be cleaned up (players, entities, lasers,
         // projectiles) should all be marked with `CleanupTag` and removed
         // here when this state ends
         let entities = data.world.read_resource::<EntitiesRes>();
+        let cleanup_tags = data.world.read_storage::<CleanupTag>();
         let faders = data.world.read_storage::<Fader>();
 
-        for (entity, _tag) in (&entities, &faders).join() {
+        for (entity, _tag) in (&entities, &cleanup_tags).join() {
             let err = format!("unable to delete entity: {:?}", entity);
             entities.delete(entity).expect(&err);
+        }
+
+        for (entity, _fader) in (&entities, &faders).join() {
+            let err = format!("unable to delete entity: {:?}", entity);
+            entities.delete(entity).expect(&err);
+        }
+
+        // make sure we clean up any perspective resources (that contain information
+        // about shaking the camera or zooming in and out)
+        if let Some(_perspective) = &self.perspective_shift {
+            let perspectives = data.world.read_storage::<Perspective>();
+            for (entity, _perspective) in (&entities, &perspectives).join() {
+                let err = format!("unable to delete entity: {:?}", entity);
+                entities.delete(entity).expect(&err);
+            }
+        }
+        if let Some(_cutscene) = &self.cutscene {
+            let cutscenes = data.world.read_storage::<Cutscene>();
+            for (entity, _perspective) in (&entities, &cutscenes).join() {
+                let err = format!("unable to delete entity: {:?}", entity);
+                entities.delete(entity).expect(&err);
+            }
         }
     }
 
@@ -198,5 +268,61 @@ fn init_overlay(
                 .with(perspective)
                 .build();
         },
+    }
+}
+
+fn init_glass(world: &mut World, glass_sprite_handle: Handle<SpriteSheet>) {
+    let playable_area = (*world.read_resource::<PlayableArea>()).clone();
+
+    let base_rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
+
+    info!("inserting some glass shards now!");
+
+    // the step by is mostly arbitrary based on what seems to look ok
+    for x_coord in (-4 .. 101).step_by(4) {
+        for y_coord in (-4 .. 101).step_by(4) {
+            let cleanup_tag = CleanupTag {};
+
+            let mut rng = thread_rng();
+            let dir: Direction = rng.gen();
+
+            // available glass sprites in glass_shards.{png,ron} are 0, 1, 2
+            let sprite_num: usize = rng.gen_range(0, 2);
+
+            let render = SpriteRender {
+                sprite_sheet: glass_sprite_handle.clone(),
+                sprite_number: sprite_num,
+            };
+
+            let x_pct: f32 = x_coord as f32 / 100.0;
+            let y_pct: f32 = y_coord as f32 / 100.0;
+            let (x_pos, y_pos) = playable_area.relative_coordinates(&x_pct, &y_pct);
+
+            let position = Translation3::new(x_pos, y_pos, 0.0);
+
+            let rotation = dir.direction_to_radians();
+            // TODO: should the scale be randomized too?
+            // let scale_factor = rng.gen_range(0.2, 0.8);
+            // let scale = Vector3::new(scale_factor, scale_factor, scale_factor);
+            let scale = Vector3::new(0.25, 0.25, 0.25);
+            let mut transform = Transform::new(position, base_rotation, scale);
+
+            // rotate based on the randomly chosen `Direction`
+            transform.set_rotation_2d(rotation);
+
+            // create the glass entity (systems will use this to decide how to move it)
+            // admittedly speed is still a pretty arbitrary unit here, but the player
+            // is 400 and lasers are 800, so something faster makes the most sense
+            let speed: f32 = rng.gen_range(1000.0, 2000.0);
+            let glass = Glass::new(dir, speed);
+
+            world
+                .create_entity()
+                .with(glass)
+                .with(render)
+                .with(transform)
+                .with(cleanup_tag)
+                .build();
+        }
     }
 }

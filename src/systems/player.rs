@@ -71,7 +71,6 @@ impl<'s> System<'s> for PlayerSystem {
             // no movement then new_x and new_y will equal 0 and the transform
             // coordinates will not be changed)
             if let Some(x_amt) = movement_x {
-                //info!("MOVINGGNGNGNGN");
                 let new_x = time.delta_seconds() * x_amt * character.get_speed() + transform.translation().x;
                 transform.set_translation_x(playable_area.clamp_x(new_x));
             }
@@ -105,8 +104,6 @@ impl<'s> System<'s> for PlayerSystem {
                 if character.can_fire(time.delta_seconds()) {
                     spawn_laser(sprite.clone().sprite_sheet, laser, &transform, &entities, &lazy_update);
                     // if we created a laser, play a laser sound
-                    // TODO: make sure there's not lag with the sound effect and the laser being inserted
-                    // lazily into the `world`
                     sounds.play_sound(SoundType::PlayerBlaster, &storage, audio_output.as_deref());
                 }
             }

@@ -12,11 +12,31 @@ cargo xtask run
 
 ### Gameplay notes
 
-This game is pre-pre-pre-alpha and is being developed as a learning exercise.
+This game is for fun and mostly exists to show off rust and amethyst. I am not an
+accomplished game developer, and this is being developed as a learning exercise.
+But, it works! Kind of! Feel free to use any of the code for your own rust and amethyst
+games.
 
 The controls are wasd for movement and the arrow keys for firing lasers.
 
-The game supports many experimental features, including being able to walk offscreen for infinity, perhaps never to return. Several of these highly advanced gameplay mechanics and features may be adjusted as development progresses, with the goal of eventually resembling an actual game.
+### Triple A Features
+
+- immersive sound effects
+- a rockin' chiptunes track
+- polygonal action with more than one shape
+- it's sort of like Robotron but not
+- surprise transition and advanced camera work that changes EVERYTHING
+- it's technically possible to win. I did it once
+- working menu screens! kind of! ...sometimes
+- will be shipped ahead of schedule with lots of bugs
+
+### Secret cheat codes
+
+OK, there's only one secret. Press 'g' during gameplay to toggle HYPER IMMORTAL mode.
+If you start a new level in this mode, you'll have increased movement speed and fire rate.
+
+There's also 'p' to pause without a menu, but if you forget to press 'p' a second time to
+unpause, you may become stuck in a timeless land for a brief eternity or two.
 
 ### Additional build instructions
 

@@ -6,15 +6,15 @@ Prefab (
             data: PlayerPrefab(
                 // BEGIN player: Player
                 player: Player(
-                      speed: 400,
-                      laser_speed: 800,
+                      speed: 500,
+                      laser_speed: 900,
                       // time to delay laser shots in seconds
-                      fire_delay: 0.17,
+                      fire_delay: 0.1,
                       // if we want the first fire to be instant,
                       // we set the timer to >= than the delay setting
-                      seconds_since_firing: 0.17,
+                      seconds_since_firing: 0.1,
                       direction: Up,
-                      invulnerable: false,
+                      invulnerable: true,
                 ),
                 // END player: Player
 

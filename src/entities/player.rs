@@ -49,6 +49,7 @@ pub struct Player {
     pub fire_delay: f32,
     pub seconds_since_firing: f32,
     pub direction: Direction,
+    pub invulnerable: bool,
 }
 
 impl Player {

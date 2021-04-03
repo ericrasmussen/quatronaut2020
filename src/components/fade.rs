@@ -1,6 +1,6 @@
 /// This state can be pushed on top of `GameplayState`
-/// and popped as needed. For now its main purpose is having
-/// a kind of cutscene/level complete transition so that
+/// and popped as needed. For now its main purpose is a
+/// quick fade to black and back transition so that
 /// progressing to the next level isn't so jarring.
 use amethyst::ecs::{storage::DenseVecStorage, Component};
 

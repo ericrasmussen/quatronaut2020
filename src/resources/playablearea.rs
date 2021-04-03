@@ -30,34 +30,51 @@ impl Default for PlayableArea {
 
 impl PlayableArea {
     // given the computed width, height, and constraint, create a new playarea
-    // if the background dimensions then the hardcoded values here will need
-    // to be adjusted
-    pub fn new(width: f32, height: f32, constrain: bool) -> PlayableArea {
+    // if the background dimensions then the hardcoded % values here will need
+    // to be adjusted. note that in true developer "works-for-me" fashion,
+    // this only currently supports normal displays and retina displays (which
+    // is determined by the hidpi factor the amethyst `ScreenDimensions`).
+    // this is likely a bad assumption because not all hidpi monitors will have
+    // the same number of pixels as a retina display, but currently it's all I can
+    // test on
+    pub fn new(width: f32, height: f32, constrain: bool, hidpi: bool) -> PlayableArea {
         // these percentages were calculated manually based on the position of
-        // the black rectangle in the smaller, unbroken background image
+        // the black rectangle in the smaller, unbroken background image, then
+        // adjusted as needed for the retina display version
         if constrain {
+            let (x1, x2, y1, y2) = if hidpi {
+                (0.33, 0.67, 0.22, 0.78)
+            } else {
+                (0.25, 0.75, 0.05, 0.95)
+            };
             PlayableArea {
-                min_x: width * 0.33,
-                max_x: width * 0.67,
-                min_y: height * 0.22,
-                max_y: height * 0.78,
+                min_x: width * x1,  // normal: 0.25, retina: 0.33,
+                max_x: width * x2,  // normal: 0.75, retina: 0.67,
+                min_y: height * y1, // normal: 0.05, retina: 0.22,
+                max_y: height * y2, // normal: 0.95, retina: 0.78,
             }
         } else {
             // there needs to be some buffer here so everything is visible inside the camera.
             // otherwise some things can be rendered in the center of the border and be partially
             // offscreen
+            let (x1, x2, y1, y2) = if hidpi {
+                (0.17, 0.83, 0.20, 0.80)
+            } else {
+                (0.02, 0.98, 0.045, 0.955)
+            };
             PlayableArea {
-                min_x: width * 0.17,
-                max_x: width * 0.83,
-                min_y: height * 0.20,
-                max_y: height * 0.80,
+                min_x: width * x1,  // normal: 0.02, retina: 0.17,
+                max_x: width * x2,  // normal: 0.98, retina: 0.83,
+                min_y: height * y1, // normal: 0.045, retina: 0.20,
+                max_y: height * y2, // normal: 0.955, retina: 0.80,
             }
         }
     }
 
     // computes coordinates in the playable area based on a relative percentage
     // (e.g. a level config that specifies an enemy should be 25% of the way along
-    // the x dimension, and 30% of the way along the y dimension)
+    // the x dimension, and 30% of the way along the y dimension). The supplied
+    // arguments should be between 0.0 and 1.0, inclusive
     pub fn relative_coordinates(&self, x_percentage: &f32, y_percentage: &f32) -> (f32, f32) {
         let x_diff = self.max_x - self.min_x;
         let y_diff = self.max_y - self.min_y;
