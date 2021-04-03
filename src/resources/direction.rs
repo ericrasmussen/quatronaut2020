@@ -1,5 +1,6 @@
 use serde::{Deserialize, Serialize};
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, PI};
+use rand::distributions::{Distribution, Standard};
 
 #[derive(Copy, Clone, Debug, Deserialize, Serialize)]
 #[serde(deny_unknown_fields)]
@@ -15,6 +16,25 @@ pub enum Direction {
 }
 
 use Direction::*;
+
+/// Allows callers to randomly generate directions for spawning
+impl Distribution<Direction> for Standard {
+    fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> Direction {
+        // randomly chooses a number from 1-8 (inclusive low/exclusvie high)
+        let n: u32 = rng.gen_range(1, 9);
+        match n {
+            1 => Left,
+            2 => Up,
+            3 => LeftUp,
+            4 => LeftDown,
+            5 => Right,
+            6 => Down,
+            7 => RightUp,
+            _ => RightDown,
+        }
+    }
+}
+
 
 // the sprites in this game default to facing up.
 // if that changes, so should this

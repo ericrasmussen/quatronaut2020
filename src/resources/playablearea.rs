@@ -57,7 +57,8 @@ impl PlayableArea {
 
     // computes coordinates in the playable area based on a relative percentage
     // (e.g. a level config that specifies an enemy should be 25% of the way along
-    // the x dimension, and 30% of the way along the y dimension)
+    // the x dimension, and 30% of the way along the y dimension). The supplied
+    // arguments should be between 0.0 and 1.0, inclusive
     pub fn relative_coordinates(&self, x_percentage: &f32, y_percentage: &f32) -> (f32, f32) {
         let x_diff = self.max_x - self.min_x;
         let y_diff = self.max_y - self.min_y;

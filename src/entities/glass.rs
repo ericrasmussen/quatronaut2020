@@ -1,6 +1,4 @@
-/// This module includes the laser component creation, laser entity,
-/// and the Direction enum used for rotating the sprite and determining
-/// velocity.
+/// This module is for
 use amethyst::{
     core::Transform,
     ecs::prelude::{Component, DenseVecStorage, Entities, Entity, LazyUpdate, ReadExpect},
@@ -57,9 +55,10 @@ impl Component for Laser {
 // this is used by systems/player.rs to create lasers whenever the player fires
 // them. the lazy_update usage is from the space-menace game example and may
 // not be required.
-// UNFORTUNATE: this implementation ties the laser image to
-// the sprite sheet being used by the player. Ideally we'd have some other way
-// to get the correct sprite.
+// BIG TODO: we should not be borrowing the sprite sheet handle from the player.
+// it should be available as a separate game resource and used as a prefab or
+// otherwise found in the world. this implementation ties the laser image to
+// the sprite sheet being used by the player.
 pub fn spawn_laser(
     sprite_sheet_handle: SpriteSheetHandle,
     laser: Laser,
@@ -67,8 +66,7 @@ pub fn spawn_laser(
     entities: &Entities,
     lazy_update: &ReadExpect<LazyUpdate>,
 ) {
-    // an incorrect sprite number here will lead to a memory leak. this should
-    // correspond to the position of the laser sprite in sprite_sheet.png
+    // an incorrect sprite number here will lead to a memory leak
     let sprite_render = SpriteRender {
         sprite_sheet: sprite_sheet_handle,
         sprite_number: 3,

@@ -265,9 +265,10 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             info!("transitioning with cutscene");
             Trans::Replace(Box::new(TransitionState::new(
                 handles.overlay_sprite_handle,
+                handles.glass_sprite_handle,
                 self.game_config.clone(),
                 None,
-                Some(Cutscene::new(15.0, 0.3, 0.0, 45.0))
+                Some(Cutscene::new(0.5, 0.3, 5.0, 4.0))
             )))
         // we're in a level and all enemies are defeated -- fade out to a new level
         } else if level_complete {
@@ -279,6 +280,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             };
             Trans::Replace(Box::new(TransitionState::new(
                 handles.overlay_sprite_handle,
+                handles.glass_sprite_handle,
                 self.game_config.clone(),
                 new_perspective,
                 None,
@@ -399,6 +401,7 @@ fn change_background(world: &mut World, level_status: &LevelStatus) {
         sprite.sprite_number = sprite_number;
     }
 }
+
 fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: GameplayHandles, immortal_hyper_mode: bool) {
     let playable_area = (*world.read_resource::<PlayableArea>()).clone();
 
@@ -430,9 +433,6 @@ fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: Gamepla
         sprite_number: 2,
     };
 
-    // TODO: maybe it's better not to have the x or y coordinates here.
-    // using the relative position as a percentage would let us multiply
-    // it by the computed playable area dimensions instead
     for rec in level_metadata.get_layout() {
         let (entity_type, x_percentage, y_percentage) = rec;
         let cleanup_tag = CleanupTag {};

@@ -16,17 +16,25 @@ use amethyst::{
 
 use derive_new::new;
 
+use rand::{thread_rng, Rng};
+
 use crate::{
     components::{
         fade::{Fade, FadeStatus, Fader},
         cutscene::{Cutscene, CutsceneStatus},
         perspective::{Perspective, PerspectiveStatus},
-        tags::BackgroundTag,
+        tags::{BackgroundTag, CleanupTag},
     },
-    resources::gameconfig::{GameConfig, GameplayMode},
+    resources::{
+        direction::Direction,
+        gameconfig::{GameConfig, GameplayMode},
+        playablearea::PlayableArea,
+    },
     states::{gameplay::GameplayState, paused::PausedState},
     systems::{CameraShakeSystem, CameraZoomSystem, FadeSystem},
 };
+
+use log::info;
 
 /// This state offers different ways to transition between levels.
 /// If it's given a perspective shift, it'll rotate the camera on the z-axis
@@ -43,7 +51,11 @@ use crate::{
 pub struct TransitionState<'a, 'b> {
     #[new(default)]
     pub dispatcher: Option<Dispatcher<'a, 'b>>,
+    #[new(default)]
+    pub glass_spawned: bool,
+
     pub overlay_sprite_handle: Handle<SpriteSheet>,
+    pub glass_sprite_handle: Handle<SpriteSheet>,
     pub game_config: GameConfig,
     pub perspective_shift: Option<Perspective>,
     pub cutscene: Option<Cutscene>,
@@ -114,7 +126,12 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
         }
 
         if let Some(_c) = &self.cutscene {
-            let cutscene = data.world.read_resource::<Cutscene>();
+            // separate scope here to avoid the immutable borrow and ensure
+            // we're done with the world
+            let cutscene = {
+                let world_ref_cutscene = data.world.read_resource::<Cutscene>();
+                *world_ref_cutscene
+            };
 
             // change the background image if we've zoomed all the way in
             // and are getting ready to zoom out and reveal the larger background
@@ -128,6 +145,10 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
                 let mut game_config = self.game_config.clone();
                 game_config.gameplay_mode = GameplayMode::LevelMode;
                 return Trans::Replace(Box::new(GameplayState::new(game_config)));
+            } else if cutscene.status == CutsceneStatus::Spawning && !self.glass_spawned {
+                init_glass(data.world, self.glass_sprite_handle.clone());
+                // make sure glass is only spawned once
+                self.glass_spawned = true;
             }
         }
 
@@ -154,9 +175,15 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
         // projectiles) should all be marked with `CleanupTag` and removed
         // here when this state ends
         let entities = data.world.read_resource::<EntitiesRes>();
+        let cleanup_tags = data.world.read_storage::<CleanupTag>();
         let faders = data.world.read_storage::<Fader>();
 
-        for (entity, _tag) in (&entities, &faders).join() {
+        for (entity, _tag) in (&entities, &cleanup_tags).join() {
+            let err = format!("unable to delete entity: {:?}", entity);
+            entities.delete(entity).expect(&err);
+        }
+
+        for (entity, _fader) in (&entities, &faders).join() {
             let err = format!("unable to delete entity: {:?}", entity);
             entities.delete(entity).expect(&err);
         }
@@ -238,5 +265,56 @@ fn init_overlay(
                 .with(perspective)
                 .build();
         },
+    }
+}
+
+fn init_glass(world: &mut World, glass_sprite_handle: Handle<SpriteSheet>) {
+
+    let playable_area = (*world.read_resource::<PlayableArea>()).clone();
+
+    let base_rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
+
+    info!("inserting some glass shards now!");
+
+    // the step by is mostly arbitrary based on what seems to look ok
+    for x_coord in (-4..101).step_by(4) {
+        for y_coord in (-4..101).step_by(4) {
+            let cleanup_tag = CleanupTag {};
+
+            let mut rng = thread_rng();
+            let dir: Direction = rng.gen();
+
+            // available glass sprites in glass_shards.{png,ron} are 0, 1, 2
+            let sprite_num: usize = rng.gen_range(0, 2);
+
+            let render = SpriteRender {
+                sprite_sheet: glass_sprite_handle.clone(),
+                sprite_number: sprite_num,
+            };
+
+            let x_pct: f32 = x_coord as f32 / 100.0;
+            let y_pct: f32 = y_coord as f32 / 100.0;
+            let (x_pos, y_pos) = playable_area.relative_coordinates(&x_pct, &y_pct);
+
+            let position = Translation3::new(x_pos, y_pos, 0.0);
+
+            let rotation = dir.direction_to_radians();
+            // TODO: should the scale be randomized too?
+            // let scale_factor = rng.gen_range(0.2, 0.8);
+            // let scale = Vector3::new(scale_factor, scale_factor, scale_factor);
+            let scale = Vector3::new(0.25, 0.25, 0.25);
+            let mut transform = Transform::new(position, base_rotation, scale);
+
+            // rotate based on the randomly chosen `Direction`
+            transform.set_rotation_2d(rotation);
+            world
+                .create_entity()
+                //.with(glass_component)
+                .with(render)
+                .with(transform)
+                .with(cleanup_tag)
+                .build();
+
+        }
     }
 }

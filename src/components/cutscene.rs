@@ -72,7 +72,7 @@ impl Cutscene {
         zoom_out_duration: f32,
     ) -> Cutscene {
         Cutscene {
-            status: Zooming, // zooming in starts the cutscene
+            status: Spawning, // spawning in starts the cutscene
             zoom_in_duration,
             zoom_in_scale,
             spawn_duration,
@@ -123,7 +123,7 @@ impl Cutscene {
             Spawning => {
                 self.spawn_duration -= time;
                 if self.spawn_duration <= 0.0 {
-                    self.status = Reversing;
+                    self.status = Zooming;
                 }
                 Some(Vector3::new(current_scale, current_scale, current_scale))
             },
@@ -133,7 +133,7 @@ impl Cutscene {
                 // of the cutscene
                 // sufficiently, pause before reversing
                 if current_scale <= self.zoom_in_scale {
-                    self.status = Spawning;
+                    self.status = Reversing;
                     None
                 // otherwise keep going
                 } else {

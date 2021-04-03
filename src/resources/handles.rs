@@ -17,6 +17,9 @@ pub struct GameplayHandles {
     // image used for fade to black transitions
     pub overlay_sprite_handle: Handle<SpriteSheet>,
 
+    // glass shard images used for ultra realistic background breaking effect
+    pub glass_sprite_handle: Handle<SpriteSheet>,
+
     // handle to clone for the sprite sheet containing enemies
     pub enemy_sprites_handle: Handle<SpriteSheet>,
 
@@ -42,12 +45,14 @@ pub fn get_game_handles(
 ) -> GameplayHandles {
     let background_sprite_handle = load_sprite_sheet(world, "backgrounds", progress_counter);
     let overlay_sprite_handle = load_sprite_sheet(world, "transition", progress_counter);
+    let glass_sprite_handle = load_sprite_sheet(world, "glass_shards", progress_counter);
     let enemy_sprites_handle = load_sprite_sheet(world, "enemy_sprites", progress_counter);
     let player_sprites_handle = load_sprite_sheet(world, "sprite_sheet", progress_counter);
 
     GameplayHandles {
         background_sprite_handle,
         overlay_sprite_handle,
+        glass_sprite_handle,
         enemy_sprites_handle,
         enemy_prefab_handle,
         flying_enemy_prefab_handle,
