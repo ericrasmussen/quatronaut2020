@@ -35,11 +35,14 @@ The controls are wasd for movement and the arrow keys for firing lasers.
 I want this game to be as useful as possible to other rust or amethyst game
 developers, so be sure to use one of:
 
+```
 # macos builds:
-`cargo doc --features metal`
-
+cargo doc --features metal
+```
+```
 # other builds:
-`cargo doc --features vulkan`
+cargo doc --features vulkan
+```
 
 The docs are written more like a design decisions document or development blog
 (as opposed to typical API docs). This is to make it clear when alternative approaches
