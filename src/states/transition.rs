@@ -301,10 +301,8 @@ fn init_glass(world: &mut World, glass_sprite_handle: Handle<SpriteSheet>) {
             let position = Translation3::new(x_pos, y_pos, 0.0);
 
             let rotation = dir.direction_to_radians();
-            // TODO: should the scale be randomized too?
-            // let scale_factor = rng.gen_range(0.2, 0.8);
-            // let scale = Vector3::new(scale_factor, scale_factor, scale_factor);
-            let scale = Vector3::new(0.25, 0.25, 0.25);
+            let scale_factor = rng.gen_range(0.18, 0.32);
+            let scale = Vector3::new(scale_factor, scale_factor, scale_factor);
             let mut transform = Transform::new(position, base_rotation, scale);
 
             // rotate based on the randomly chosen `Direction`
