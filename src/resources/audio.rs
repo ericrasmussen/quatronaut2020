@@ -60,7 +60,7 @@ impl Sounds {
     /// pick one of them.
     fn random_int(&self, max: usize) -> usize {
         let mut rng = thread_rng();
-        rng.gen_range(0..max)
+        rng.gen_range(0 .. max)
     }
 
     /// This is the primary API for actually playing a sound. Different systems

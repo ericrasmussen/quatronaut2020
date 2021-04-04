@@ -65,11 +65,7 @@ fn main() -> amethyst::Result<()> {
         gameplay_mode: starting_mode,
         immortal_hyper_mode: false,
     };
-    let mut game = Application::new(
-        assets,
-        states::MainMenu::new(game_config, false),
-        game_data,
-    )?;
+    let mut game = Application::new(assets, states::MainMenu::new(game_config, false), game_data)?;
     game.run();
 
     Ok(())

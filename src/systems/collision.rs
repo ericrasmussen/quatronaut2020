@@ -17,7 +17,6 @@ use crate::{
     resources::audio::{SoundType, Sounds},
 };
 
-
 /// This is the main laser collision detection system, or LCDS.
 /// Note: an alternative approach (probably more useful in larger games)
 /// would be using ncollide's broad phase collision detection and integrating

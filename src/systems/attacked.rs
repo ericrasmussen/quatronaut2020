@@ -13,8 +13,10 @@ use amethyst::{
 use crate::{
     components::{collider::Collider, launcher::Projectile},
     entities::{enemy::Enemy, player::Player},
-    resources::{audio::{SoundType, Sounds}, playablearea::PlayableArea},
-
+    resources::{
+        audio::{SoundType, Sounds},
+        playablearea::PlayableArea,
+    },
 };
 use log::info;
 

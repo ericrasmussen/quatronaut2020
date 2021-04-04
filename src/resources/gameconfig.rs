@@ -7,8 +7,10 @@
 //! up as needed, but when debugging I've found it really convenient to have
 //! some known amount of config that I can access and check in code (without
 //! having to look in storage).
-use crate::resources::audio::SoundConfig;
-use crate::resources::level::{LevelConfig, Levels};
+use crate::resources::{
+    audio::SoundConfig,
+    level::{LevelConfig, Levels},
+};
 
 /// This tracks whether we're in a level, transitioning between levels,
 /// or if we've finished all of them.

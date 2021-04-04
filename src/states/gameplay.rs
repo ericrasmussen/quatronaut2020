@@ -6,10 +6,15 @@
 //!   3) act as the game's state manager (deciding when to switch states)
 use amethyst::{
     assets::{Handle, PrefabLoader, ProgressCounter, RonFormat},
-    core::math::{Translation3, UnitQuaternion, Vector3},
-    core::{transform::Transform, ArcThreadPool},
-    ecs::prelude::{Dispatcher, DispatcherBuilder, Entity, Join},
-    ecs::world::EntitiesRes,
+    core::{
+        math::{Translation3, UnitQuaternion, Vector3},
+        transform::Transform,
+        ArcThreadPool,
+    },
+    ecs::{
+        prelude::{Dispatcher, DispatcherBuilder, Entity, Join},
+        world::EntitiesRes,
+    },
     input::{is_close_requested, is_key_down, VirtualKeyCode},
     prelude::*,
     renderer::{Camera, SpriteRender, SpriteSheet},
