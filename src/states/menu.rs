@@ -5,6 +5,7 @@ use amethyst::{
     input::{is_close_requested, is_key_down},
     prelude::*,
     ui::{UiCreator, UiEvent, UiEventType, UiFinder},
+    window::ScreenDimensions,
     winit::VirtualKeyCode,
 };
 
@@ -42,10 +43,18 @@ impl SimpleState for MainMenu {
         // create UI from prefab and save the reference.
         let world = data.world;
 
+        let dimensions = (*world.read_resource::<ScreenDimensions>()).clone();
+
+        // hidpi_factor should be 1.0 for a normal screen and something higher for
+        // hidpi/retina displays, which affect the number of pixels in the background images
+        let is_hidpi = dimensions.hidpi_factor() > 1.0;
+
+        let menu_prefix = if is_hidpi { "ui/retina/" } else { "ui/normal/" };
+
         let menu_path = if self.active_game {
-            "ui/menu.ron"
+            format!("{}menu.ron", menu_prefix)
         } else {
-            "ui/menu_no_continue.ron"
+            format!("{}menu_no_continue.ron", menu_prefix)
         };
         self.ui_root = Some(world.exec(|mut creator: UiCreator<'_>| creator.create(menu_path, ())));
     }

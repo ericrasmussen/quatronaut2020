@@ -8,6 +8,7 @@ use amethyst::{
     input::is_close_requested,
     prelude::*,
     ui::{UiCreator, UiEvent, UiEventType, UiFinder},
+    window::ScreenDimensions,
 };
 
 use crate::{resources::gameconfig::GameConfig, states::menu::MainMenu};
@@ -39,10 +40,18 @@ impl SimpleState for AllDone {
         // create UI from prefab and save the reference.
         let world = data.world;
 
+        let dimensions = (*world.read_resource::<ScreenDimensions>()).clone();
+
+        // hidpi_factor should be 1.0 for a normal screen and something higher for
+        // hidpi/retina displays, which affect the number of pixels in the background images
+        let is_hidpi = dimensions.hidpi_factor() > 1.0;
+
+        let menu_prefix = if is_hidpi { "ui/retina/" } else { "ui/normal/" };
+
         let menu_path = if self.achieved_victory {
-            "ui/you_win.ron"
+            format!("{}you_win.ron", menu_prefix)
         } else {
-            "ui/game_over.ron"
+            format!("{}game_over.ron", menu_prefix)
         };
         self.ui_root = Some(world.exec(|mut creator: UiCreator<'_>| creator.create(menu_path, ())));
     }

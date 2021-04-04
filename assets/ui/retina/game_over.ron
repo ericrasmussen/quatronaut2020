@@ -23,8 +23,6 @@ Container(
               id: "game_over",
               x: 0.,
               y: 250.,
-              // TODO: why do these values need to be the computed retina display values?
-              // may need separate configs for retina displays
               // win is 357 x 217
               // game over is 454 x 217
               width: 1021.5,
