@@ -31,7 +31,7 @@ impl Distribution<Direction> for Standard {
     fn sample<R: rand::Rng + ?Sized>(&self, rng: &mut R) -> Direction {
         // randomly chooses a number from 1-8
         // (`gen_range` is inclusive low/exclusvie high)
-        let n: u32 = rng.gen_range(1, 9);
+        let n: u32 = rng.gen_range(1..9);
         match n {
             1 => Left,
             2 => Up,

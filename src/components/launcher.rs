@@ -43,7 +43,7 @@ impl Launcher {
         // each shot at the same time
         if self.seconds_since_firing >= self.fire_delay {
             let mut rng = thread_rng();
-            self.seconds_since_firing = rng.gen_range(0.1, 0.9);
+            self.seconds_since_firing = rng.gen_range(0.1..0.9);
             true
         } else {
             self.seconds_since_firing += time;

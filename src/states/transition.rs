@@ -294,7 +294,7 @@ fn init_glass(world: &mut World, glass_sprite_handle: Handle<SpriteSheet>) {
             let dir: Direction = rng.gen();
 
             // available glass sprites in glass_shards.{png,ron} are 0, 1, 2
-            let sprite_num: usize = rng.gen_range(0, 2);
+            let sprite_num: usize = rng.gen_range(0..2);
 
             let render = SpriteRender {
                 sprite_sheet: glass_sprite_handle.clone(),
@@ -308,7 +308,7 @@ fn init_glass(world: &mut World, glass_sprite_handle: Handle<SpriteSheet>) {
             let position = Translation3::new(x_pos, y_pos, 0.0);
 
             let rotation = dir.direction_to_radians();
-            let scale_factor = rng.gen_range(0.18, 0.32);
+            let scale_factor = rng.gen_range(0.18..0.32);
             let scale = Vector3::new(scale_factor, scale_factor, scale_factor);
             let mut transform = Transform::new(position, base_rotation, scale);
 
@@ -318,7 +318,7 @@ fn init_glass(world: &mut World, glass_sprite_handle: Handle<SpriteSheet>) {
             // create the glass entity (systems will use this to decide how to move it)
             // admittedly speed is still a pretty arbitrary unit here, but the player
             // is 400 and lasers are 800, so something faster makes the most sense
-            let speed: f32 = rng.gen_range(1000.0, 2000.0);
+            let speed: f32 = rng.gen_range(1000.0..2000.0);
             let glass = Glass::new(dir, speed);
 
             world
