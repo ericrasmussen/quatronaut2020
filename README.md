@@ -38,15 +38,12 @@ If you start a new level in this mode, you'll have increased movement speed and 
 There's also 'p' to pause without a menu, but if you forget to press 'p' a second time to
 unpause, you may become stuck in a timeless land for a brief eternity or two.
 
-### Additional build instructions
+### Linux dependencies
 
-The information below comes from the https://github.com/amethyst/amethyst-starter-2d README:
+See https://github.com/amethyst/amethyst#dependencies for extra system dependencies needed
+by linux distros.
 
-#### For Linux Users
-
-You might need to install some dependencies. Please refer to [this section](https://github.com/amethyst/amethyst#dependencies) of the README for more details.
-
-#### Assets
+### Assets
 
 Special thanks to Joel Steudler at https://joelsteudler.itch.io/ for making every art and sound asset in the game. If you
 are a game developer, check out his site! His asset packs are top-notch and have appeared regularly on
@@ -59,6 +56,15 @@ The primary font used in the game is the free font "Font Over" (https://fontesk.
 Check out his other work at https://www.behance.net/zielgraphic
 
 
-#### Copyright Information
+### Known issues
+
+Things I'll address one day when I have infinite time and resources:
+
+* add tests (I started and then stopped)
+* the UI is flaky and I'm not sure if it's my code or amethyst UI or both
+* sometimes projectiles don't get cleaned up before the level changes
+* there are tons of gameplay ideas we had and just didn't get around to
+
+### Copyright Information
 
 Quatronaut 2020 name and logo is Copyright 2020 Eric Rasmussen and Joel Steudler.

@@ -1,6 +1,7 @@
-//! Working on crate docs
-// this is the main entry point for our game. it was only slightly modified
-// from the main.rs file in https://github.com/amethyst/amethyst-starter-2d
+//! Welcome to Quatronaut 2020! The `main.rs` module reads config files,
+//! creates a few config structs, and launches the main menu. Note that
+//! the order of system loading below is important, so take care when
+//! modifying it.
 use amethyst::{
     assets::PrefabLoaderSystemDesc,
     audio::AudioBundle,
@@ -66,7 +67,6 @@ fn main() -> amethyst::Result<()> {
     };
     let mut game = Application::new(
         assets,
-        // add level config here to a config struct of some kind
         states::MainMenu::new(game_config, false),
         game_data,
     )?;

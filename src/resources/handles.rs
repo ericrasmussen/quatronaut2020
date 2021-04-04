@@ -39,7 +39,7 @@ pub struct GameplayHandles {
     pub player_sprites_handle: Handle<SpriteSheet>,
 }
 
-/// This relys on `gameplay.rs` to pass in the prefabs. It then loads all
+/// This relies on `gameplay.rs` to pass in the prefabs. It then loads all
 /// the non-prefab spritesheets, and puts all the handles in one handy struct.
 pub fn get_game_handles(
     world: &mut World,

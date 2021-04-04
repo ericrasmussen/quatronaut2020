@@ -1,3 +1,5 @@
+//! These systems deal with manipulating the in-game camera. Specifically,
+//! shaking or zooming.
 use amethyst::{
     assets::AssetStorage,
     audio::{output::Output, Source},
@@ -11,6 +13,8 @@ use crate::{
     resources::audio::Sounds,
 };
 
+/// The `CameraShakeSystem` uses `Perspective` components to decide how to
+/// rotate ominously.
 #[derive(SystemDesc)]
 pub struct CameraShakeSystem;
 
@@ -47,6 +51,8 @@ impl<'s> System<'s> for CameraShakeSystem {
     }
 }
 
+/// The `CameraZoomSystem` uses `Cutscene` components to decide how to zoom in
+/// and out for dramatic effect.
 #[derive(SystemDesc)]
 pub struct CameraZoomSystem;
 

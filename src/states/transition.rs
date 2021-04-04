@@ -38,8 +38,6 @@ use crate::{
     systems::{CameraShakeSystem, CameraZoomSystem, FadeSystem, GlassSystem},
 };
 
-use log::info;
-
 /// This state offers different ways to transition between levels.
 /// If it's given a perspective shift, it'll rotate the camera on the z-axis
 /// and play a sound. If it's given a cutscene, it'll zoom in, break some

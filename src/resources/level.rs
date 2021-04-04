@@ -16,7 +16,7 @@ pub enum EntityType {
 
 /// The entity to create and a percentage (x, y) representing where
 /// they were in the text level config.
-/// e.g. in a row with "P   F", P's x value is 20% from the left, and
+/// e.g. in a row with `"P   F"`, P's x value is 20% from the left, and
 /// F is 100% from the left.
 pub type EntityRecord = (EntityType, f32, f32);
 
@@ -51,7 +51,7 @@ pub struct LevelConfig {
 }
 
 /// This is the main code representation of our fully loaded levels,
-/// where we can see if we're using small small levels, and then get
+/// where we can see if we're using small levels, and then get
 /// all the entities and their relative positions for a given level.
 #[derive(Clone, Debug)]
 pub struct Levels {

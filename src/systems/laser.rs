@@ -1,3 +1,8 @@
+//! The player character has exactly one weapon at their disposal:
+//! a trusty laser blaster mounted on their face. Once a laser is
+//! fired, it continues moving in its given `Direction` until it
+//! collides with an enemy (see `collision.rs`) or it goes out of
+//! bounds.
 use amethyst::{
     core::{timing::Time, Transform},
     derive::SystemDesc,
@@ -11,10 +16,10 @@ use crate::{
 
 use log::info;
 
-// this system is concerned only with lasers that have already been spawned.
-// the entity exists but the transform needs to be continuously updated based
-// on the direction.
-// if it collides with a border it should also be destroyed.
+/// The main responsibility of `LaserSystem` is to update the laser's
+/// transform component based on its speed, direction, and delta time.
+/// `collision.rs` may destroy these lasers if they hit enemies, otherwise
+/// this system will delete them whenever they travel outside the playing area.
 #[derive(SystemDesc)]
 pub struct LaserSystem;
 

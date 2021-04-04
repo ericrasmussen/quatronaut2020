@@ -1,5 +1,5 @@
 //! This module contains our main gameplay state and game update method. It is
-//! used by `main.rs` to build the application.
+//! used by `menu.rs` to build the game.
 //! The main responsibilities are:
 //!   1) initialize the game world (assets, prefabs, entities)
 //!   2) setup the dispatcher so the systems here won't run in other states

@@ -1,3 +1,6 @@
+//! This is used for the glass breaking effect when the
+//! arcade background "breaks", before the camera zooms out to
+//! reveal the widescreen broken background.
 use amethyst::{
     core::{timing::Time, Transform},
     derive::SystemDesc,
@@ -11,9 +14,9 @@ use crate::{
 
 use log::info;
 
-// this system sends glass flying off in whatever ``glass.direction`` they
-// have, at their given ``glass.speed``
-// if it collides with a border it should also be destroyed.
+/// This system sends glass flying off in whatever ``glass.direction`` they
+/// have, at their given ``glass.speed``. A lot of the code is duplicated
+/// from `laser.rs`. Ideally they'd be consolidated into something more generic.
 #[derive(SystemDesc)]
 pub struct GlassSystem;
 

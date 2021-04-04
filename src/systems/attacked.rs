@@ -1,7 +1,7 @@
-/// These systems deal with conditions that delete players, such as being hit by
-/// an enemy or a projectile. Right now there are only two cases, but if there are
-/// ever three or more then this should probably send a "player hit" event so it
-/// can be handled in one place.
+//! These systems deal with conditions that delete players, such as being hit by
+//! an enemy or a projectile. Right now there are only two cases, but if there are
+//! ever three or more then this should probably send a "player hit" event so it
+//! can be handled in one place.
 use amethyst::{
     assets::AssetStorage,
     audio::{output::Output, Source},
@@ -13,10 +13,13 @@ use amethyst::{
 use crate::{
     components::{collider::Collider, launcher::Projectile},
     entities::{enemy::Enemy, player::Player},
-    resources::audio::{SoundType, Sounds},
+    resources::{audio::{SoundType, Sounds}, playablearea::PlayableArea},
+
 };
 use log::info;
 
+/// Checks whether an enemy has collided with (aka attacked) our hero. If
+/// the player is invulnerable, nothing happens, otherwise you lose.
 #[derive(SystemDesc)]
 pub struct AttackedSystem;
 
@@ -33,9 +36,6 @@ impl<'s> System<'s> for AttackedSystem {
         Option<Read<'s, Output>>,
     );
 
-    // note that `player` is needed here as part of the query to ensure we're
-    // dealing with player entities (otherwise we'd be checking every game entity with projectiles and
-    // colliders)
     fn run(
         &mut self,
         (transforms, players, enemies, colliders, entities, storage, sounds, audio_output): Self::SystemData,
@@ -65,6 +65,8 @@ impl<'s> System<'s> for AttackedSystem {
     }
 }
 
+/// Checks whether our outstanding hero has been hit by a projectile. If the player
+/// is invulnerable, the projectile disappears, otherwise the player loses.
 #[derive(SystemDesc)]
 pub struct ProjectileHitSystem;
 
@@ -75,13 +77,14 @@ impl<'s> System<'s> for ProjectileHitSystem {
         WriteStorage<'s, Player>,
         WriteStorage<'s, Projectile>,
         ReadStorage<'s, Collider>,
+        Read<'s, PlayableArea>,
         Entities<'s>,
     );
 
     // note that `player` is needed here as part of the query to ensure we're
     // dealing with player entities (otherwise we'd be checking every game entity with projectiles and
     // colliders)
-    fn run(&mut self, (transforms, players, projectiles, colliders, entities): Self::SystemData) {
+    fn run(&mut self, (transforms, players, projectiles, colliders, playable_area, entities): Self::SystemData) {
         for (player_entity, player, player_transform, player_collider) in
             (&entities, &players, &transforms, &colliders).join()
         {
@@ -98,9 +101,9 @@ impl<'s> System<'s> for ProjectileHitSystem {
                 );
 
                 if collides {
-                    // we probably don't actually want to delete the player instantly,
-                    // but how else will we artificially inflate difficulty in a short game
-                    // TODO: this is also a game over event condition
+                    // we delete the player instantly to artificially inflate
+                    // the difficulty of a short game. if we add more conditions
+                    // then this should be handled by an event
                     if !player.invulnerable {
                         info!("player was hit!");
                         entities.delete(player_entity).unwrap();
@@ -110,8 +113,7 @@ impl<'s> System<'s> for ProjectileHitSystem {
                 }
 
                 let trans = projectile_transform.translation();
-                // 2880.0 x 1710.0
-                if trans.x < -5.0 || trans.x > 2900.0 || trans.y < -5.0 || trans.y > 2000.0 {
+                if playable_area.out_of_bounds(trans.x, trans.y) {
                     entities.delete(projectile_entity).unwrap();
                 }
             }

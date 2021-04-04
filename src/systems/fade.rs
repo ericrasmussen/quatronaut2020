@@ -1,3 +1,5 @@
+//! This system controllers `Fader` components to create a
+//! fade-to-black effect for simple level transitions.
 use amethyst::{
     core::timing::Time,
     derive::SystemDesc,
@@ -7,15 +9,11 @@ use amethyst::{
 
 use crate::components::fade::{FadeStatus, Fader};
 
-//use log::info;
-
+/// Faders have an associated `Tint` component so we can modify
+/// the alpha frame by frame.
 #[derive(SystemDesc)]
 pub struct FadeSystem;
 
-// this system exists to remove the player entity when victory is achieved
-// if it happens too suddenly we might do something like a victory condition
-// resource that requires both enemy count <= 0 and some time elapsed since
-// the last enemy was removed
 impl<'s> System<'s> for FadeSystem {
     type SystemData = (
         WriteStorage<'s, Fader>,
@@ -24,8 +22,6 @@ impl<'s> System<'s> for FadeSystem {
         Read<'s, Time>,
     );
 
-    // open question: should lasers be deleted here too? otherwise they may still be flying
-    // across the screen when a new level starts
     fn run(&mut self, (mut faders, mut tints, mut fade_status, time): Self::SystemData) {
         for (fader, tint) in (&mut faders, &mut tints).join() {
             //info!("found tint: {:?}", tint);

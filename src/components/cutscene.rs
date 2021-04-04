@@ -1,5 +1,5 @@
 //! The `Cutscene` component is used to describe how we can manipulate the
-//! camera during our transition to thedamaged background art/wide-screen mode.
+//! camera during our transition to the damaged background art/wide-screen mode.
 //! It's expected that camera systems will use this component to get the next
 //! camera scale, and states (namely `transition.rs`) can check if we're in
 //! the `Spawning` phase (meaning it's time to spawn glass shards so it looks
