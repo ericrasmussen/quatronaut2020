@@ -1,8 +1,8 @@
-/// This game state is for The End, Game Over, You Won,
-/// All is Well, or however else you encapsulate the competing notions of
-/// total domination over your foes vs utter defeat at the (metaphorical) hands
-/// of slow-moving polygons.
-/// tl;dr this is where you go for "You Win" or "Game Over" screens
+//! This game state is for The End, Game Over, You Won,
+//! All is Well, or however else you encapsulate the competing notions of
+//! total domination over your foes vs utter defeat at the (metaphorical) hands
+//! of slow-moving polygons.
+//! tl;dr this is where you go for "You Win" or "Game Over" screens
 use amethyst::{
     ecs::Entity,
     input::is_close_requested,

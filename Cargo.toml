@@ -14,6 +14,9 @@ ncollide2d = "0.26"
 serde = { version = "1.0.104", features = ["derive"] }
 rand = "0.7.3"
 
+[dev-dependencies]
+amethyst_test = "0.15.3"
+
 [features]
 empty = ["amethyst/empty"]
 metal = ["amethyst/metal"]

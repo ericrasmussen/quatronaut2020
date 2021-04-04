@@ -5,7 +5,7 @@ use amethyst::{
 };
 
 use crate::{
-    entities::glass::Glass,
+    components::glass::Glass,
     resources::{direction::Direction, playablearea::PlayableArea},
 };
 

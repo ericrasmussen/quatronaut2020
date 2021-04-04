@@ -22,10 +22,10 @@ use crate::{
     components::{
         cutscene::{Cutscene, CutsceneStatus},
         fade::{Fade, FadeStatus, Fader},
+        glass::Glass,
         perspective::{Perspective, PerspectiveStatus},
         tags::{BackgroundTag, CleanupTag},
     },
-    entities::glass::Glass,
     resources::{
         direction::Direction,
         gameconfig::{GameConfig, GameplayMode},

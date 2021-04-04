@@ -1,3 +1,8 @@
+//! There are a lot of handles to manage in a game. This struct
+//! at least makes them easier to pass around. It does expose some
+//! of the difficulties of mixing and matching prefabs with non-prefab
+//! approaches. If I had time I would probably remove the prefabs
+//! completely.
 use amethyst::{
     assets::{AssetStorage, Handle, Loader, Prefab, ProgressCounter},
     prelude::*,
@@ -6,7 +11,7 @@ use amethyst::{
 
 use crate::entities::{enemy::EnemyPrefab, player::PlayerPrefab};
 
-/// The `GameplayState` needs to keep track of man prefab and spritesheet
+/// The `GameplayState` needs to keep track of many prefab and spritesheet
 /// handles to run. This struct mostly exists to organize all those handles
 /// into one namespace.
 #[derive(Clone, Debug)]
@@ -34,6 +39,8 @@ pub struct GameplayHandles {
     pub player_sprites_handle: Handle<SpriteSheet>,
 }
 
+/// This relys on `gameplay.rs` to pass in the prefabs. It then loads all
+/// the non-prefab spritesheets, and puts all the handles in one handy struct.
 pub fn get_game_handles(
     world: &mut World,
     progress_counter: &mut ProgressCounter,
@@ -47,7 +54,7 @@ pub fn get_game_handles(
     let overlay_sprite_handle = load_sprite_sheet(world, "transition", progress_counter);
     let glass_sprite_handle = load_sprite_sheet(world, "glass_shards", progress_counter);
     let enemy_sprites_handle = load_sprite_sheet(world, "enemy_sprites", progress_counter);
-    let player_sprites_handle = load_sprite_sheet(world, "sprite_sheet", progress_counter);
+    let player_sprites_handle = load_sprite_sheet(world, "player_sprites", progress_counter);
 
     GameplayHandles {
         background_sprite_handle,
@@ -63,7 +70,7 @@ pub fn get_game_handles(
     }
 }
 
-// helper for loading a spritesheet
+// Helper for loading a spritesheet into asset storage.
 fn load_sprite_sheet(world: &mut World, name: &str, progress_counter: &mut ProgressCounter) -> Handle<SpriteSheet> {
     let texture_handle = {
         let loader = world.read_resource::<Loader>();
@@ -81,7 +88,8 @@ fn load_sprite_sheet(world: &mut World, name: &str, progress_counter: &mut Progr
     loader.load(
         format!("sprites/{}.ron", name),
         SpriteSheetFormat(texture_handle),
-        // TODO: should be progress_counter here too
+        // TODO: should be progress_counter here too but would require some
+        // restructuring
         (),
         &sprite_sheet_store,
     )

@@ -1,3 +1,4 @@
+//! Working on crate docs
 // this is the main entry point for our game. it was only slightly modified
 // from the main.rs file in https://github.com/amethyst/amethyst-starter-2d
 use amethyst::{

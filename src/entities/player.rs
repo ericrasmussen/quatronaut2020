@@ -1,3 +1,5 @@
+//! This module contains the prefab setup and structs for our
+//! hero, the brave blue circle that never gives up and never surrenders.
 use amethyst::{
     assets::PrefabData,
     derive::PrefabData,
@@ -9,8 +11,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{components::collider::Collider, resources::direction::Direction};
 
-// this entity is a grouping of components, which allows the prefab loads to aggregate
-// components from a config file (`prefabs/enemy.ron` in our case)
+/// This entity is a grouping of components, which allows the prefab loads to aggregate
+/// components from a config file (`assets/prefabs/player.ron` in our case).
 #[derive(Debug, Deserialize, Serialize)]
 pub struct PlayerPrefab {
     pub player: Player,
@@ -39,6 +41,11 @@ impl<'a> PrefabData<'a> for PlayerPrefab {
     }
 }
 
+/// This is the main struct that represents what it means to be
+/// a true player for real (TPFR). We need to know the player's speed,
+/// the speed of the lasers they fire, their fire delay (which determines
+/// fire rate), their current direction, and whether or not they are an
+/// immortal being impervious to all known forms of damage.
 #[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PrefabData)]
 #[prefab(Component)]
 #[serde(deny_unknown_fields)]
@@ -53,17 +60,16 @@ pub struct Player {
 }
 
 impl Player {
-    // this is mainly so callers cannot modify the speed directly. we could
-    // also have the player track momentum to compute a speed, but it seems
-    // unnecessary
+    /// This is mainly so callers cannot modify the speed directly, but can
+    /// still get the current speed.
     pub fn get_speed(&self) -> f32 {
         self.speed
     }
 
-    // checks if we've had enough time elapse since the last laser
-    // and resets the timer. this is possibly a surprising API for a
-    // `bool` check, but it also ensures we don't rely on calling code
-    // to manage the timer.
+    /// Checks if we've had enough time elapse since the last laser
+    /// and resets the timer. this is possibly a surprising API for a
+    /// `bool` check, but it also ensures we don't rely on calling code
+    /// to manage the timer.
     pub fn can_fire(&mut self, time: f32) -> bool {
         if self.seconds_since_firing >= self.fire_delay {
             self.seconds_since_firing = 0.0;

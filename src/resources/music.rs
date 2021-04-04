@@ -1,3 +1,6 @@
+//! This is a pretty big file for looping one track over and over, but
+//! it could be used to add more tracks in the future. It's adapted from
+//! the pong example in the amethyst book.
 use std::{iter::Cycle, vec::IntoIter};
 
 use amethyst::{
@@ -8,18 +11,22 @@ use amethyst::{
     error::Error,
 };
 
-// starting out by copying the pong example in the amethyst book
 const MUSIC_TRACKS: &[&str] = &["music/Quatronaut_-_Angles_Of_Attack_v01.ogg"];
 
+/// Our struct only needs to know about cycling over some number of handles.
 pub struct Music {
     pub music: Cycle<IntoIter<SourceHandle>>,
 }
 
-/// TODO: this is duplicated in audio.rs
+/// This is duplicated in audio.rs, but for now music related setup is being
+/// kept here in it's own module. Probably ok to copy/paste
+/// until there's a third use case.
 fn load_audio_track(loader: &Loader, world: &World, file: &str) -> SourceHandle {
     loader.load(file, OggFormat, (), &world.read_resource())
 }
 
+/// This loads all the music (our one track) and music struct
+/// into the `world`.
 pub fn initialize_music(world: &mut World) {
     let music = {
         let loader = world.read_resource::<Loader>();
@@ -37,17 +44,15 @@ pub fn initialize_music(world: &mut World) {
         Music { music }
     };
 
-    // Add sound effects and music to the world. We have to do this in another scope because
-    // world won't let us insert new resources as long as `Loader` is borrowed.
     world.insert(music);
 }
 
-// the DJ system assumes the type of resource it needs will exist already, but in main.rs
-// we haven't initialized anything. this bundle takes care of initialization and adding the
-// system so that it can be used by main.rs
-// in the pong example it only works because pong is bundled and initialized first
-// alternatively maybe a different djsystem could be added to gameplay.rs using the lower
-// level DjSystem API
+/// The DJ system assumes the type of resource it needs will exist already, but in main.rs
+/// we haven't initialized anything. this bundle takes care of initialization and adding the
+/// system so that it can be used by `main.rs`.
+/// Note: in the pong example it only works because pong is bundled and initialized first.
+/// Alternatively, maybe a different djsystem could be added to gameplay.rs using the lower
+/// level `DjSystem` API (instead of `DjSystemDesc`).
 pub struct MusicBundle;
 
 impl<'a, 'b> SystemBundle<'a, 'b> for MusicBundle {

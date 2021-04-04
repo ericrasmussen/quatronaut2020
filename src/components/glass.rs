@@ -1,12 +1,13 @@
-/// This module is for
+//! The `Glass` component represents an individual glass shard
+//! that gets placed on the screen when we "break" the small
+//! background and reveal the larger, broken background (play the
+//! game to see it in action -- just press 'g' during a level
+//! for invulnerability).
 use amethyst::ecs::prelude::{Component, DenseVecStorage};
 
 use crate::resources::direction::Direction;
 
-//use log::info;
-
 // An individual glass shard with its own direction and speed
-// TODO: maybe a delay here?
 #[derive(Debug)]
 pub struct Glass {
     pub direction: Direction,

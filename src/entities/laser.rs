@@ -1,6 +1,6 @@
-/// This module includes the laser component creation, laser entity,
-/// and the Direction enum used for rotating the sprite and determining
-/// velocity.
+//! This module includes the laser component creation, laser entity,
+//! and the Direction enum used for rotating the sprite and determining
+//! velocity.
 use amethyst::{
     core::Transform,
     ecs::prelude::{Component, DenseVecStorage, Entities, Entity, LazyUpdate, ReadExpect},
@@ -9,13 +9,10 @@ use amethyst::{
 
 use crate::{components::tags::CleanupTag, resources::direction::Direction};
 
-//use log::info;
-
 /// This is the laser component type, used by `spawn_laser` to create new
-/// laser entities.
-/// The systems/player.rs file determines, based on player input, when to
-/// fire lasers.
-/// The systems/laser.rs module is responsible for updating the laser position
+/// laser entities. The systems/player.rs file determines, based on player
+/// input, when to fire lasers.
+/// The systems/laser.rs module is also responsible for updating the laser position
 /// and eventually destroying it.
 #[derive(Debug)]
 pub struct Laser {
@@ -28,10 +25,10 @@ impl Laser {
         Laser { direction, speed }
     }
 
-    // we're receiving two types of inputs that may or may not be directional.
-    // we need to decide if they are directional (e.g. Up, or Right and Up),
-    // combine the horizontal and vertical directions if possible, and finally
-    // create a new laser.
+    /// We're receiving two types of inputs that may or may not be directional.
+    /// We need to decide if they are directional (e.g. Up, or Right and Up),
+    /// combine the horizontal and vertical directions if possible, and finally
+    /// create a new (maybe) laser.
     pub fn from_coordinates(x: Option<f32>, y: Option<f32>, speed: f32) -> Option<Laser> {
         // inputs come from the amethyst input manager
         let maybe_x = Direction::horizontal(x.unwrap_or(0.0));
@@ -54,9 +51,9 @@ impl Component for Laser {
     type Storage = DenseVecStorage<Self>;
 }
 
-// this is used by systems/player.rs to create lasers whenever the player fires
-// them. the lazy_update usage is from the space-menace game example and may
-// not be required.
+/// This is used by systems/player.rs to create lasers whenever the player fires
+/// them. the lazy_update usage is from the space-menace game example and may
+/// not be required.
 // UNFORTUNATE: this implementation ties the laser image to
 // the sprite sheet being used by the player. Ideally we'd have some other way
 // to get the correct sprite.
@@ -68,7 +65,7 @@ pub fn spawn_laser(
     lazy_update: &ReadExpect<LazyUpdate>,
 ) {
     // an incorrect sprite number here will lead to a memory leak. this should
-    // correspond to the position of the laser sprite in sprite_sheet.png
+    // correspond to the position of the laser sprite in player_sprites.png
     let sprite_render = SpriteRender {
         sprite_sheet: sprite_sheet_handle,
         sprite_number: 3,
