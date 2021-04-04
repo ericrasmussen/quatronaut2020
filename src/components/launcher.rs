@@ -1,5 +1,5 @@
-/// This component tracks when and how to fire projectiles,
-/// along with logic to create different projectiles.
+//! This component tracks when and how to fire projectiles,
+//! along with logic to create different projectiles.
 use amethyst::{
     assets::PrefabData,
     core::Transform,
@@ -21,6 +21,8 @@ use crate::components::{
 
 use crate::resources::audio::SoundType;
 
+/// This is used by the boss enemy that fires projectiles. The
+/// launcher lets us control the firing rate and projectile speed.
 #[derive(Clone, Copy, Debug, Deserialize, Serialize, PrefabData)]
 #[prefab(Component)]
 #[serde(deny_unknown_fields)]
@@ -31,10 +33,10 @@ pub struct Launcher {
 }
 
 impl Launcher {
-    // checks if we've had enough time elapse since the last laser
-    // and resets the timer. this is possibly a surprising API for a
-    // `bool` check, but it also ensures we don't rely on calling code
-    // to manage the timer.
+    /// Checks if we've had enough time elapse since the last laser
+    /// and resets the timer. this is possibly a surprising API for a
+    /// `bool` check, but it also ensures we don't rely on calling code
+    /// to manage the timer.
     pub fn can_fire(&mut self, time: f32) -> bool {
         // this offset here is to make the firing less predictable,
         // which is important when multiple enemies would otherwise fire
@@ -54,8 +56,8 @@ impl Component for Launcher {
     type Storage = DenseVecStorage<Self>;
 }
 
-// empty struct for now because this is used as a way to track projectiles
-// in systems, and so far there's no real data we need to associate with it
+/// Empty struct that lets us tag entities as `Projectile`s. The `systems`
+/// module needs this for looking them up.
 #[derive(Debug, Default)]
 pub struct Projectile;
 
@@ -63,8 +65,10 @@ impl Component for Projectile {
     type Storage = NullStorage<Self>;
 }
 
-// this needs to be run by a system that has a launcher, sprites, transforms,
-// and all entities.
+/// This needs to be run by a system that has a launcher, sprites, transforms,
+/// and all entities. It creates an entity with all the necessary components
+/// for systems to operate on the projectile (moving it, detecting collisions,
+/// checking if it's out of bounds, etc).
 pub fn launch_projectile(
     launcher: Launcher,
     sprite_sheet_handle: SpriteSheetHandle,

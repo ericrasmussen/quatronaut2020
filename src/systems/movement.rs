@@ -1,3 +1,7 @@
+//! The movement module has a system to determine the enemy's next
+//! move, and another system to update the transforms. This separation
+//! is useful when you need information from multiple transforms all
+//! joined at different levels.
 use amethyst::{
     assets::AssetStorage,
     audio::{output::Output, Source},
@@ -16,6 +20,10 @@ use std::f32::consts::PI;
 
 use log::debug;
 
+/// This system has mutable enemies so we can update their velocity based
+/// on their transform and the player transforms. It does not actually move
+/// the enemy, but their velocity is used by `TransformUpdateSystem` below
+/// to decide the next (x, y) values for the `Transform`.
 #[derive(SystemDesc)]
 pub struct MovementTrackingSystem;
 
@@ -46,7 +54,10 @@ impl<'s> System<'s> for MovementTrackingSystem {
     }
 }
 
-// now we can update the transform
+/// This is the system that checks the enemy's velocity and updates their
+/// transform. It grew a little larger than intended, and now also handles
+/// other movement related info like playing a launch sound or obtaining
+/// direction information needed for rotating yellow enemies to face players.
 #[derive(SystemDesc)]
 pub struct TransformUpdateSystem;
 
@@ -76,8 +87,6 @@ impl<'s> System<'s> for TransformUpdateSystem {
             let x = enemy_transform.translation().x;
             let y = enemy_transform.translation().y;
 
-            // maybe TODO: smooth rotation? or for projectiles at least,
-            // rotated before being spawned
             if let Some(player_vec) = movement.locked_direction {
                 if !movement.already_rotated {
                     let dir = player_vec - enemy_transform.translation();

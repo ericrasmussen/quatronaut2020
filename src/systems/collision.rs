@@ -1,3 +1,5 @@
+//! This module detects laser collisions with enemies so they can take
+//! damage. See `attacked.rs` for collisions with the player.
 use nalgebra::{Isometry2, Vector2};
 use ncollide2d::{bounding_volume, shape::Cuboid};
 
@@ -15,10 +17,12 @@ use crate::{
     resources::audio::{SoundType, Sounds},
 };
 
-//use log::info;
 
-// big TODO: as this system gets more complicated, at some point it'll probably
-// be worth using ncollide's broad phase collision
+/// This is the main laser collision detection system, or LCDS.
+/// Note: an alternative approach (probably more useful in larger games)
+/// would be using ncollide's broad phase collision detection and integrating
+/// it with amethyst. Then it would be tracking a whole lot of things and reporting
+/// more data.
 #[derive(SystemDesc)]
 pub struct CollisionSystem;
 
@@ -40,7 +44,6 @@ impl<'s> System<'s> for CollisionSystem {
         (transforms, lasers, mut enemies, entities, colliders, storage, sounds, audio_output): Self::SystemData,
     ) {
         for (laser_entity, _laser_a, transform_a) in (&entities, &lasers, &transforms).join() {
-            // this is for a laser much larger than ours. agh.
             // the x, y should be the half length along the x and y axes, respectively
             // for a ball type you'd use a radius instead. this creates a representation of
             // the shape and a size of the shape, but *not* positioning of any kind
@@ -50,7 +53,7 @@ impl<'s> System<'s> for CollisionSystem {
 
             // next we need to create an isometry representation of the position, which for 2d
             // ncollide is a vector of the x and y coordinates and a rotation (zero() for no rotation).
-            // the actual rotation is available via some_transform.isometry(), but
+            // the actual rotation is available via some_transform.isometry() if ever needed
             let laser_cube_pos = Isometry2::new(
                 Vector2::new(transform_a.translation().x, transform_a.translation().y),
                 nalgebra::zero(),
@@ -74,7 +77,6 @@ impl<'s> System<'s> for CollisionSystem {
                     // we should probably destroy the laser too
                     entities.delete(laser_entity).unwrap();
                     // if the enemy has taken enough damage, delete them
-                    // TODO: may be a latent bug in associating this with laser hits...
                     if enemy.is_dead() && entities.delete(enemy_entity).is_ok() {
                         //info!("enemy deleted due to insufficient laser dodging abilities");
                         sounds.play_sound(SoundType::EnemyDeath, &storage, audio_output.as_deref());

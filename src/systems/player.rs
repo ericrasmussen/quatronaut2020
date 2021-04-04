@@ -1,3 +1,5 @@
+//! This module handles all player-based input and uses it to fire lasers
+//! and update the player position.
 use amethyst::{
     assets::AssetStorage,
     audio::{output::Output, Source},
@@ -20,14 +22,13 @@ use crate::resources::{
 
 use amethyst_rendy::sprite::SpriteRender;
 
-//use log::info;
-
 #[derive(SystemDesc)]
 pub struct PlayerSystem;
 
-// this system is likely too complicated, but it's not clear if there's a benefit
-// to breaking some of it into separate systems (for instance, one system to track
-// input, another to modify the transform, another to spawn lasers, etc)
+/// This system is doing too many things, but it's still a relatively small amount
+/// of code. It gets information on the movement and laser inputs, then moves the
+/// player and spawns lasers (when possible, as determined by the player's configured
+/// firing rate, since we wouldn't want lasers spawning every frame)
 #[allow(clippy::type_complexity)]
 impl<'s> System<'s> for PlayerSystem {
     type SystemData = (

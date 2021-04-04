@@ -1,8 +1,8 @@
-/// The `states::gameplay::GameplayState` module uses a dispatcher to ensure
-/// its systems only run when it is the active state. Consequently, this
-/// paused state doesn't need to do anything to stop all the game action.
-/// Eventually though it'd be good to have an overplay or "press p to continue"
-/// message.
+//! The `states::gameplay::GameplayState` module uses a dispatcher to ensure
+//! its systems only run when it is the active state. Consequently, this
+//! paused state doesn't need to do anything to stop all the game action.
+//! Eventually though it'd be good to have an overplay or "press p to continue"
+//! message. I'll probably never get to that.
 use amethyst::{
     input::{is_key_down, VirtualKeyCode},
     prelude::*,
