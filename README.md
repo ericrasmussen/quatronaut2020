@@ -30,6 +30,23 @@ The controls are wasd for movement and the arrow keys for firing lasers.
 - working menu screens! kind of! ...sometimes
 - will be shipped ahead of schedule with lots of bugs
 
+### Docs
+
+I want this game to be as useful as possible to other rust or amethyst game
+developers, so be sure to use one of:
+
+# macos builds:
+`cargo doc --features metal`
+
+# other builds:
+`cargo doc --features vulkan`
+
+The docs are written more like a design decisions document or development blog
+(as opposed to typical API docs). This is to make it clear when alternative approaches
+exist or when things are complicated and ideally would be cleaned up (presumably I'm
+lacking the time or motivation to do said cleaning).
+
+
 ### Secret cheat codes
 
 OK, there's only one secret. Press 'g' during gameplay to toggle HYPER IMMORTAL mode.
