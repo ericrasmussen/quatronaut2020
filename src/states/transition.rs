@@ -1,7 +1,10 @@
-/// This state can be pushed on top of `GameplayState`
-/// and popped as needed. For now its main purpose is having
-/// a kind of cutscene/level complete transition so that
-/// progressing to the next level isn't so jarring.
+//! This state manages three types of level transitions:
+//!  1) arcade background to arcade background --
+//!        the screen will shake and make a noise
+//!  2) arcade background to damaged background --
+//!         the camera will zoom in, glass flies everywhere, camera zooms out
+//!  3) a quick fade to black and back before the next level layout is loaded
+//!     (makes transitions feel less jarring)
 use amethyst::{
     assets::Handle,
     core::math::{Translation3, UnitQuaternion, Vector3},
@@ -22,10 +25,10 @@ use crate::{
     components::{
         cutscene::{Cutscene, CutsceneStatus},
         fade::{Fade, FadeStatus, Fader},
+        glass::Glass,
         perspective::{Perspective, PerspectiveStatus},
         tags::{BackgroundTag, CleanupTag},
     },
-    entities::glass::Glass,
     resources::{
         direction::Direction,
         gameconfig::{GameConfig, GameplayMode},
@@ -34,8 +37,6 @@ use crate::{
     states::{gameplay::GameplayState, paused::PausedState},
     systems::{CameraShakeSystem, CameraZoomSystem, FadeSystem, GlassSystem},
 };
-
-use log::info;
 
 /// This state offers different ways to transition between levels.
 /// If it's given a perspective shift, it'll rotate the camera on the z-axis
@@ -93,7 +94,10 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
         }
 
         // this is all a little over complicated, but the status is a shared
-        // resource to track if fading has completed
+        // resource to track if fading has completed. note that this is not
+        // consistent with the `GameConfig` struct or other things passed around
+        // explicitly. it's all part of my master plan to demonstrate different ways
+        // to do the same thing in increasingly complicated ways
         world.register::<FadeStatus>();
         world.insert(FadeStatus::default());
 
@@ -158,7 +162,7 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
         let mut fade_status = data.world.write_resource::<FadeStatus>();
 
         // if we have any kind of non-fade transition, they determine when to switch
-        // states
+        // states, otherwise we go by whether the fade status `is_completed()`
         let managed_scene = self.perspective_shift.is_some() || self.cutscene.is_some();
 
         if fade_status.is_completed() && !managed_scene {
@@ -174,9 +178,9 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
     }
 
     fn on_stop(&mut self, data: StateData<GameData>) {
-        // state items that should be cleaned up (players, entities, lasers,
-        // projectiles) should all be marked with `CleanupTag` and removed
-        // here when this state ends
+        // we should probably just add cleanup tags to everything and
+        // simplify this the way we do in `gameplay.rs`, but at least
+        // the below version is explicit
         let entities = data.world.read_resource::<EntitiesRes>();
         let cleanup_tags = data.world.read_storage::<CleanupTag>();
         let faders = data.world.read_storage::<Fader>();
@@ -200,6 +204,7 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
                 entities.delete(entity).expect(&err);
             }
         }
+        // cleanup cutscenes too
         if let Some(_cutscene) = &self.cutscene {
             let cutscenes = data.world.read_storage::<Cutscene>();
             for (entity, _perspective) in (&entities, &cutscenes).join() {
@@ -227,8 +232,9 @@ impl<'a, 'b> SimpleState for TransitionState<'a, 'b> {
     }
 }
 
-// render the background, giving it a low z value so it renders under
-// everything else
+/// This renders a small black square and then stretches it over the screen. The
+/// `Fader` and `Tint` components control transitioning it smoothly between solid
+/// black and fully transparent.
 fn init_overlay(
     world: &mut World,
     dimensions: &ScreenDimensions,
@@ -271,12 +277,13 @@ fn init_overlay(
     }
 }
 
+/// This feels a little... large... but it basically spawns randomly sized
+/// shards of glass, pointing in random directions, all over the arcade background.
+/// The `glass.rs` system then sends these flying while the smashing sound plays.
 fn init_glass(world: &mut World, glass_sprite_handle: Handle<SpriteSheet>) {
     let playable_area = (*world.read_resource::<PlayableArea>()).clone();
 
     let base_rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
-
-    info!("inserting some glass shards now!");
 
     // the step by is mostly arbitrary based on what seems to look ok
     for x_coord in (-4 .. 101).step_by(4) {

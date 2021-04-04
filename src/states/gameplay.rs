@@ -1,9 +1,9 @@
-/// This module contains our main gameplay state and game update method. It is
-/// used by `main.rs` to build the application.
-/// The main responsibilities are:
-///   1) initialize the game world (assets, prefabs, entities)
-///   2) setup the dispatcher so the systems here won't run in other states
-///   3) act as the game's state manager (deciding when to switch states)
+//! This module contains our main gameplay state and game update method. It is
+//! used by `menu.rs` to build the game.
+//! The main responsibilities are:
+//!   1) initialize the game world (assets, prefabs, entities)
+//!   2) setup the dispatcher so the systems here won't run in other states
+//!   3) act as the game's state manager (deciding when to switch states)
 use amethyst::{
     assets::{Handle, PrefabLoader, ProgressCounter, RonFormat},
     core::math::{Translation3, UnitQuaternion, Vector3},
@@ -54,8 +54,6 @@ use crate::{
 /// config file without gameplay state knowledge)
 #[derive(new)]
 pub struct GameplayState<'a, 'b> {
-    // this is mostly for use in creating a new menu, but
-    // there might be better options (like Trans::Pop)
     pub game_config: GameConfig,
 
     // useful to know the level status for choosing transitions
@@ -106,9 +104,10 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
         // Get the screen dimensions so we can initialize the camera and
         // place our sprites correctly later. We'll clone this since we'll
-        // pass the world mutably to the following functions.
+        // pass the world mutably to the following functions. note that these
+        // are initialized from assets/configs/display_config.ron, but the
+        // exact dimensions are computed at runtime based on the display type
         let dimensions = (*world.read_resource::<ScreenDimensions>()).clone();
-        //info!("computed dimensions are: {:?}", &dimensions);
 
         // register our entities and resources before inserting them or
         // having them created as part of `init_level` in `update`
@@ -126,7 +125,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         // Place the camera
         init_camera(world, &dimensions);
 
-        // easier to load the prefab handles here and then pass them to
+        // easier to load the prefab handles here and then pass them to the handle handler
         let enemy_prefab_handle = world.exec(|loader: PrefabLoader<'_, EnemyPrefab>| {
             loader.load("prefabs/enemy.ron", RonFormat, &mut self.progress_counter)
         });
@@ -166,7 +165,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             self.handles.clone().unwrap().background_sprite_handle,
         );
 
-        // audio should not need to be initialized multiple times
+        // initialize all our sound effects
         audio::initialize_audio(world, &self.game_config.sound_config);
 
         // setup our music player
@@ -180,12 +179,12 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             .pop()
             .expect("levels.ron needs at least one small level!");
 
-        // setup the playable area. this is still messy but if we begin in small level mode,
-        // we setup the constrained level mode. hidpi_factor should be 1.0 for a normal screen
-        // and something higher for hidpi/retina displays, which affect the number of pixels in
-        // the background images
+        // hidpi_factor should be 1.0 for a normal screen and something higher for
+        // hidpi/retina displays, which affect the number of pixels in the background images
         let is_hidpi = dimensions.hidpi_factor() > 1.0;
-        //info!("high dpi factor bool: {:?}", is_hidpi);
+
+        // The playable area determines the boundaries of the level based on the computed
+        // dimensions and whether or not the display is hidpi
         let playable_area = match next_level_status {
             LevelStatus::LargeLevel(_) => PlayableArea::new(dimensions.width(), dimensions.height(), false, is_hidpi),
             _ => PlayableArea::new(dimensions.width(), dimensions.height(), true, is_hidpi),
@@ -193,11 +192,16 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
         world.insert(playable_area);
 
-        // switches back to the small background if needed
+        // switches to the small or large level background as needed
+        // note: without this extra change here, if you reach a large level and
+        // get game over or choose new game, the widescreen background stays
         change_background(world, &next_level_status);
 
         let handles = self.handles.clone().expect("failure accessing GameplayHandles struct");
 
+        // some tricky logic for choosing level modes. the real special case here is
+        // `TransitionTime`, which means it's the last small level and we need to
+        // know to transition with a cutscene rather than a normal level transition
         let immortal_hyper_mode = self.game_config.immortal_hyper_mode;
         if let GameplayMode::LevelMode = &self.game_config.gameplay_mode {
             match next_level_status {
@@ -221,8 +225,14 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
     fn update(&mut self, data: &mut StateData<'_, GameData<'_, '_>>) -> SimpleTrans {
         if let Some(dispatcher) = self.dispatcher.as_mut() {
-            // TODO: we could maybe push another state over `GameplayState` and push back
-            // when the counter is complete, rather than checking every time here
+            // NOTE: this is really important -- it makes sure we don't run any of
+            // the gameplay systems until we're done loading assets. without it,
+            // if the game loads slowly then some things will appear and start moving
+            // before others.
+            // idea: we could maybe push another state over `GameplayState` and push back
+            // when the counter is complete, rather than checking every time here. if
+            // loading took a long time that would be good time for a loading screen or
+            // overlay too
             if self.progress_counter.is_complete() {
                 dispatcher.dispatch(&data.world);
             }
@@ -264,9 +274,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         // this branch decides whether or not to switch state. if a level is
         // loaded and all enemies are defeated, it's time to transition, otherwise
         // keep going
-        // TODO: this will be what triggers the glass breaking cutscene
         if level_complete && self.game_config.gameplay_mode == GameplayMode::TransitionMode {
-            info!("transitioning with cutscene");
             Trans::Replace(Box::new(TransitionState::new(
                 handles.overlay_sprite_handle,
                 handles.glass_sprite_handle,
@@ -291,11 +299,11 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
             )))
         // we've finished the game! you did it! you're awesome! make sure this
         // comes before the game over check, because technically there are 0 players
-        // when the game is complete
+        // for game over too
         } else if self.game_config.gameplay_mode == GameplayMode::CompletedMode {
             info!("YOU WIN!");
             Trans::Replace(Box::new(AllDone::new(self.game_config.clone(), true)))
-        // the level is still going and you ran out of lives. keep tryin'
+        // the level is still going but you ran out of lives. keep tryin'
         } else if self.level_is_loaded && player_lives == 0 {
             info!("try again!");
             Trans::Replace(Box::new(AllDone::new(self.game_config.clone(), false)))
@@ -305,6 +313,9 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
     }
 
     // handles pausing (toggling the `p` key) and closing (window close or pressing escape)
+    // now that there's a menu screen this pause state isn't really needed, but it's still
+    // a nice example of push/pop state and stopping the running game systems
+    // also, how else are you going to take screenshots of this game in action
     fn handle_event(&mut self, _data: StateData<'_, GameData<'_, '_>>, event: StateEvent) -> SimpleTrans {
         if let StateEvent::Window(event) = &event {
             // Check if the window should be closed
@@ -329,7 +340,8 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         // projectiles) should all be marked with `CleanupTag` and removed
         // here when this state ends
         // BUG: sometimes lasers or projectiles aren't removed, despite always
-        // getting a cleanup tag
+        // getting a cleanup tag. not sure if this is a timing issue or a bug in
+        // the code that I missed
         let entities = data.world.read_resource::<EntitiesRes>();
         let cleanup_tags = data.world.read_storage::<CleanupTag>();
 
@@ -340,21 +352,15 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
     }
 }
 
+/// Initializes the main game camera used in levels. The `dimensions` struct will
+/// return 2880.0 x 1710.0 on retina displays and 1920.0 x 1080.0 on normal displays.
+/// However, the camera size (which amethyst scales as needed) *must* use 1920x1080
+/// (the intended game dimensions) in order for the images to fit correctly.
 fn init_camera(world: &mut World, dimensions: &ScreenDimensions) {
     // Center the camera in the middle of the screen, and let it cover
     // the entire screen
     let mut transform = Transform::default();
     transform.set_translation_xyz(dimensions.width() * 0.5, dimensions.height() * 0.5, 1.);
-    // info!(
-    //     "computed dimensions: {:?} x {:?}",
-    //     dimensions.width(),
-    //     dimensions.height()
-    // );
-    // many amethyst examples show using dimensions here, but it turns out we want the
-    // intended dimensions (say, based on sprite sizes) and not the computed dimensions
-    // (which are affected by hidpi and other factors, and may not be what we intended)
-    // even though transforms can use the computed dimensions, the camera needs the original
-    // dimensions (from display_config.ron)
     world
         .create_entity()
         .with(Camera::standard_2d(1920.0, 1080.0))
@@ -363,8 +369,8 @@ fn init_camera(world: &mut World, dimensions: &ScreenDimensions) {
         .build();
 }
 
-// render the background, giving it a low z value so it renders under
-// everything else
+/// Render the background, giving it a low z value so it renders under
+/// everything else
 fn init_background(world: &mut World, dimensions: &ScreenDimensions, bg_sprite_sheet_handle: Handle<SpriteSheet>) {
     let rotation = UnitQuaternion::from_euler_angles(0.0, 0.0, 0.0);
 
@@ -373,7 +379,8 @@ fn init_background(world: &mut World, dimensions: &ScreenDimensions, bg_sprite_s
     let transform = Transform::new(position, rotation, scale);
 
     // 0 here refers to the arcade machine background with a smaller playable window,
-    // and 1 (which is used by `transition.rs`) is the widescreen background
+    // and 1 (which is used by `transition.rs` and `change_background`) is the
+    // widescreen background
     let sprite_number = 0;
     let bg_render = SpriteRender {
         sprite_sheet: bg_sprite_sheet_handle,
@@ -390,10 +397,10 @@ fn init_background(world: &mut World, dimensions: &ScreenDimensions, bg_sprite_s
         .build();
 }
 
+/// Based on the level status (small or large), this updates the background
+/// accordingly. This logic is duplicated from `transition.rs` and should
+/// probably be consolidated elsewhere.
 fn change_background(world: &mut World, level_status: &LevelStatus) {
-    // this is duplicated from transition.rs and should probably be
-    // handled elsewhere. it resets the main background (from big to small)
-    // for new games
     let sprite_number = match level_status {
         LevelStatus::LargeLevel(_) => 1,
         _ => 0,
@@ -406,6 +413,8 @@ fn change_background(world: &mut World, level_status: &LevelStatus) {
     }
 }
 
+/// This massive function takes all of our prefabs, handles, and level
+/// configuration, then puts them all in the game world.
 fn init_level(world: &mut World, level_metadata: LevelMetadata, handles: GameplayHandles, immortal_hyper_mode: bool) {
     let playable_area = (*world.read_resource::<PlayableArea>()).clone();
 

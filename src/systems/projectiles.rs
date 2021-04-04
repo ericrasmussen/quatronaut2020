@@ -1,3 +1,6 @@
+//! The big red boss badguy has a `Launcher` component that can
+//! fire projectiles. This module spawns those projectiles whenever
+//! the boss can fire (as determined by their configured firing rate).
 use amethyst::{
     core::{timing::Time, Transform},
     derive::SystemDesc,
@@ -11,9 +14,10 @@ use amethyst_rendy::sprite::SpriteRender;
 #[derive(SystemDesc)]
 pub struct ProjectilesSystem;
 
-// this system is likely too complicated, but it's not clear if there's a benefit
-// to breaking some of it into separate systems (for instance, one system to track
-// input, another to modify the transform, another to spawn lasers, etc)
+/// Launch some projectiles whenever an enemy is ready to fire! This
+/// uses `Launcher.can_fire` (which internally has a time-based firing rate)
+/// so that enemies fire only periodically, and not once per frame. I did
+/// accidentally let them fire once per frame though and it looked neat.
 #[allow(clippy::type_complexity)]
 impl<'s> System<'s> for ProjectilesSystem {
     type SystemData = (

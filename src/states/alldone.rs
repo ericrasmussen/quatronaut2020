@@ -1,8 +1,8 @@
-/// This game state is for The End, Game Over, You Won,
-/// All is Well, or however else you encapsulate the competing notions of
-/// total domination over your foes vs utter defeat at the (metaphorical) hands
-/// of slow-moving polygons.
-/// tl;dr this is where you go for "You Win" or "Game Over" screens
+//! This game state is for The End, Game Over, You Won,
+//! All is Well, or however else you encapsulate the competing notions of
+//! total domination over your foes vs utter defeat at the (metaphorical) hands
+//! of slow-moving polygons.
+//! tl;dr this is where you go for "You Win" or "Game Over" screens
 use amethyst::{
     ecs::Entity,
     input::is_close_requested,
@@ -16,6 +16,8 @@ use derive_new::new;
 
 const BUTTON_MENU: &str = "menu";
 
+/// This struct tracks the current status of the game and the relevant
+/// UI elements for the game over and you win screens.
 #[derive(Debug, new)]
 pub struct AllDone {
     // this is still how we're passing around level info to the menu,
@@ -84,7 +86,7 @@ impl SimpleState for AllDone {
     }
 
     fn on_stop(&mut self, data: StateData<GameData>) {
-        // after destroying the current UI, invalidate references as well (makes things cleaner)
+        // after destroying the current UI, invalidate references as well
         if let Some(root_entity) = self.ui_root {
             data.world
                 .delete_entity(root_entity)

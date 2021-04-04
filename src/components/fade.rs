@@ -1,9 +1,7 @@
-/// This state can be pushed on top of `GameplayState`
-/// and popped as needed. For now its main purpose is a
-/// quick fade to black and back transition so that
-/// progressing to the next level isn't so jarring.
+//! This component provides an API for controlling fade to black transitions.
 use amethyst::ecs::{storage::DenseVecStorage, Component};
 
+/// This enum lets us track the status of the current fade transition.
 #[derive(Clone, Debug, PartialEq)]
 pub enum Fade {
     Darken,
@@ -11,6 +9,8 @@ pub enum Fade {
     Done,
 }
 
+/// The `Fader` is given a speed, a direction (Darken/Lighten/Done),
+/// and an alpha level (0.0 is transparent, 1.0 is solid black).
 #[derive(Clone, Debug)]
 pub struct Fader {
     fade_speed: f32,
@@ -38,10 +38,13 @@ impl Fader {
         }
     }
 
+    /// Whether or not we're all done fading.
     pub fn fade_completed(&self) -> bool {
         self.fade_direction == Fade::Done
     }
 
+    /// Compute the next alpha change based on the time since the last
+    /// frame and how fast we want to fade.
     pub fn next_alpha_change(&mut self, time_delta: f32) -> f32 {
         let change_amt = self.fade_speed * time_delta;
         match self.fade_direction {
@@ -59,15 +62,22 @@ impl Fader {
         self.alpha
     }
 
+    /// Check if we're all done covering the screen.
     pub fn is_darkened(&self) -> bool {
         self.fade_direction == Fade::Darken && self.alpha >= 1.0
     }
 
+    /// Check if we're all done making the fader transparent.
     pub fn is_lightened(&self) -> bool {
         self.fade_direction == Fade::Lighten && self.alpha <= 0.0
     }
 }
 
+/// This component can be stored in the amethyst `world` to keep track
+/// of whether or not we're done fading. This is somewhat inconsistent
+/// with other APIs in this codebase, where similar flags are stored at
+/// the state level or passed around in config structs.
+/// Variety! The spice of life!
 pub struct FadeStatus {
     completed: bool,
 }
@@ -83,16 +93,20 @@ impl Default for FadeStatus {
 }
 
 impl FadeStatus {
+    /// Update the status based on whether or not the `fader` is done.
     pub fn update(&mut self, fader: Fader) {
         if fader.fade_completed() {
             self.completed = true;
         }
     }
 
+    /// Check if we're all done.
     pub fn is_completed(&self) -> bool {
         self.completed
     }
 
+    /// Clear the status (useful if we want to change fade direction
+    /// or otherwise keep going).
     pub fn clear(&mut self) {
         self.completed = false;
     }

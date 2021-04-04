@@ -1,5 +1,5 @@
 (
-  // max volume, 0.0 - 1.0
+  // max volume should be 0.0 - 1.0
   // in audio.rs the individual sounds are assigned volumes
   // for balancing
   max_volume: 0.5,
@@ -42,7 +42,8 @@
     "sfx/Triangle_lockon_01_v03.ogg",
   ],
   short_transition: "sfx/Transition_02_v01.ogg",
-  // this might not be needed now
+  // long transition isn't currently in use, but keeping
+  // things here to be flexible
   long_transition: "sfx/Transition_01_v01.ogg",
   glass_transition: "sfx/Quatronaut_-_glassbreak_v01.ogg",
 )
