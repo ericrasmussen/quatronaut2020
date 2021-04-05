@@ -128,7 +128,7 @@
       "                                                                    ",
     ],
 
-    // 5. Twin shooters
+    // 6. Twin shooters
     [
       "   F  F  F                                                 F  F  F  ",
       "                                                                    ",
@@ -146,14 +146,33 @@
       "     S                                                        S     ",
       "       S                                                    S       ",
     ],
+    // 6. Beware The Boss
+    [
+      "                                B                                   ",
+      "                                                                    ",
+      "             B                                        B             ",
+      "                                                                    ",
+      "                                                                    ",
+      "                                                                    ",
+      "                                                                    ",
+      "                                                                    ",
+      "                                                                    ",
+      "                                                                    ",
+      "                              P                     S               ",
+      "                                                                    ",
+      "           S                                                        ",
+      "                                               S                    ",
+      "                    S                                               ",
+    ],
   ],
+
   // this is for the LevelConfig struct
   small_levels: [
-    // 4. breaking free
+    // 5. breaking free
     [
       "           F                    F                 ",
       "                                                  ",
-      "                      F                           ",
+      "                                                  ",
       "  F                                            F  ",
       "                                                  ",
       "   S        S       S       S       S        S    ",
@@ -167,7 +186,7 @@
       "                                                  ",
       "                                                  ",
       "                                                  ",
-      "                                                  ",
+      "    F                                    F        ",
       "                                                  ",
       "                                                  ",
       "                                                  ",
@@ -177,7 +196,7 @@
       "                                                  ",
       "                                                  ",
     ],
-    // 3. it's a trap!
+    // 4. it's a trap!
     [
       "                                                  ",
       "                                  F       F  F    ",
@@ -203,6 +222,35 @@
       "                     S                            ",
       "                                                  ",
       "                                                  ",
+      "                                                  ",
+    ],
+
+    // 3. mind the angles of attack
+    [
+      "                                F                 ",
+      "                                                  ",
+      "      S             S                             ",
+      "                                         F        ",
+      "                                                  ",
+      "   S                                              ",
+      "                                                  ",
+      "                                           S      ",
+      "   S                                              ",
+      "                                                  ",
+      "                       P                          ",
+      "                                                  ",
+      "                                                  ",
+      "                                                  ",
+      "                                                  ",
+      "     F                                            ",
+      "                                                  ",
+      "                                                  ",
+      "                                         S        ",
+      "                                                  ",
+      "      F                                  S        ",
+      "                                    S             ",
+      "                               S                  ",
+      "               F                                  ",
       "                                                  ",
     ],
 

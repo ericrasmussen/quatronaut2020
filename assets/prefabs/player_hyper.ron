@@ -6,7 +6,7 @@ Prefab (
             data: PlayerPrefab(
                 // BEGIN player: Player
                 player: Player(
-                      speed: 500,
+                      speed: 600,
                       laser_speed: 900,
                       // time to delay laser shots in seconds
                       fire_delay: 0.1,

@@ -37,7 +37,7 @@ Prefab (
                 // BEGIN launcher: Launcher
                 launcher: Launcher(
                     fire_delay: 2.0,
-                    projectile_speed: 250,
+                    projectile_speed: 300,
                     seconds_since_firing: 0.17,
                 ),
                 // END launcher: Launcher

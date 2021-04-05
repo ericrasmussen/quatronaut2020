@@ -6,7 +6,7 @@ Prefab (
             data: EnemyPrefab(
                 // BEGIN enemy: Enemy
                 enemy: Enemy(
-                    health: 60,
+                    health: 40,
                 ),
                 // END enemy: Enemy
 
@@ -23,7 +23,7 @@ Prefab (
 
                 // BEGIN movement: Movement
                 movement: Movement(
-                    speed: 100,
+                    speed: 200,
                     velocity_x: 0,
                     velocity_y: 0,
                     freeze_direction: false,
