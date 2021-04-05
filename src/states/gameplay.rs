@@ -187,6 +187,8 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         // hidpi_factor should be 1.0 for a normal screen and something higher for
         // hidpi/retina displays, which affect the number of pixels in the background images
         let is_hidpi = dimensions.hidpi_factor() > 1.0;
+        // this will be relevant for future troubleshooting:`
+        // info!("dimensions: {:?}", dimensions);
 
         // The playable area determines the boundaries of the level based on the computed
         // dimensions and whether or not the display is hidpi
