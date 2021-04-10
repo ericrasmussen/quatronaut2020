@@ -72,6 +72,12 @@ impl<'s> System<'s> for LaserSystem {
                     transform.set_translation_x(pos_x);
                     transform.set_translation_y(neg_y);
                 },
+                Direction::Mouse(manual) => {
+                    let this_x = manual.velocity_x * laser.speed * time.delta_seconds();
+                    let this_y = manual.velocity_y * laser.speed * time.delta_seconds();
+                    transform.prepend_translation_x(this_x);
+                    transform.prepend_translation_y(this_y);
+                },
             }
 
             if playable_area.out_of_bounds(trans.x, trans.y) {

@@ -40,12 +40,17 @@ impl PlayableArea {
     // this is likely a bad assumption because not all hidpi monitors will have
     // the same number of pixels as a retina display, but currently it's all I can
     // test on
-    pub fn new(width: f32, height: f32, constrain: bool, hidpi: bool) -> PlayableArea {
+    // also note: clippy doesn't like comparing floats, but if I don't get exactly
+    // 2.0 or 2.5 then I want it to fall into the else category
+    #[allow(clippy::float_cmp)]
+    pub fn new(width: f32, height: f32, constrain: bool, hidpi_factor: f64) -> PlayableArea {
         // these percentages were calculated manually based on the position of
         // the black rectangle in the smaller, unbroken background image, then
         // adjusted as needed for the retina display version
         if constrain {
-            let (x1, x2, y1, y2) = if hidpi {
+            let (x1, x2, y1, y2) = if hidpi_factor == 2.5 {
+                (0.375, 0.625, 0.26, 0.74)
+            } else if hidpi_factor == 2.0 {
                 (0.33, 0.67, 0.22, 0.78)
             } else {
                 (0.25, 0.75, 0.05, 0.95)
@@ -60,7 +65,9 @@ impl PlayableArea {
             // there needs to be some buffer here so everything is visible inside the camera.
             // otherwise some things can be rendered in the center of the border and be partially
             // offscreen
-            let (x1, x2, y1, y2) = if hidpi {
+            let (x1, x2, y1, y2) = if hidpi_factor == 2.5 {
+                (0.26, 0.74, 0.26, 0.74)
+            } else if hidpi_factor == 2.0 {
                 (0.17, 0.83, 0.20, 0.80)
             } else {
                 (0.02, 0.98, 0.045, 0.955)

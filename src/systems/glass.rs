@@ -68,6 +68,13 @@ impl<'s> System<'s> for GlassSystem {
                     transform.set_translation_x(pos_x);
                     transform.set_translation_y(neg_y);
                 },
+                // TODO: this is still all wrong
+                Direction::Mouse(manual) => {
+                    let this_x = manual.velocity_x + glass.speed * time.delta_seconds();
+                    let this_y = manual.velocity_y + glass.speed * time.delta_seconds();
+                    transform.set_translation_x(this_x);
+                    transform.set_translation_y(this_y);
+                },
             }
 
             if playable_area.out_of_bounds(trans.x, trans.y) {

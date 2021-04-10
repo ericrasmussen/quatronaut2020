@@ -4,10 +4,45 @@
 //! module is for the possible directions you might choose when
 //! firing a laser or moving the player, such as moving right,
 //! moving right and up, moving left and down, etc.
-
+use amethyst::core::math::Vector3;
 use rand::distributions::{Distribution, Standard};
 use serde::{Deserialize, Serialize};
 use std::f32::consts::{FRAC_PI_2, FRAC_PI_4, PI};
+
+#[derive(Copy, Clone, Debug, Deserialize, Serialize)]
+pub struct ManualDirection {
+    pub velocity_x: f32,
+    pub velocity_y: f32,
+    pub radians: f32,
+}
+
+impl ManualDirection {
+    pub fn new(player_x: f32, player_y: f32, player_z: f32, mouse_x: f32, mouse_y: f32) -> ManualDirection {
+        let (velocity_x, velocity_y) = ManualDirection::get_velocities(player_x, player_y, mouse_x, mouse_y);
+        let mouse_vec = Vector3::new(mouse_x, mouse_y, player_z);
+        let player_vec = Vector3::new(player_x, player_y, player_z);
+        let radians = ManualDirection::manual_radians(mouse_vec, player_vec);
+        ManualDirection {
+            velocity_x,
+            velocity_y,
+            radians,
+        }
+    }
+
+    fn manual_radians(mouse_vec: Vector3<f32>, player_vec: Vector3<f32>) -> f32 {
+        let dir = mouse_vec - player_vec;
+        let angle = dir.y.atan2(dir.x);
+        angle - (90.0 * PI / 180.0)
+    }
+
+    fn get_velocities(player_x: f32, player_y: f32, mouse_x: f32, mouse_y: f32) -> (f32, f32) {
+        let dx = mouse_x - player_x;
+        let dy = mouse_y - player_y;
+        let angle = dy.atan2(dx);
+
+        (angle.cos(), angle.sin())
+    }
+}
 
 /// The main `Direction` enum for capturing the direction
 /// of the player, lasers, and glass shards.
@@ -22,6 +57,7 @@ pub enum Direction {
     Down,
     RightUp,
     RightDown,
+    Mouse(ManualDirection),
 }
 
 use Direction::*;
@@ -122,6 +158,7 @@ impl Direction {
             LeftDown => 2.356_194_5,
             Right => -FRAC_PI_2,
             RightDown => -2.356_194_5,
+            Mouse(manual_dir) => manual_dir.radians,
         }
     }
 }

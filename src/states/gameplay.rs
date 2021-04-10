@@ -113,7 +113,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         // are initialized from assets/configs/display_config.ron, but the
         // exact dimensions are computed at runtime based on the display type
         let dimensions = (*world.read_resource::<ScreenDimensions>()).clone();
-
+        info!("dimensions: {:?}", dimensions);
         // register our entities and resources before inserting them or
         // having them created as part of `init_level` in `update`
         world.register::<BackgroundTag>();
@@ -186,15 +186,20 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
 
         // hidpi_factor should be 1.0 for a normal screen and something higher for
         // hidpi/retina displays, which affect the number of pixels in the background images
-        let is_hidpi = dimensions.hidpi_factor() > 1.0;
+        // let is_hidpi = dimensions.hidpi_factor() > 1.0;
         // this will be relevant for future troubleshooting:`
         // info!("dimensions: {:?}", dimensions);
 
         // The playable area determines the boundaries of the level based on the computed
         // dimensions and whether or not the display is hidpi
         let playable_area = match next_level_status {
-            LevelStatus::LargeLevel(_) => PlayableArea::new(dimensions.width(), dimensions.height(), false, is_hidpi),
-            _ => PlayableArea::new(dimensions.width(), dimensions.height(), true, is_hidpi),
+            LevelStatus::LargeLevel(_) => PlayableArea::new(
+                dimensions.width(),
+                dimensions.height(),
+                false,
+                dimensions.hidpi_factor(),
+            ),
+            _ => PlayableArea::new(dimensions.width(), dimensions.height(), true, dimensions.hidpi_factor()),
         };
 
         world.insert(playable_area);

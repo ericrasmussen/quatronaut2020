@@ -25,6 +25,10 @@ impl Laser {
         Laser { direction, speed }
     }
 
+    pub fn from_dir(dir: Direction, speed: f32) -> Laser {
+        Laser::new(dir, speed)
+    }
+
     /// We're receiving two types of inputs that may or may not be directional.
     /// We need to decide if they are directional (e.g. Up, or Right and Up),
     /// combine the horizontal and vertical directions if possible, and finally
@@ -40,10 +44,7 @@ impl Laser {
 
         // once we have determined the one true direction or no
         // direction at all, we can return our Option<Laser>
-        match maybe_composite {
-            Some(dir) => Some(Laser::new(dir, speed)),
-            _ => None,
-        }
+        maybe_composite.map(|dir| Laser::new(dir, speed))
     }
 }
 
