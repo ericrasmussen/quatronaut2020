@@ -10,14 +10,17 @@
 
 use amethyst::{
     assets::PrefabData,
+    core::Transform,
     derive::PrefabData,
-    ecs::{storage::DenseVecStorage, Component, Entity, WriteStorage},
+    ecs::{Component, Entities, Entity, LazyUpdate, ReadExpect, storage::DenseVecStorage, WriteStorage},
     Error,
 };
 
+use amethyst_rendy::sprite::SpriteRender;
+
 use serde::{Deserialize, Serialize};
 
-use crate::components::{collider::Collider, launcher::Launcher, movement::Movement};
+use crate::components::{collider::Collider, launcher::Launcher, movement::Movement, tags::CleanupTag};
 
 // This entity is a grouping of components representing one game enemy,
 // which allows the prefab loads to aggregate components from a config
@@ -76,7 +79,7 @@ impl Enemy {
     }
 
     /// Use this in systems deciding when an enemy has taken some amount of
-    /// damage, likely from the player's laser weapon.
+    /// damage, likely from the player's ghost weapon.
     pub fn take_damage(&mut self, damage: f32) {
         self.health -= damage;
     }
@@ -84,4 +87,51 @@ impl Enemy {
 
 impl Component for Enemy {
     type Storage = DenseVecStorage<Self>;
+}
+
+/// A ghost like in PacMan, but also nothing at all like that.
+#[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PrefabData)]
+#[prefab(Component)]
+#[serde(deny_unknown_fields)]
+pub struct Ghost {
+    pub fade_time: f32,
+    pub min_scale: f32,
+    pub tint_value: f32,
+}
+
+impl Ghost {
+    pub fn is_done_fading(self) -> bool {
+        self.fade_time <= 0.0
+    }
+
+    pub fn next_scale(&mut self, current_scale: f32, timedelta: f32) -> f32 {
+        self.fade_time -= timedelta;
+        if self.fade_time <= 0.0 {
+            self.min_scale
+        } else {
+            let next_increment = (current_scale - self.min_scale) / self.fade_time;
+            let next_scale = current_scale - (next_increment * timedelta);
+            next_scale
+        }
+    }
+}
+
+impl Component for Ghost {
+    type Storage = DenseVecStorage<Self>;
+}
+
+pub fn summon_ghost(
+    sprite_render: SpriteRender,
+    enemy_transform: Transform,
+    entities: &Entities,
+    lazy_update: &ReadExpect<LazyUpdate>,
+) {
+
+    let ghost = Ghost { fade_time: 0.25, min_scale: 0.05, tint_value: 0.5 };
+    let ghost_entity: Entity = entities.create();
+    let cleanup_tag = CleanupTag {};
+    lazy_update.insert(ghost_entity, ghost);
+    lazy_update.insert(ghost_entity, cleanup_tag);
+    lazy_update.insert(ghost_entity, enemy_transform);
+    lazy_update.insert(ghost_entity, sprite_render);
 }

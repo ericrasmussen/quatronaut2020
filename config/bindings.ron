@@ -7,6 +7,10 @@
     // laser beams!
     "x_laser": Emulated(pos: Key(Right), neg: Key(Left)),
     "y_laser": Emulated(pos: Key(Up), neg: Key(Down)),
+
+    // laser beams alt!
+    "x_laser2": Emulated(pos: Key(L), neg: Key(J)),
+    "y_laser2": Emulated(pos: Key(I), neg: Key(K)),
   },
   actions: {},
 )

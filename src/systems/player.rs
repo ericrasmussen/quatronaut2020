@@ -92,8 +92,16 @@ impl<'s> System<'s> for PlayerSystem {
             // this tracks whether or not the player is shooting. it makes sense to stay
             // here for now, mostly to avoid weird issues in the future that might allow
             // firing lasers without a player entity
-            let laser_x = input.axis_value("x_laser");
-            let laser_y = input.axis_value("y_laser");
+            // some keyboards don't allow multiple arrow key presses with wasd so
+            // this will allow ijkl for firing too. as long as 0.0 is the condition for
+            // no input, and > 0.0 || < 0.0 is the condition for firing, it's safe to
+            // add the values (i.e. up arrow and/or the i key results in firing up)
+            let left_arrow = input.axis_value("x_laser").unwrap_or(0.0);
+            let j_key = input.axis_value("x_laser2").unwrap_or(0.0);
+            let right_arrow = input.axis_value("y_laser").unwrap_or(0.0);
+            let l_key = input.axis_value("y_laser2").unwrap_or(0.0);
+            let laser_x = Some(left_arrow + j_key);
+            let laser_y = Some(right_arrow + l_key);
 
             // optionally creates a new direction for the player (and possibly laser) based on the mouse
             // click coordinates or the keyboard arrows

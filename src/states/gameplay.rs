@@ -26,7 +26,7 @@ use derive_new::new;
 use log::info;
 
 use crate::entities::{
-    enemy::{Enemy, EnemyPrefab},
+    enemy::{Enemy, EnemyPrefab, Ghost},
     laser::Laser,
     player::{Player, PlayerPrefab},
 };
@@ -98,6 +98,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         dispatcher_builder.add(systems::MovementTrackingSystem, "movement_tracking_system", &[]);
         dispatcher_builder.add(systems::TransformUpdateSystem, "transform_update_system", &[]);
         dispatcher_builder.add(systems::ProjectilesSystem, "projectiles_system", &[]);
+        dispatcher_builder.add(systems::GhostSystem, "ghost_system", &[]);
 
         // builds and sets up the dispatcher
         let mut dispatcher = dispatcher_builder
@@ -122,6 +123,7 @@ impl<'a, 'b> SimpleState for GameplayState<'a, 'b> {
         world.register::<Player>();
         world.register::<Laser>();
         world.register::<Enemy>();
+        world.register::<Ghost>();
         world.register::<Collider>();
         world.register::<Movement>();
         world.register::<Launcher>();

@@ -8,12 +8,14 @@ use amethyst::{
     audio::{output::Output, Source},
     core::Transform,
     derive::SystemDesc,
-    ecs::{Entities, Join, Read, ReadExpect, ReadStorage, System, SystemData, WriteStorage},
+    ecs::{Entities, Join, LazyUpdate, Read, ReadExpect, ReadStorage, System, SystemData, WriteStorage},
 };
+
+use amethyst_rendy::sprite::SpriteRender;
 
 use crate::{
     components::collider::Collider,
-    entities::{enemy::Enemy, laser::Laser},
+    entities::{enemy::{Enemy, summon_ghost}, laser::Laser},
     resources::audio::{SoundType, Sounds},
 };
 
@@ -33,6 +35,8 @@ impl<'s> System<'s> for CollisionSystem {
         WriteStorage<'s, Enemy>,
         Entities<'s>,
         ReadStorage<'s, Collider>,
+        ReadStorage<'s, SpriteRender>,
+        ReadExpect<'s, LazyUpdate>,
         Read<'s, AssetStorage<Source>>,
         ReadExpect<'s, Sounds>,
         Option<Read<'s, Output>>,
@@ -40,7 +44,7 @@ impl<'s> System<'s> for CollisionSystem {
 
     fn run(
         &mut self,
-        (transforms, lasers, mut enemies, entities, colliders, storage, sounds, audio_output): Self::SystemData,
+        (transforms, lasers, mut enemies, entities, colliders, sprite_renders, lazy_update, storage, sounds, audio_output): Self::SystemData,
     ) {
         for (laser_entity, _laser_a, transform_a) in (&entities, &lasers, &transforms).join() {
             // the x, y should be the half length along the x and y axes, respectively
@@ -61,8 +65,8 @@ impl<'s> System<'s> for CollisionSystem {
             // a bounding volume is the combination of a shape and a position
             let aabb_laser = bounding_volume::aabb(&laser_cube, &laser_cube_pos);
 
-            for (enemy_entity, enemy, enemy_transform, enemy_collider) in
-                (&entities, &mut enemies, &transforms, &colliders).join()
+            for (enemy_entity, enemy, enemy_transform, enemy_collider, sprite_render) in
+                (&entities, &mut enemies, &transforms, &colliders, &sprite_renders).join()
             {
                 let x = enemy_transform.translation().x;
                 let y = enemy_transform.translation().y;
@@ -78,6 +82,7 @@ impl<'s> System<'s> for CollisionSystem {
                     // if the enemy has taken enough damage, delete them
                     if enemy.is_dead() && entities.delete(enemy_entity).is_ok() {
                         //info!("enemy deleted due to insufficient laser dodging abilities");
+                        summon_ghost(sprite_render.clone(), enemy_transform.clone(), &entities, &lazy_update);
                         sounds.play_sound(SoundType::EnemyDeath, &storage, audio_output.as_deref());
                     }
                 }
