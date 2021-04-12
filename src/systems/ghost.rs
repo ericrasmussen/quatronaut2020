@@ -4,7 +4,6 @@ use amethyst::{
     core::math::Vector3,
     derive::SystemDesc,
     ecs::{Entities, Join, Read, System, SystemData, WriteStorage},
-    // renderer::{palette::Srgba, resources::Tint},
 };
 
 use crate::entities::enemy::Ghost;
@@ -16,7 +15,6 @@ pub struct GhostSystem;
 impl<'s> System<'s> for GhostSystem {
     type SystemData = (
         WriteStorage<'s, Ghost>,
-//        WriteStorage<'s, Tint>,
         WriteStorage<'s, Transform>,
         Entities<'s>,
         Read<'s, Time>,
@@ -31,7 +29,6 @@ impl<'s> System<'s> for GhostSystem {
             } else {
                 let next_scale = ghost.next_scale(transform.scale().x, time.delta_seconds());
                 transform.set_scale(Vector3::from_element(next_scale));
-
             }
         }
     }

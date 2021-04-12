@@ -96,7 +96,6 @@ impl Component for Enemy {
 pub struct Ghost {
     pub fade_time: f32,
     pub min_scale: f32,
-    pub tint_value: f32,
 }
 
 impl Ghost {
@@ -106,14 +105,21 @@ impl Ghost {
 
     pub fn next_scale(&mut self, current_scale: f32, timedelta: f32) -> f32 {
         self.fade_time -= timedelta;
-        if self.fade_time <= 0.0 {
+        // once we've scaled enough, we don't want to keep going past `min_scale`
+        if self.fade_time <= 0.0 || current_scale <= self.min_scale {
             self.min_scale
         } else {
             let next_increment = (current_scale - self.min_scale) / self.fade_time;
             let next_scale = current_scale - (next_increment * timedelta);
-            next_scale
+            // one last check to make sure we don't actually go the wrong way
+            if next_scale < self.min_scale {
+                self.min_scale
+            } else {
+                next_scale
+            }
         }
     }
+
 }
 
 impl Component for Ghost {
@@ -127,7 +133,7 @@ pub fn summon_ghost(
     lazy_update: &ReadExpect<LazyUpdate>,
 ) {
 
-    let ghost = Ghost { fade_time: 0.25, min_scale: 0.05, tint_value: 0.5 };
+    let ghost = Ghost { fade_time: 0.2, min_scale: 0.05 };
     let ghost_entity: Entity = entities.create();
     let cleanup_tag = CleanupTag {};
     lazy_update.insert(ghost_entity, ghost);
