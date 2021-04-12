@@ -10,6 +10,8 @@ cd quatronaut2020
 cargo xtask run
 ```
 
+![Quatronaut gif](/quatronaut_animation.gif?raw=true "Quatronaut in action")
+
 ### Gameplay notes
 
 This game is for fun and mostly exists to show off rust and amethyst. I am not an
@@ -17,7 +19,11 @@ accomplished game developer, and this is being developed as a learning exercise.
 But, it works! Kind of! Feel free to use any of the code for your own rust and amethyst
 games.
 
-The controls are wasd for movement and the arrow keys for firing lasers.
+The controls are:
+
+* Movement: wasd
+* Lasers: arrow keys, or ijkl, or mouse
+
 
 ### Triple A Features
 
